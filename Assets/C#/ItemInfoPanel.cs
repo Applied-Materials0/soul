@@ -6,38 +6,83 @@ using System.Text; // <- StringBuilder 사용을 위해 필요!
 public class ItemInfoPanel : MonoBehaviour
 {
 
-    public static ItemInfoPanel Instance;
+    // 정보창은 처음에 꺼져 있어 Awake가 늦게 실행되므로, 비활성 상태여도 InventoryManager를 통해 찾아 온다.
+    // (BagUI 안에 ItemInfoPanel이 여러 개 있어도 스탯창에 붙은 것은 제외하고 올바른 하나만 반환)
+    private static ItemInfoPanel instance;
+    public static ItemInfoPanel Instance
+    {
+        get
+        {
+            if (instance == null && InventoryManager.Instance != null)
+                instance = InventoryManager.Instance.FindInfoPanel();
+            return instance;
+        }
+    }
 
     [Header("UI 요소 연결")]
     public Image infoIcon;
     public TextMeshProUGUI infoName;
     public TextMeshProUGUI infoDescription;
-    public GameObject iteminfopanel; 
+    public GameObject iteminfopanel;
+    [Header("제작 UI (비워 두면 코드가 기본 UI를 자동 생성)")]
     [SerializeField] private TextMeshProUGUI recipeText;
     [SerializeField] private GameObject craftButton;
     [SerializeField] private CraftQuantityPopup craftPopup; // 수량 선택 팝업
 
-
-
     void Awake()
     {
-        Instance = this;
-        // 시작할 때는 꺼둠
+        // 인벤토리가 이 패널을 찾지 못하는 구조일 때만 스스로를 등록
+        if (instance == null && (InventoryManager.Instance == null || InventoryManager.Instance.FindInfoPanel() == null))
+            instance = this;
+    }
+
+    // 슬롯 클릭 시 호출: 정보창을 열고 내용과 제작 버튼 상태를 한 번에 세팅
+    public void ShowItem(Item item)
+    {
+        if (item == null) return;
+        OpenInfoPanel(item);
+        ShowInfo(item);
+    }
+
+    // 정보창과 제작 팝업을 닫음 (효과음 없음)
+    public void HidePanel()
+    {
+        if (craftPopup != null) craftPopup.Close();
         gameObject.SetActive(false);
+    }
+
+    // 제작 버튼과 수량 팝업이 인스펙터에 없으면 기본 UI를 만들어 붙임
+    private void EnsureCraftUI()
+    {
+        TMP_FontAsset font = infoName != null ? infoName.font : null;
+
+        if (craftButton == null)
+        {
+            craftButton = CraftQuantityPopup.CreateButton(transform, "CraftButton", "제작", font,
+                new Color(0.2f, 0.55f, 0.3f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(260f, 80f), OnClickCraftButton);
+        }
+        if (craftPopup == null)
+        {
+            craftPopup = CraftQuantityPopup.Create(transform, font);
+        }
     }
 
     // 핵심 함수: 아이템 데이터를 받아 정보창을 세팅하고 켬
     public void OpenInfoPanel(Item item)
     {
-        SoundManager.Instance.PlaySlotClickSound();
+        SoundManager.Instance?.PlaySlotClickSound();
         //1. 슬롯에서 데이터가 잘 넘어왔는지 체크
         if (item == null)
         {
             Debug.LogError("넘어온 아이템 데이터(item)가 null입니다!");
             return;
         }
-        //2. 인스펙터 연결 체크
-        Debug.Log($"[데이터 확인] 이름: {item.itemName} / 아이콘 유무: {item.icon != null} / 갯수: {item.count}");
+        Display(item);
+    }
+
+    // 효과음 없이 아이템 정보(이름, 설명, 아이콘)를 화면에 표시
+    private void Display(Item item)
+    {
         gameObject.SetActive(true);
 
         // 이름 세팅
@@ -62,8 +107,8 @@ public class ItemInfoPanel : MonoBehaviour
 
     public void CloseInfoPanel()
     {
-        SoundManager.Instance.PlaySlotClickSound();
-        gameObject.SetActive(false);
+        SoundManager.Instance?.PlaySlotClickSound();
+        HidePanel();
     }
 
     // 핵심 함수: 아이템 종류에 따라 텍스트 조합하기
@@ -79,9 +124,14 @@ public class ItemInfoPanel : MonoBehaviour
         }
         // 2. 수치가 0보다 큰 항목만 알아서 줄바꿈 출력!
         //if (item.count > 1)
-        sb.AppendLine($" 수   량 : {item.count} 개");
+        sb.AppendLine($" 수   량 : {InventoryManager.Instance.GetItemCount(item.id)} 개");
         if (item.weight > 0) sb.AppendLine($" 중   량 : {item.weight} kg");
-        if (item.durability > 0) sb.AppendLine($" 내구도 : {item.durability} / {item.durabilitymax}");
+        if (item.durabilitymax > 0)
+        {
+            ItemStack stack = InventoryManager.Instance.FindStack(item.id);
+            int currentDurability = stack != null ? stack.durability : item.durabilitymax;
+            sb.AppendLine($" 내구도 : {currentDurability} / {item.durabilitymax}");
+        }
         if (item.at > 0) sb.AppendLine($" 공 격 력 : {item.at}");
         if (item.df > 0) sb.AppendLine($" 방 어 력 : {item.df}");
         if (item.hp > 0) sb.AppendLine($" 체    력 : {item.hp}");
@@ -121,73 +171,45 @@ public class ItemInfoPanel : MonoBehaviour
 
     public void ShowInfo(Item item)
     {
+        EnsureCraftUI();
+
         currentItem = item;
         currentRecipe = item.recipe; // 아이템에 설정된 레시피 가동
 
-        if (currentRecipe != null && currentRecipe.ingredients.Count > 0)
-        {
-            Debug.Log($"[ShowInfo] 선택된 아이템 레시피 감지됨: {item.itemName}");
-            craftButton.SetActive(true);
+        // 레시피에 재료가 하나라도 있어야 제작 가능한 아이템
+        bool craftable = currentRecipe != null && currentRecipe.ingredients != null && currentRecipe.ingredients.Count > 0;
 
-            // 조합법 텍스트 구성 (예: 나뭇가지: 2/5개)
-            string text = "<b>[조합법]</b>\n";
-            foreach (var ing in currentRecipe.ingredients)
-            {
-                string ingName = ing.item.itemName;
-                int hasCount = InventoryManager.Instance.GetItemCount(ing.item.id);
+        // 제작 가능하면 제작 버튼을 켜고, 제작할 수 없는 아이템이면 끔
+        craftButton.SetActive(craftable);
 
-                // 재료가 충분하면 흰색, 부족하면 빨간색 표시
-                string colorHex = (hasCount >= ing.amount) ? "#FFFFFF" : "#FF5555";
-                text += $"<color={colorHex}>- {ingName}: {ing.amount}개 (보유: {hasCount}개)</color>\n";
-            }
-            recipeText.SetText(text);
-        }
-        else
+        if (recipeText != null)
         {
-            Debug.Log($"[ShowInfo] {item.itemName}은(는) 조합법이 없는 아이템입니다.");
-            craftButton.SetActive(false);
-            recipeText.SetText("제작 불가능한 아이템입니다.");
+            recipeText.SetText(craftable ? "<b>[제작 가능]</b>" : "제작 불가능한 아이템입니다.");
         }
     }
 
-    // '제작' 버튼 클릭 시 수량 선택 팝업 열기
+    // '제작' 버튼 클릭 시 조합법과 수량 입력 팝업 열기
     public void OnClickCraftButton()
     {
-        SoundManager.Instance.PlaySlotClickSound();
-        // 1. currentRecipe가 null인지 검사 (지워도 됨)
-        if (currentRecipe == null)
+        SoundManager.Instance?.PlaySlotClickSound();
+        if (currentRecipe == null || currentItem == null)
         {
-            Debug.LogError("[CraftError] currentRecipe가 null입니다! ShowInfo()가 제대로 호출되었는지 확인하세요.");
+            Debug.LogError("[CraftError] 선택된 아이템/레시피가 없습니다! ShowInfo()가 먼저 호출되어야 합니다.");
             return;
         }
-        int maxCraft = InventoryManager.Instance.GetMaxCraftableAmount(currentRecipe); 
-        Debug.Log($"[CraftCheck] 계산된 최대 제작 가능 수량: {maxCraft}");
-        
-        // 재료별 보유 수량 출력 디버그 (지워도 됨)
-        foreach (var ing in currentRecipe.ingredients)
-        {
-            int hasCount = InventoryManager.Instance.GetItemCount(ing.item.id);
-            Debug.Log($"[재료 검사] 필요 ID: {ing.item.id} | 필요 개수: {ing.amount} | 현재 보유: {hasCount}");
-        }
 
-        if (maxCraft < 1)
-        {
-            // 재료 부족 알림 메시지 출력
-            Debug.LogWarning("재료가 부족합니다!");
-            return;
-        }
-        // 2. 즉시 1개 제작 실행
-        bool success = InventoryManager.Instance.TryCraftItem(currentRecipe, 1);
-        if (success)
-        {
-            // (선택) 제작 성공 사운드 재생
-            // SoundManager.Instance?.PlayCraftSound();
+        EnsureCraftUI();
+        craftPopup.Open(currentRecipe, OnCrafted);
+    }
 
-            // 3. 재료가 소모되고 아이템이 늘어났으므로 정보 패널 UI 즉시 갱신
+    // 제작이 끝난 뒤 호출: 보유 수량이 바뀌었으므로 정보창 내용을 갱신
+    private void OnCrafted()
+    {
+        if (currentItem != null)
+        {
+            Display(currentItem);
             ShowInfo(currentItem);
         }
-
-        //craftPopup.OpenPopup(currentRecipe, maxCraft); //수량 선택 팝업
     }
 
 }

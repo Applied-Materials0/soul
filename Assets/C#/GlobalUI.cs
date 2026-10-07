@@ -31,13 +31,13 @@ public class GlobalUI : MonoBehaviour
     void Update()
     {
         // 인벤토리 단축키
-        if (Input.GetKeyDown(KeyCode.Tab))
+        if (Input.GetKeyDown(KeyCode.Tab) && InventoryManager.Instance != null)
         {
             InventoryManager.Instance.ToggleInventory();
         }
 
         // 지도 단축키
-        if (Input.GetKeyDown(KeyCode.M))
+        if (Input.GetKeyDown(KeyCode.M) && MapManager.Instance != null)
         {
             MapManager.Instance.ToggleMap();
         }
@@ -45,7 +45,7 @@ public class GlobalUI : MonoBehaviour
         // ESC 키 (공통 닫기)
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen)
+            if ((InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen) || (MapManager.Instance != null && MapManager.Instance.IsMapOpen))
             {
                 HandleEscapeKey();
             }

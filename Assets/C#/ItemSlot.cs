@@ -16,18 +16,27 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler
     /// </summary>
     public void SetupSlot(Item item)
     {
-        if (item == null || item.icon == null)
+        if (item == null)
         {
             SetEmpty();
             return;
         }
 
+        // 아이콘이 없어도 데이터는 연결해야 슬롯을 눌러 정보창을 열 수 있음
         myItemData = item;
 
         // 1. 아이콘 연동
-        iconImage.sprite = item.icon;
-        iconImage.gameObject.SetActive(true);
-        if (iconImage.type == Image.Type.Simple) iconImage.preserveAspect = true;
+        if (item.icon != null)
+        {
+            iconImage.sprite = item.icon;
+            iconImage.gameObject.SetActive(true);
+            if (iconImage.type == Image.Type.Simple) iconImage.preserveAspect = true;
+        }
+        else
+        {
+            Debug.LogWarning($"[ItemSlot] '{item.itemName}'(ID {item.id}) 아이템 에셋에 icon이 없습니다.");
+            iconImage.gameObject.SetActive(false);
+        }
 
         // (수량 텍스트 연동은 이제 UpdateCountUI가 전담하므로 여기서 지웠습니다!)
     }
@@ -54,39 +63,23 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler
     /// </summary>
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log("<color=yellow>1. 슬롯 물리적 클릭 감지됨!</color>");
+        // 좌클릭이 아니거나 데이터가 없으면 무시
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+        if (myItemData == null) return;
 
-        // 1. 좌클릭이 아니거나 데이터가 없으면 무시
-        if (eventData.button != PointerEventData.InputButton.Left)
+        // 스탯 창이 켜져 있으면 닫고 정보창을 보여 줌
+        InventoryManager.Instance?.CloseStat();
+
+        // 정보 패널 열기 (효과음은 패널이 재생)
+        ItemInfoPanel panel = ItemInfoPanel.Instance;
+        if (panel != null)
         {
-            Debug.Log("<color=red>2. 실패: 좌클릭이 아님</color>");
-            return;
-        }
-
-        if (myItemData == null)
-        {
-            Debug.Log("<color=red>2. 실패: myItemData가 비어있음 (빈 슬롯으로 인식됨)</color>");
-            return;
-        }
-
-        Debug.Log($"<color=green>3. 통과! 아이템 데이터: {myItemData.itemName}</color>");
-
-        // 2. 유효한 아이템 슬롯을 좌클릭했을 때만 효과음 재생
-        SoundManager.Instance?.PlaySlotClickSound();
-
-        // 3. 정보 패널 열기 및 데이터 전달
-        if (ItemInfoPanel.Instance != null)
-        {
-            ItemInfoPanel.Instance.OpenInfoPanel(myItemData);
-            ItemInfoPanel.Instance.ShowInfo(myItemData);
+            panel.ShowItem(myItemData);
         }
         else
         {
-            Debug.Log("<color=red>4. 실패: ItemInfoPanel.Instance가 NULL임! (싱글톤 없음)</color>");
+            Debug.LogError("[ItemSlot] ItemInfoPanel을 찾을 수 없습니다! BagUI 안에 ItemInfoPanel이 있는지 확인하세요.");
         }
-
-        // 4. 스탯 창 닫기 (Null 조건부 연산자 '?.' 추가로 안전성 확보)
-        InventoryManager.Instance?.CloseStat();
     }
 
     /// <summary>

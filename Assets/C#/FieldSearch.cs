@@ -48,9 +48,6 @@ public class FieldSearch : MonoBehaviour
     private int currentRequiredTier;
     private GatherSoundType currentSoundType;
 
-    [Header("자원 아이템 데이터베이스 (인스펙터 등록 필수)")]
-    public List<Item> resourceDB = new List<Item>();
-
     private void Awake() // ★ 대문자 A로 수정
     {
         if (Instance == null)
@@ -221,7 +218,7 @@ public class FieldSearch : MonoBehaviour
     // =========================================================
     public void GatherBtnOn()
     {
-        Debug.LogError("채집 버튼 입력 정상");
+        Debug.Log("채집 버튼 입력 정상");
         ProcessGathering();
     }
 
@@ -235,13 +232,9 @@ public class FieldSearch : MonoBehaviour
             return;
         }
 
-        //수정됨: 가방을 뒤지는 대신, 새로 만든 도감(resourceDB)에서 아이템 고유 번호로 원본 데이터를 찾습니다.
-        Item targetResource = resourceDB.Find(x => x.id == currentItemIndex);
-        if (targetResource == null)
-        {
-            Debug.LogError($"ID가 {currentItemIndex}인 아이템을 resourceDB에서 찾을 수 없습니다! 유니티 인스펙터를 확인하세요.");
-            return;
-        }
+        // 아이템 고유 번호로 ItemDatabase(InventoryManager.itemDB)에서 원본 데이터를 찾습니다.
+        Item targetResource = InventoryManager.Instance.GetItemData(currentItemIndex);
+        if (targetResource == null) return; // 원인은 GetItemData가 로그로 알려줌
 
         string resourceName = targetResource.itemName;
         if (resourceName == "가득찬 물통")
@@ -282,10 +275,10 @@ public class FieldSearch : MonoBehaviour
 
         // 3. 자원 차감 및 인벤토리 추가
         int gainedAmount = Mathf.Min(sourceHP, damage);
-        InventoryManager.Instance.itemList[currentItemIndex].itemData.count += gainedAmount;
+        InventoryManager.Instance.AddItem(targetResource, gainedAmount);
         sourceHP -= gainedAmount;
         GameManager.SP -= 1;
-        Debug.Log(InventoryManager.Instance.itemList[currentItemIndex].itemData.count);//현재 아이템 갯수
+        Debug.Log(InventoryManager.Instance.GetItemCount(targetResource.id));//현재 아이템 갯수
         if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateStatText(); //스탯창 갱신
 
         // 4. 사운드 재생
