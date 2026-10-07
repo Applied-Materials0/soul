@@ -240,7 +240,8 @@ public class DataTableWindow : EditorWindow
         monster.id = newId;
         monster.monsterName = "새 몬스터";
 
-        string path = AssetDatabase.GenerateUniqueAssetPath($"{FolderOf<Monster>("Assets/6Monsters")}/{newId:000}_새 몬스터.asset");
+        // 파일 이름은 "번호_이름" (번호는 3자리)
+        string path = AssetDatabase.GenerateUniqueAssetPath($"{FolderOf<Monster>("Assets/6Monsters")}/{DatabaseSync.MonsterFileName(monster)}.asset");
         AssetDatabase.CreateAsset(monster, path);
         AssetDatabase.SaveAssets();
         FinishCreate();
@@ -270,8 +271,9 @@ public class DataTableWindow : EditorWindow
         AssetDatabase.SaveAssets();
         dirty = false;
 
-        // 표에서 아이템의 번호나 이름을 바꿨다면 파일 이름도 "번호_이름"에 맞춘다
+        // 표에서 아이템이나 몬스터의 번호나 이름을 바꿨다면 파일 이름도 "번호_이름"에 맞춘다
         if (mode == Mode.Item) DatabaseSync.NormalizeItemFileNames();
+        if (mode == Mode.Monster) DatabaseSync.NormalizeMonsterFileNames();
     }
 
     private void OnGUI()

@@ -44,30 +44,41 @@ public static class DatabaseSync
     }
 
     // =========================================================
-    //  아이템 에셋 파일 이름: 항상 "번호_이름" (번호는 3자리, 예: ID 14, 이름 물통 -> 014_물통.asset)
+    //  아이템/몬스터 에셋 파일 이름: 항상 "번호_이름" (번호는 3자리)
+    //   예: 아이템 ID 14, 이름 물통 -> 014_물통.asset / 몬스터 ID 3, 이름 토끼 -> 003_토끼.asset
     // =========================================================
-    public static string ItemFileName(Item item)
+    private static string MakeFileName(int id, string name)
     {
-        string name = string.IsNullOrWhiteSpace(item.itemName) ? "이름없음" : item.itemName.Trim();
+        name = string.IsNullOrWhiteSpace(name) ? "이름없음" : name.Trim();
 
         // 파일 이름에 쓸 수 없는 글자는 뺀다
         foreach (char c in System.IO.Path.GetInvalidFileNameChars())
             name = name.Replace(c.ToString(), "");
-        return $"{item.id:000}_{name}";
+        return $"{id:000}_{name}";
     }
 
-    // 모든 아이템 에셋의 파일 이름을 "번호_이름"에 맞춘다. 바꾼 것이 있으면 true
+    public static string ItemFileName(Item item)
+    {
+        return MakeFileName(item.id, item.itemName);
+    }
+
+    public static string MonsterFileName(Monster monster)
+    {
+        return MakeFileName(monster.id, monster.monsterName);
+    }
+
+    // 해당 종류의 모든 에셋의 파일 이름을 expectedName 규칙에 맞춘다. 바꾼 것이 있으면 true
     // (GUID는 그대로라서 레시피, 도감, 씬의 연결은 끊기지 않는다)
-    public static bool NormalizeItemFileNames()
+    private static bool NormalizeFileNames<T>(System.Func<T, string> expectedName) where T : Object
     {
         bool renamed = false;
-        foreach (string guid in AssetDatabase.FindAssets("t:Item"))
+        foreach (string guid in AssetDatabase.FindAssets("t:" + typeof(T).Name))
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            Item item = AssetDatabase.LoadAssetAtPath<Item>(path);
-            if (item == null) continue;
+            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset == null) continue;
 
-            string expected = ItemFileName(item);
+            string expected = expectedName(asset);
             if (System.IO.Path.GetFileNameWithoutExtension(path) == expected) continue;
 
             string error = AssetDatabase.RenameAsset(path, expected);
@@ -75,6 +86,16 @@ public static class DatabaseSync
             else Debug.LogWarning($"[DatabaseSync] '{path}' 파일 이름을 '{expected}'로 바꾸지 못했습니다: {error}");
         }
         return renamed;
+    }
+
+    public static bool NormalizeItemFileNames()
+    {
+        return NormalizeFileNames<Item>(ItemFileName);
+    }
+
+    public static bool NormalizeMonsterFileNames()
+    {
+        return NormalizeFileNames<Monster>(MonsterFileName);
     }
 
     // =========================================================
@@ -160,6 +181,7 @@ public class DatabaseSyncPostprocessor : AssetPostprocessor
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) return;
         // 아이템 파일 이름을 "번호_이름"으로 맞추고, 도감에 등록한다. 바뀐 것이 없으면 아무 일도 안 하므로 반복되지 않음
         DatabaseSync.NormalizeItemFileNames();
+        DatabaseSync.NormalizeMonsterFileNames();
         DatabaseSync.SyncAll();
     }
 }
