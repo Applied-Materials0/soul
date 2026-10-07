@@ -36,8 +36,16 @@ public class FieldSearch : MonoBehaviour
     public GameObject RunBtn;          // 도망 버튼
     public GameObject MapBtn;          // 맵 버튼
 
+    [Header("탐색 결과 비율 (탐색 버튼을 눌렀을 때 무엇이 나올지)")]
+    [Tooltip("비율끼리 비교하는 값이라 합이 100일 필요는 없음. 확률 = 내 값 / 세 값의 합. 0이면 절대 안 나옴")]
+    [Min(0)] public int resourceWeight = 76; // 자원 발견 (나뭇가지, 덤불, 광석, 연못 등. 어떤 자원인지의 비율은 아래 resourceTable 에셋에서 조절)
+    [Min(0)] public int eventWeight = 4;     // 이벤트 (지금은 "아무것도 발견하지 못했다"만 있음)
+    [Min(0)] public int monsterWeight = 20;  // 몬스터 조우
+
+    [Tooltip("자원이 나왔을 때 어떤 자원인지를 정하는 표. Create > Soul > Resource Spawn Table 로 만들어 연결. 비워 두면 기본 비율 사용")]
+    public ResourceSpawnTable resourceTable;
+
     // 내부 탐색/채집 상태 변수
-    private int result;   // 랜덤 정수
     private int events;   // 탐색 이벤트 번호
     private int mob;      // 마주친 몬스터 번호
     private int sourceHP; // 자원의 현재 체력
@@ -102,89 +110,69 @@ public class FieldSearch : MonoBehaviour
         RunAudio.Stop();
         SearchAudio.Play();
 
-        result = Random.Range(1, 101); // 1~100까지 균등하게 생성
+        // 1단계: 자원 / 이벤트 / 몬스터 중 무엇이 나올지를 인스펙터의 비율대로 정함
+        int resW = Mathf.Max(0, resourceWeight);
+        int evW = Mathf.Max(0, eventWeight);
+        int monW = Mathf.Max(0, monsterWeight);
+        int total = resW + evW + monW;
 
-        if (result >= 1 && result <= 5) // 5% - 나뭇가지 (맨손 줍기)
+        if (total <= 0)
         {
-            //SetSearchTarget(상황 텍스트, 버튼 텍스트, 이벤트, 아이템id, 툴 타입, 티어, 소스 HP);
-            SetSearchTarget("나뭇가지를 발견했다.", "채집", 0, 0, ToolType.None, 0, 1, GatherSoundType.Default);
+            Debug.LogWarning("[FieldSearch] 탐색 결과 비율(resourceWeight/eventWeight/monsterWeight)이 모두 0입니다.");
+            SearchEvent();
+            return;
         }
-        else if (result >= 6 && result <= 14) // 9% - 덤불
+
+        int roll = Random.Range(0, total); // 0 ~ total-1
+        if (roll < resW) SearchResource();
+        else if (roll < resW + evW) SearchEvent();
+        else SearchMonster();
+    }
+
+    // 자원 발견: 어떤 자원이 나올지는 resourceTable(ResourceSpawnTable 에셋)의 비중대로 정함
+    private void SearchResource()
+    {
+        ResourceSpawnTable table = GetResourceTable();
+        ResourceSpawn spawn = table != null ? table.Pick() : null;
+        if (spawn == null)
         {
-            int hp = Random.Range(1, 5);
-            SetSearchTarget("덤불을 발견했다.", "채집", 12, 13, ToolType.Sickle, 0, hp, GatherSoundType.Bush);
+            Debug.LogWarning("[FieldSearch] 뽑을 수 있는 자원이 없습니다. ResourceSpawnTable의 비중을 확인하세요.");
+            SearchEvent();
+            return;
         }
-        else if (result >= 15 && result <= 25) // 11% - 참나무 (1티어 도끼)
+
+        int lo = Mathf.Max(1, Mathf.Min(spawn.hpMin, spawn.hpMax));
+        int hi = Mathf.Max(1, Mathf.Max(spawn.hpMin, spawn.hpMax));
+        int hp = Random.Range(lo, hi + 1);
+
+        SetSearchTarget(spawn.foundText, spawn.gatherButtonText, 0, spawn.itemId, spawn.toolType, spawn.tier, hp, spawn.sound);
+    }
+
+    // 에셋을 아직 연결하지 않았을 때를 위한 기본 표 (코드에 들어 있는 기본값과 같음)
+    private ResourceSpawnTable fallbackTable;
+    private ResourceSpawnTable GetResourceTable()
+    {
+        if (resourceTable != null) return resourceTable;
+
+        if (fallbackTable == null)
         {
-            int hp = Random.Range(3, 10);
-            SetSearchTarget("참나무를 발견했다.", "벌목", 3, 0, ToolType.Axe, 1, hp, GatherSoundType.Logging);
+            fallbackTable = ScriptableObject.CreateInstance<ResourceSpawnTable>();
+            Debug.LogWarning("[FieldSearch] resourceTable이 연결되지 않아 기본 비율을 사용합니다. Create > Soul > Resource Spawn Table 에셋을 만들어 연결하세요.");
         }
-        else if (result >= 26 && result <= 28) // 3% - 구리 조각
-        {
-            SetSearchTarget("구리 조각을 발견했다.", "채집", 1, 1, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result >= 29 && result <= 30) // 2% - 구리 광석 (2티어 곡괭이)
-        {
-            int hp = Random.Range(5, 15);
-            SetSearchTarget("구리 광석을 발견했다.", "채광", 14, 1, ToolType.Pickaxe, 1, hp, GatherSoundType.Mining);
-        }
-        else if (result >= 31 && result <= 35) // 5% - 잡석 조각
-        {
-            SetSearchTarget("잡석 조각을 발견했다.", "채집", 2, 2, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result >= 36 && result <= 38) // 3% - 잡석/바위 (1티어 곡괭이)
-        {
-            int hp = Random.Range(3, 10);
-            SetSearchTarget("잡석을 발견했다.", "채석", 15, 2, ToolType.Pickaxe, 1, hp, GatherSoundType.Mining);
-        }
-        else if (result >= 39 && result <= 48) // 10% - 풀
-        {
-            SetSearchTarget("풀을 발견했다.", "채집", 4, 13, ToolType.None, 0, 1, GatherSoundType.Bush);
-        }
-        else if (result >= 49 && result <= 55) // 7% - 딸기
-        {
-            int hp = Random.Range(1, 5);
-            SetSearchTarget("딸기를 발견했다.", "채집", 5, 16, ToolType.None, 0, hp, GatherSoundType.Bush);
-        }
-        else if (result >= 56 && result <= 57) // 2% - 옥수수
-        {
-            int hp = Random.Range(1, 5);
-            SetSearchTarget("옥수수를 발견했다.", "채집", 6, 17, ToolType.None, 0, hp, GatherSoundType.Bush);
-        }
-        else if (result >= 58 && result <= 60) // 3% - 벌집
-        {
-            SetSearchTarget("벌집을 발견했다.", "채집", 7, 18, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result == 61) // 1% - 달걀
-        {
-            int hp = Random.Range(1, 5);
-            SetSearchTarget("달걀을 발견했다.", "채집", 8, 19, ToolType.None, 0, hp, GatherSoundType.Default);
-        }
-        else if (result >= 62 && result <= 66) // 5% - 주황 버섯
-        {
-            SetSearchTarget("주황 버섯을 발견했다.", "채집", 9, 26, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result >= 67 && result <= 69) // 3% - 푸른 버섯
-        {
-            SetSearchTarget("푸른 버섯을 발견했다.", "채집", 10, 27, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result == 70) // 1% - 붉은 버섯
-        {
-            SetSearchTarget("붉은 버섯을 발견했다.", "채집", 11, 28, ToolType.None, 0, 1, GatherSoundType.Default);
-        }
-        else if (result >= 71 && result <= 90) // 몬스터 조우
-        {
-            SetMonsterEncounter("적과 마주쳤다!", result - 70);
-        }
-        else if (result >= 91 && result <= 96) // 6% - 연못
-        {
-            SetSearchTarget("연못을 발견했다.", "담기", 16, 15, ToolType.Bottle, 0, 100, GatherSoundType.Water);
-        }
-        else
-        {
-            SearchText.SetText("아무것도 발견하지 못했다...");
-            GatherBtn.SetActive(false);
-        }
+        return fallbackTable;
+    }
+
+    // 이벤트: 지금은 아무 일도 없는 경우만 있음. 새 이벤트는 여기에 추가
+    private void SearchEvent()
+    {
+        SearchText.SetText("아무것도 발견하지 못했다...");
+        GatherBtn.SetActive(false);
+    }
+
+    // 몬스터 조우 (몬스터 번호는 임시로 1~20 중 무작위. 몬스터 도감을 만들면 지역별 출현 가중치로 대체)
+    private void SearchMonster()
+    {
+        SetMonsterEncounter("적과 마주쳤다!", Random.Range(1, 21));
     }
 
     // 탐색 결과 세팅 세부 함수

@@ -11,6 +11,9 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler
 
     private Item myItemData;
 
+    // 이 슬롯이 보여 주는 스택 (수량, 현재 내구도). InventoryManager가 슬롯을 만들 때 연결함
+    public ItemStack Stack { get; set; }
+
     /// <summary>
     /// 슬롯 UI 갱신 함수 (아이콘 및 기본 데이터 연동만 담당)
     /// </summary>
@@ -74,7 +77,7 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler
         ItemInfoPanel panel = ItemInfoPanel.Instance;
         if (panel != null)
         {
-            panel.ShowItem(myItemData);
+            panel.ShowItem(myItemData, Stack);
         }
         else
         {

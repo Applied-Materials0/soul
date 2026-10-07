@@ -24,10 +24,9 @@ public class ItemInfoPanel : MonoBehaviour
     public TextMeshProUGUI infoName;
     public TextMeshProUGUI infoDescription;
     public GameObject iteminfopanel;
-    [Header("제작 UI (비워 두면 코드가 기본 UI를 자동 생성)")]
-    [SerializeField] private TextMeshProUGUI recipeText;
-    [SerializeField] private GameObject craftButton;
-    [SerializeField] private CraftQuantityPopup craftPopup; // 수량 선택 팝업
+    // 지금 표시 중인 아이템과 스택 (제작 후 수량 표시를 갱신할 때 사용)
+    private Item currentItem;
+    private ItemStack currentStack;
 
     void Awake()
     {
@@ -36,53 +35,32 @@ public class ItemInfoPanel : MonoBehaviour
             instance = this;
     }
 
-    // 슬롯 클릭 시 호출: 정보창을 열고 내용과 제작 버튼 상태를 한 번에 세팅
-    public void ShowItem(Item item)
+    // 슬롯 클릭 시 호출: 정보창을 열고 그 슬롯(스택)의 내용을 표시
+    public void ShowItem(Item item, ItemStack stack)
     {
         if (item == null) return;
-        OpenInfoPanel(item);
-        ShowInfo(item);
+        SoundManager.Instance?.PlaySlotClickSound();
+        Display(item, stack);
     }
 
-    // 정보창과 제작 팝업을 닫음 (효과음 없음)
+    // 정보창을 닫음 (효과음 없음)
     public void HidePanel()
     {
-        if (craftPopup != null) craftPopup.Close();
         gameObject.SetActive(false);
     }
 
-    // 제작 버튼과 수량 팝업이 인스펙터에 없으면 기본 UI를 만들어 붙임
-    private void EnsureCraftUI()
+    // 정보창이 열려 있으면 내용을 다시 그림 (제작으로 보유 수량이 바뀐 뒤 호출)
+    public void RefreshIfOpen()
     {
-        TMP_FontAsset font = infoName != null ? infoName.font : null;
-
-        if (craftButton == null)
-        {
-            craftButton = CraftQuantityPopup.CreateButton(transform, "CraftButton", "제작", font,
-                new Color(0.2f, 0.55f, 0.3f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(260f, 80f), OnClickCraftButton);
-        }
-        if (craftPopup == null)
-        {
-            craftPopup = CraftQuantityPopup.Create(transform, font);
-        }
-    }
-
-    // 핵심 함수: 아이템 데이터를 받아 정보창을 세팅하고 켬
-    public void OpenInfoPanel(Item item)
-    {
-        SoundManager.Instance?.PlaySlotClickSound();
-        //1. 슬롯에서 데이터가 잘 넘어왔는지 체크
-        if (item == null)
-        {
-            Debug.LogError("넘어온 아이템 데이터(item)가 null입니다!");
-            return;
-        }
-        Display(item);
+        if (gameObject.activeSelf && currentItem != null)
+            Display(currentItem, currentStack);
     }
 
     // 효과음 없이 아이템 정보(이름, 설명, 아이콘)를 화면에 표시
-    private void Display(Item item)
+    private void Display(Item item, ItemStack stack)
     {
+        currentItem = item;
+        currentStack = stack;
         gameObject.SetActive(true);
 
         // 이름 세팅
@@ -90,7 +68,7 @@ public class ItemInfoPanel : MonoBehaviour
         else Debug.LogError("infoName (Text)이 인스펙터에 연결되지 않았습니다!");
 
         // 설명 세팅
-        if (infoDescription != null) infoDescription.text = BuildItemStatText(item);
+        if (infoDescription != null) infoDescription.text = BuildItemStatText(item, stack);
         else Debug.LogError("infoDescription (Text)이 인스펙터에 연결되지 않았습니다!");
 
         // 1. 데이터 연동
@@ -112,7 +90,7 @@ public class ItemInfoPanel : MonoBehaviour
     }
 
     // 핵심 함수: 아이템 종류에 따라 텍스트 조합하기
-    private string BuildItemStatText(Item item)
+    private string BuildItemStatText(Item item, ItemStack stack)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -128,7 +106,7 @@ public class ItemInfoPanel : MonoBehaviour
         if (item.weight > 0) sb.AppendLine($" 중   량 : {item.weight} kg");
         if (item.durabilitymax > 0)
         {
-            ItemStack stack = InventoryManager.Instance.FindStack(item.id);
+            // 도구는 슬롯마다 내구도가 따로이므로 클릭한 슬롯(스택)의 현재 내구도를 표시
             int currentDurability = stack != null ? stack.durability : item.durabilitymax;
             sb.AppendLine($" 내구도 : {currentDurability} / {item.durabilitymax}");
         }
@@ -163,53 +141,6 @@ public class ItemInfoPanel : MonoBehaviour
         }
 
         return sb.ToString();
-    }
-
-    //변수 선언
-    private Recipe currentRecipe;
-    private Item currentItem;
-
-    public void ShowInfo(Item item)
-    {
-        EnsureCraftUI();
-
-        currentItem = item;
-        currentRecipe = item.recipe; // 아이템에 설정된 레시피 가동
-
-        // 레시피에 재료가 하나라도 있어야 제작 가능한 아이템
-        bool craftable = currentRecipe != null && currentRecipe.ingredients != null && currentRecipe.ingredients.Count > 0;
-
-        // 제작 가능하면 제작 버튼을 켜고, 제작할 수 없는 아이템이면 끔
-        craftButton.SetActive(craftable);
-
-        if (recipeText != null)
-        {
-            recipeText.SetText(craftable ? "<b>[제작 가능]</b>" : "제작 불가능한 아이템입니다.");
-        }
-    }
-
-    // '제작' 버튼 클릭 시 조합법과 수량 입력 팝업 열기
-    public void OnClickCraftButton()
-    {
-        SoundManager.Instance?.PlaySlotClickSound();
-        if (currentRecipe == null || currentItem == null)
-        {
-            Debug.LogError("[CraftError] 선택된 아이템/레시피가 없습니다! ShowInfo()가 먼저 호출되어야 합니다.");
-            return;
-        }
-
-        EnsureCraftUI();
-        craftPopup.Open(currentRecipe, OnCrafted);
-    }
-
-    // 제작이 끝난 뒤 호출: 보유 수량이 바뀌었으므로 정보창 내용을 갱신
-    private void OnCrafted()
-    {
-        if (currentItem != null)
-        {
-            Display(currentItem);
-            ShowInfo(currentItem);
-        }
     }
 
 }

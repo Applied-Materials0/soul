@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using System.Linq;
 
 
@@ -30,6 +32,12 @@ public class InventoryManager : MonoBehaviour
 
     [Header("아이템 도감 (모든 Item 에셋이 등록된 ItemDatabase)")]
     public ItemDatabase itemDB;
+
+    [Header("제작 (비워 두면 가방 UI 상단, 스탯 버튼 옆에 제작 버튼을 자동 생성)")]
+    public Button craftRecipeButton;
+    [Tooltip("제작 UI에 쓸 한글 폰트. 비워 두면 가방 UI의 텍스트 중 한글이 들어 있는 폰트를 자동으로 찾음")]
+    public TMP_FontAsset uiFont;
+    private CraftRecipePanel recipePanel;
 
     [Header("아이템 데이터 목록")]
     public List<ItemStack> itemList = new List<ItemStack>(); // 플레이어가 소지한 아이템 리스트
@@ -71,6 +79,96 @@ public class InventoryManager : MonoBehaviour
 
         // 시작 아이템이 있다면 그 슬롯을 생성
         RefreshInventoryUI();
+
+        // 상시 표시되는 제작 버튼 준비
+        SetupCraftButton();
+    }
+
+    // 가방 UI 상단의 [제작] 버튼: 스탯 버튼 바로 왼쪽에 같은 모양으로 만든다
+    private void SetupCraftButton()
+    {
+        if (craftRecipeButton != null)
+        {
+            craftRecipeButton.onClick.AddListener(ToggleRecipePanel);
+            return;
+        }
+        if (inventoryUI == null) return;
+
+        RectTransform statBtn = inventoryUI.transform.Find("StatButton") as RectTransform;
+        TMP_Text statLabel = statBtn != null ? statBtn.GetComponentInChildren<TMP_Text>(true) : null;
+
+        Vector2 anchor = new Vector2(1f, 1f);
+        Vector2 pos = new Vector2(-420f, -100f);
+        Vector2 size = new Vector2(150f, 100f);
+        Vector2 pivot = Vector2.zero;
+        if (statBtn != null)
+        {
+            anchor = statBtn.anchorMax;
+            pivot = statBtn.pivot;
+            size = statBtn.sizeDelta;
+            pos = statBtn.anchoredPosition - new Vector2(size.x + 10f, 0f);
+        }
+
+        GameObject go = CraftQuantityPopup.CreateButton(inventoryUI.transform, "CraftRecipeButton", "제작",
+            FindUIFont(), new Color(0.2f, 0.55f, 0.3f), anchor, pos, size, ToggleRecipePanel);
+
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = anchor;
+        rt.anchorMax = anchor;
+        rt.pivot = pivot;
+        rt.anchoredPosition = pos;
+
+        // 스탯 버튼과 같은 이미지/글자 모양을 따라 함
+        if (statBtn != null)
+        {
+            Image src = statBtn.GetComponent<Image>();
+            Image dst = go.GetComponent<Image>();
+            if (src != null)
+            {
+                dst.sprite = src.sprite;
+                dst.type = src.type;
+                dst.color = src.color;
+            }
+            TMP_Text dstLabel = go.GetComponentInChildren<TMP_Text>();
+            if (dstLabel != null && statLabel != null)
+            {
+                dstLabel.fontSize = statLabel.fontSize;
+                dstLabel.color = statLabel.color;
+            }
+        }
+    }
+
+    // 제작 UI에 쓸 한글 폰트를 찾음.
+    // 첫 번째 텍스트의 폰트를 그냥 쓰면 안 됨: 슬롯의 SlotText처럼 숫자만 쓰는 기본 폰트(LiberationSans)에는 한글이 없어 네모로 나옴.
+    // 그래서 uiFont가 지정돼 있으면 그것을, 아니면 가방 UI 텍스트 중 한글 글자('한')가 실제로 들어 있는 폰트를 고른다.
+    private TMP_FontAsset FindUIFont()
+    {
+        if (uiFont != null) return uiFont;
+        if (inventoryUI == null) return null;
+
+        TMP_FontAsset fallback = null;
+        foreach (TMP_Text label in inventoryUI.GetComponentsInChildren<TMP_Text>(true))
+        {
+            TMP_FontAsset f = label.font;
+            if (f == null) continue;
+            if (f.HasCharacter('한')) return f;
+            if (fallback == null) fallback = f;
+        }
+
+        if (fallback != null)
+            Debug.LogWarning("[InventoryManager] 한글이 들어 있는 TMP 폰트를 찾지 못했습니다. uiFont에 NotoSansCJKkr SDF를 지정하세요.");
+        return fallback;
+    }
+
+    // [제작] 버튼: 제작 레시피 슬라이드 창을 열고 닫음
+    public void ToggleRecipePanel()
+    {
+        if (BtnAudio != null) BtnAudio.Play();
+        if (recipePanel == null)
+        {
+            recipePanel = CraftRecipePanel.Create(inventoryUI.transform, FindUIFont());
+        }
+        recipePanel.Toggle();
     }
 
     // 인벤토리 정보창(ItemInfoPanel)을 찾아 반환. 스탯창에 붙은 것은 제외. 비활성 상태여도 찾음.
@@ -121,6 +219,7 @@ public class InventoryManager : MonoBehaviour
     {
         if (BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
+        if (recipePanel != null) recipePanel.Close(true);
         inventoryUI.SetActive(false);
     }
 
@@ -181,14 +280,26 @@ public class InventoryManager : MonoBehaviour
             return null;
         }
 
+        slot.Stack = stack; // 슬롯이 어느 스택(수량/내구도)을 보여 주는지 연결
         slot.SetupSlot(stack.itemData);
         slot.UpdateCountUI(stack.amount);
         dynamicSlots[stack] = slot;
         return slot;
     }
 
+    // 스택의 슬롯 UI가 있으면 수량만 갱신하고, 없으면 새로 만든다
+    private void RefreshSlot(ItemStack stack)
+    {
+        if (dynamicSlots.TryGetValue(stack, out ItemSlot slot) && slot != null)
+            slot.UpdateCountUI(stack.amount);
+        else
+            CreateSlot(stack);
+    }
+
     /// <summary>
     /// 인벤토리 내 적절한 도구를 자동으로 찾아 내구도를 1 차감합니다.
+    /// 소모 순서: 필요 티어 이상인 도구 중 가장 낮은 티어 먼저, 티어가 같으면 앞쪽(좌상단) 슬롯 먼저.
+    /// 도구는 슬롯마다 따로 내구도를 가집니다(countmax = 1).
     /// </summary>
     public Item ConsumeToolDurability(ToolType requiredType, int requiredTier, out ToolCheckResult checkResult, out bool isBroken)
     {
@@ -224,10 +335,11 @@ public class InventoryManager : MonoBehaviour
             targetStack.durability = 0;
             isBroken = true;
 
-            // 같은 도구가 여러 개면 하나만 부서지고 다음 도구가 새 내구도로 이어짐
+            // countmax가 2 이상인 도구 스택이면 하나만 부서지고 다음 도구가 새 내구도로 이어짐
+            // (countmax = 1이면 해당 슬롯의 도구는 내구도 0인 채로 남음)
             if (targetStack.amount > 1)
             {
-                RemoveItem(usedTool.id, 1);
+                RemoveFromStack(targetStack, 1);
                 targetStack.durability = usedTool.durabilitymax;
             }
         }
@@ -246,12 +358,6 @@ public class InventoryManager : MonoBehaviour
         Item item = itemDB.Get(id);
         if (item == null) Debug.LogError($"ItemDatabase에 ID {id} 아이템이 없습니다!");
         return item;
-    }
-
-    // 특정 아이템의 스택 반환 (없으면 null)
-    public ItemStack FindStack(int itemID)
-    {
-        return itemList.Find(x => x.itemData.id == itemID);
     }
 
     // 특정 아이템의 현재 총 보유 수량 반환
@@ -287,12 +393,15 @@ public class InventoryManager : MonoBehaviour
     // 실제 제작 실행 (재료 소모 + 아이템 추가)
     public bool TryCraftItem(Recipe recipe, int craftCount)
     {
+        return TryCraftItem(GetItemData(recipe.resultItemId), recipe, craftCount);
+    }
+
+    // result: 이 레시피로 만들어지는 아이템 (아이템 에셋에 들어 있는 레시피는 그 아이템을 만든다)
+    public bool TryCraftItem(Item result, Recipe recipe, int craftCount)
+    {
+        if (result == null || recipe == null) return false;
         if (craftCount <= 0 || GetMaxCraftableAmount(recipe) < craftCount)
             return false;
-
-        // 완성품이 도감에 없으면 재료를 쓰기 전에 중단
-        Item result = GetItemData(recipe.resultItemId);
-        if (result == null) return false;
 
         // 1. 재료 소모
         foreach (var ing in recipe.ingredients)
@@ -305,66 +414,81 @@ public class InventoryManager : MonoBehaviour
         return true;
     }
 
+    // 한 슬롯에 쌓을 수 있는 최대 수량 (countmax가 0 이하면 제한 없음)
+    private static int StackLimit(Item item)
+    {
+        return item.countmax > 0 ? item.countmax : int.MaxValue;
+    }
+
     /// <summary>
-    /// 아이템 획득 시 호출
+    /// 아이템 획득 시 호출.
+    /// 같은 아이템의 빈자리가 있는 스택(앞쪽 슬롯부터)을 먼저 채우고, 남으면 새 슬롯을 만든다.
+    /// 도구/장비(countmax = 1)는 하나마다 슬롯이 따로 생기고 내구도도 각자 가진다.
     /// </summary>
     public void AddItem(Item newItem, int amount = 1)
     {
         if (newItem == null || amount <= 0) return;
+        int limit = StackLimit(newItem);
 
-        ItemStack stack = itemList.Find(x => x.itemData.id == newItem.id);
-
-        if (stack != null)
+        // 1. 자리가 남은 기존 스택 채우기
+        foreach (ItemStack s in itemList)
         {
-            stack.amount += amount;
+            if (amount <= 0) break;
+            if (s.itemData.id != newItem.id || s.amount >= limit) continue;
+
+            int add = Mathf.Min(limit - s.amount, amount);
+            s.amount += add;
+            amount -= add;
+            RefreshSlot(s);
         }
-        else
+
+        // 2. 남은 수량은 새 스택(= 새 슬롯, 획득 순서대로 뒤에 추가)
+        while (amount > 0)
         {
-            // 신규 아이템: 리스트 맨 뒤에 추가 (= 획득 순서)
-            stack = new ItemStack(newItem, amount);
+            int add = Mathf.Min(limit, amount);
+            ItemStack stack = new ItemStack(newItem, add);
             itemList.Add(stack);
-        }
-
-        // 슬롯 UI가 있으면 숫자만 갱신, 없으면(신규이거나 아직 UI가 안 만들어진 스택) 새로 생성
-        if (dynamicSlots.TryGetValue(stack, out ItemSlot slot) && slot != null)
-        {
-            slot.UpdateCountUI(stack.amount);
-        }
-        else
-        {
             CreateSlot(stack);
+            amount -= add;
         }
 
-        Debug.Log($"[AddItem] {newItem.itemName} +{amount} (보유 {stack.amount}개)");
+        Debug.Log($"[AddItem] {newItem.itemName} 획득 (총 보유 {GetItemCount(newItem.id)}개)");
     }
 
     /// <summary>
-    /// 크래프팅/사용 등으로 아이템 삭제 시 호출
+    /// 크래프팅/사용 등으로 아이템 삭제 시 호출 (뒤쪽 스택부터 차감)
     /// </summary>
     public void RemoveItem(int targetItemId, int amount = 1)
     {
-        ItemStack existingStack = itemList.Find(x => x.itemData.id == targetItemId);
-        if (existingStack == null) return;
-
-        existingStack.amount -= amount;
-
-        if (existingStack.amount <= 0)
+        for (int i = itemList.Count - 1; i >= 0 && amount > 0; i--)
         {
-            // 리스트에서 제거 및 UI 파괴 (GridLayoutGroup이 자동으로 땡겨줌)
-            if (dynamicSlots.TryGetValue(existingStack, out ItemSlot slotScript))
+            ItemStack s = itemList[i];
+            if (s.itemData.id != targetItemId) continue;
+
+            int take = Mathf.Min(s.amount, amount);
+            amount -= take;
+            RemoveFromStack(s, take);
+        }
+    }
+
+    // 스택에서 수량을 빼고, 0이 되면 리스트와 슬롯 UI에서 제거
+    private void RemoveFromStack(ItemStack stack, int take)
+    {
+        stack.amount -= take;
+
+        if (stack.amount <= 0)
+        {
+            // 슬롯 UI 파괴 (GridLayoutGroup이 자동으로 땡겨줌)
+            if (dynamicSlots.TryGetValue(stack, out ItemSlot slot))
             {
-                Destroy(slotScript.gameObject);
-                dynamicSlots.Remove(existingStack);
+                if (slot != null) Destroy(slot.gameObject);
+                dynamicSlots.Remove(stack);
             }
-            itemList.Remove(existingStack);
+            itemList.Remove(stack);
         }
         else
         {
-            // 아직 아이템이 남아있다면 깎인 숫자만 UI에 갱신
-            if (dynamicSlots.TryGetValue(existingStack, out ItemSlot slotScript))
-            {
-                slotScript.UpdateCountUI(existingStack.amount);
-            }
+            RefreshSlot(stack);
         }
     }
 }

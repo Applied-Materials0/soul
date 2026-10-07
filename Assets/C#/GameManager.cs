@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
     static public int Level;            //레벨
     static public int Exp;              //경험치
     static public int ExpNext;          //레벨업까지 경험치
-    static public int ExpR;             //경험치 보너스
+    static public int ExpR;             //경험치 증감율
     static public int SP;               //현재 행동력 Stamina Point
     static public int SPMax;            //최대 행동력
     static public int Mana;             //마나량
@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour
     static public float AtRate;         //공격 증감률
     static public float DfRate;         //방어 증감률
     static public float HpRate;         //체력 증감률
+    static public int Speed;            //속도 (첫 조우에 높을 수록 선 턴)
     static public float HpRateAt;       //체력 비례 공격[%]
     static public int FixAt;            //고정 공격력
     static public float BreakDf;        //관통률 [%] 방관

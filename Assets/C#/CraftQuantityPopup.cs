@@ -27,6 +27,7 @@ public class CraftQuantityPopup : MonoBehaviour
     private Button confirmButton;
     private readonly List<Row> rows = new List<Row>();
 
+    private Item resultItem; // 만들 아이템
     private Recipe recipe;
     private Action onCrafted;
     private int maxCraftable; // 현재 보유 재료로 만들 수 있는 최대 횟수
@@ -135,18 +136,19 @@ public class CraftQuantityPopup : MonoBehaviour
     // =========================================================
     //  열기 / 닫기
     // =========================================================
-    public void Open(Recipe r, Action crafted)
+    // result: 만들 아이템, r: 그 아이템의 제작법
+    public void Open(Item result, Recipe r, Action crafted)
     {
-        if (r == null || InventoryManager.Instance == null) return;
+        if (result == null || r == null || InventoryManager.Instance == null) return;
+        resultItem = result;
         recipe = r;
         onCrafted = crafted;
 
         // 목표 아이템 표시
-        Item result = InventoryManager.Instance.GetItemData(r.resultItemId);
-        resultTitle.text = result != null ? result.itemName : $"(ID {r.resultItemId} 없음)";
-        resultDesc.text = (result != null && !string.IsNullOrEmpty(result.description) ? result.description + "\n\n" : "")
+        resultTitle.text = result.itemName;
+        resultDesc.text = (!string.IsNullOrEmpty(result.description) ? result.description + "\n\n" : "")
             + $"1회 제작 시 {r.resultAmount}개 생산";
-        resultIcon.sprite = result != null ? result.icon : null;
+        resultIcon.sprite = result.icon;
         resultIcon.enabled = resultIcon.sprite != null;
 
         // 재료 줄 다시 만들기
@@ -270,7 +272,7 @@ public class CraftQuantityPopup : MonoBehaviour
         SoundManager.Instance?.PlaySlotClickSound();
         int count = ParseCount();
 
-        if (InventoryManager.Instance.TryCraftItem(recipe, count))
+        if (InventoryManager.Instance.TryCraftItem(resultItem, recipe, count))
         {
             Action done = onCrafted;
             Close();
@@ -292,7 +294,7 @@ public class CraftQuantityPopup : MonoBehaviour
     // =========================================================
     //  UI 생성 도구
     // =========================================================
-    private static RectTransform NewRect(string name, Transform parent, Vector2 anchor, Vector2 pos, Vector2 size)
+    public static RectTransform NewRect(string name, Transform parent, Vector2 anchor, Vector2 pos, Vector2 size)
     {
         GameObject go = new GameObject(name, typeof(RectTransform));
         RectTransform rt = (RectTransform)go.transform;
@@ -311,7 +313,7 @@ public class CraftQuantityPopup : MonoBehaviour
         return AddText(rt, size, align, font);
     }
 
-    private static TextMeshProUGUI AddText(RectTransform rt, float size, TextAlignmentOptions align, TMP_FontAsset font)
+    public static TextMeshProUGUI AddText(RectTransform rt, float size, TextAlignmentOptions align, TMP_FontAsset font)
     {
         TextMeshProUGUI t = rt.gameObject.AddComponent<TextMeshProUGUI>();
         if (font != null) t.font = font;

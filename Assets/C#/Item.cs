@@ -21,7 +21,7 @@ public class Item : ScriptableObject
     public int id;             // 고유 ID (ItemDatabase 안에서 중복 금지)
     public string itemName;    // 아이템 이름
     public int weight;         // 무게
-    public int countmax;       // 최대 소지 수량
+    public int countmax;       // 한 슬롯에 쌓이는 최대 수량 (도구/장비는 1, 0이면 제한 없음). 넘치면 다음 슬롯에 쌓임
     public int durabilitymax;  // 최대 내구도 (도구가 아니면 0)
 
     [Header("도구 분류")]
@@ -62,6 +62,12 @@ public class Item : ScriptableObject
     [Header("표시 / 제작")]
     public Sprite icon;        // 아이템 이미지
     public Recipe recipe;      // 제작법 (재료가 비어 있으면 제작 불가)
+
+    // 제작법은 "이 아이템을 만드는 방법"이므로 결과 아이템 id는 항상 자기 자신으로 맞춘다
+    private void OnValidate()
+    {
+        if (recipe != null) recipe.resultItemId = id;
+    }
 }
 
 [System.Serializable]
@@ -76,6 +82,7 @@ public class Recipe
 {
     public List<Ingredient> ingredients = new List<Ingredient>(); // 필요 재료 목록
 
-    public int resultItemId;      // 완성품 아이템 ID (ItemDatabase에서 조회)
+    [HideInInspector]
+    public int resultItemId;      // 완성품 아이템 ID (Item.OnValidate가 자동으로 채움)
     public int resultAmount = 1;  // 1회 제작 시 생산 수량
 }
