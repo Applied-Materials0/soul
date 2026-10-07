@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 480dc28675d76db4193aca86414e7651, type: 3}
+  m_Name: LevelTable
+  m_EditorClassIdentifier: Assembly-CSharp::LevelTable
+  levels:
+  - level: 1
+    expToNext: 10
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 2
+    expToNext: 30
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 3
+    expToNext: 60
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 4
+    expToNext: 100
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 5
+    expToNext: 150
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 6
+    expToNext: 210
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 7
+    expToNext: 280
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 8
+    expToNext: 360
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 9
+    expToNext: 450
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 10
+    expToNext: 550
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 11
+    expToNext: 660
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 12
+    expToNext: 780
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 13
+    expToNext: 910
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 14
+    expToNext: 1050
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 15
+    expToNext: 1200
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 16
+    expToNext: 1360
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 17
+    expToNext: 1530
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 18
+    expToNext: 1710
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 19
+    expToNext: 1900
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 0
+  - level: 20
+    expToNext: 0
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1

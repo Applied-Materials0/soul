@@ -14,8 +14,9 @@ public class CraftQuantityPopup : MonoBehaviour
     {
         public GameObject root;
         public TextMeshProUGUI text;
-        public Ingredient ingredient;
+        public Ingredient ingredient; // 재료 줄이면 값이 있음
         public Item item;
+        public RecipeTool tool;       // 필요 도구 줄이면 값이 있음
     }
 
     private TMP_FontAsset font;
@@ -25,6 +26,7 @@ public class CraftQuantityPopup : MonoBehaviour
     private RectTransform rowContainer;
     private TMP_InputField qtyInput;
     private Button confirmButton;
+    private TextMeshProUGUI noticeText; // 제작에 실패했을 때 이유를 보여 주는 줄 (가방이 가득 참 등)
     private readonly List<Row> rows = new List<Row>();
 
     private Item resultItem; // 만들 아이템
@@ -63,7 +65,7 @@ public class CraftQuantityPopup : MonoBehaviour
         gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.6f);
 
         // 가운데 창
-        RectTransform window = NewRect("Window", transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820f, 720f));
+        RectTransform window = NewRect("Window", transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820f, 780f));
         window.gameObject.AddComponent<Image>().color = new Color(0.13f, 0.13f, 0.16f, 1f);
 
         // 이후 요소는 창의 위쪽 가운데를 기준으로 배치 (pos.y는 위에서 아래로 내려온 거리)
@@ -99,6 +101,10 @@ public class CraftQuantityPopup : MonoBehaviour
         // 제작 / 취소
         confirmButton = CreateButton(window, "Confirm", "제작", font, new Color(0.2f, 0.55f, 0.3f), top, new Vector2(-130f, -650f), new Vector2(220f, 60f), OnClickConfirm).GetComponent<Button>();
         CreateButton(window, "Cancel", "취소", font, new Color(0.55f, 0.25f, 0.25f), top, new Vector2(130f, -650f), new Vector2(220f, 60f), OnClickCancel);
+
+        // 실패 이유 (버튼 아래)
+        noticeText = NewText(NewRect("Notice", window, top, new Vector2(0f, -718f), new Vector2(760f, 50f)), 26, TextAlignmentOptions.Center);
+        noticeText.color = new Color(1f, 0.45f, 0.45f);
     }
 
     private void BuildInputField(Transform parent, Vector2 pos, Vector2 size)
@@ -160,9 +166,17 @@ public class CraftQuantityPopup : MonoBehaviour
         rows.Clear();
         foreach (Ingredient ing in r.ingredients)
         {
-            rows.Add(BuildRow(ing));
+            rows.Add(BuildRow(ing, null));
+        }
+        if (r.tools != null)
+        {
+            foreach (RecipeTool tool in r.tools)
+            {
+                if (tool != null) rows.Add(BuildRow(null, tool)); // 필요한 도구도 한 줄로 표시
+            }
         }
 
+        noticeText.text = "";
         qtyInput.SetTextWithoutNotify("1");
         RefreshRows();
 
@@ -176,10 +190,10 @@ public class CraftQuantityPopup : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // 재료 한 줄: [아이콘] 이름 / 필요 수량 (보유 수량) / 설명
-    private Row BuildRow(Ingredient ing)
+    // 재료 한 줄: [아이콘] 이름 / 필요 수량 (보유 수량) / 설명.  도구 줄이면(tool이 있으면) 아이콘 없이 도구 정보만
+    private Row BuildRow(Ingredient ing, RecipeTool tool)
     {
-        Item item = InventoryManager.Instance.GetItemData(ing.itemId);
+        Item item = ing != null ? InventoryManager.Instance.GetItemData(ing.itemId) : null;
 
         GameObject rowGo = new GameObject("Row", typeof(RectTransform), typeof(Image), typeof(LayoutElement), typeof(HorizontalLayoutGroup));
         rowGo.transform.SetParent(rowContainer, false);
@@ -211,7 +225,7 @@ public class CraftQuantityPopup : MonoBehaviour
         TextMeshProUGUI text = NewText((RectTransform)textGo.transform, 22, TextAlignmentOptions.Left);
         text.overflowMode = TextOverflowModes.Ellipsis;
 
-        return new Row { root = rowGo, text = text, ingredient = ing, item = item };
+        return new Row { root = rowGo, text = text, ingredient = ing, item = item, tool = tool };
     }
 
     // =========================================================
@@ -244,6 +258,18 @@ public class CraftQuantityPopup : MonoBehaviour
 
         foreach (Row row in rows)
         {
+            // 필요한 도구 줄: 제작할 때 내구도가 깎임 (도구는 사라지지 않음)
+            if (row.tool != null)
+            {
+                int durabilityNeed = Mathf.Max(1, row.tool.durabilityCost) * count;
+                int durabilityHave = InventoryManager.Instance.GetToolDurability(row.tool.toolType, row.tool.tier);
+                string toolColor = durabilityHave >= durabilityNeed ? "#FFFFFF" : "#FF6666";
+                string tierText = row.tool.tier > 0 ? $" (티어 {row.tool.tier} 이상)" : "";
+                row.text.text = $"<color={toolColor}><b>필요 도구: {ToolTypeInfo.Name(row.tool.toolType)}</b>{tierText}  내구도 -{durabilityNeed} (남은 내구도 {durabilityHave})</color>\n"
+                    + "<size=18><color=#AAAAAA>제작하면 내구도가 줄어듭니다</color></size>";
+                continue;
+            }
+
             int need = row.ingredient.amount * count;
             int have = InventoryManager.Instance.GetItemCount(row.ingredient.itemId);
             string color = have >= need ? "#FFFFFF" : "#FF6666";
@@ -281,6 +307,7 @@ public class CraftQuantityPopup : MonoBehaviour
         else
         {
             RefreshRows();
+            noticeText.text = InventoryManager.Instance.LastCraftFailReason; // 가방이 가득 참 등
         }
     }
 

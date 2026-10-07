@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a444b14d113173408264902b0e9ca85, type: 3}
+  m_Name: SPCostTable
+  m_EditorClassIdentifier: Assembly-CSharp::SPCostTable
+  entries:
+  - action: 0
+    label: "\uD0D0\uC0C9"
+    cost: 1
+    note: "\uD0D0\uC0C9 \uBC84\uD2BC\uC744 \uD55C \uBC88 \uB204\uB97C \uB54C"
+  - action: 1
+    label: "\uCC44\uC9D1"
+    cost: 1
+    note: "\uC790\uC6D0\uC744 \uD55C \uBC88 \uCC44\uC9D1\uD560 \uB54C"
+  - action: 2
+    label: "\uB3C4\uB824\uB0B4\uAE30"
+    cost: 1
+    note: "\uCE7C\uB85C \uD55C \uBC88 \uB3C4\uB824\uB0BC \uB54C"
+  - action: 3
+    label: "\uACF5\uACA9"
+    cost: 1
+    note: "\uC804\uD22C\uC5D0\uC11C \uACF5\uACA9\uD560 \uB54C"
+  - action: 4
+    label: "\uBC29\uC5B4"
+    cost: 1
+    note: "\uC804\uD22C\uC5D0\uC11C \uBC29\uC5B4\uD560 \uB54C"
+  - action: 5
+    label: "\uB3C4\uB9DD"
+    cost: 1
+    note: "\uC804\uD22C\uC5D0\uC11C \uB3C4\uB9DD\uC744 \uC2DC\uB3C4\uD560 \uB54C"
+  - action: 6
+    label: "\uC9C0\uC5ED \uC774\uB3D9"
+    cost: 5
+    note: "\uB2E4\uB978 \uC9C0\uC5ED\uC73C\uB85C \uC774\uB3D9\uD560 \uB54C (\uB8E8\uD504
+      \uD0C0\uC6B4\uC73C\uB85C \uB3CC\uC544\uAC08 \uB54C\uB294 \uC18C\uBAA8 \uC548
+      \uD568)"

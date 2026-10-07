@@ -19,11 +19,11 @@ public class DataTableWindow : EditorWindow
         return new Col { title = title, path = path, width = width, tip = tip, text = text };
     }
 
-    private enum Mode { Item, Resource, Monster }
-    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터" };
+    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound }
+    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음" };
 
     private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피" };
-    private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역" };
+    private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역", "도망/도려내기" };
 
     // ===== 아이템 열 =====
     private static readonly Col[] ItemLead =
@@ -57,7 +57,8 @@ public class DataTableWindow : EditorWindow
         C("최대 마나", "manamax", 65), C("마나 회복", "manaheal", 65),
         C("공격력 배율", "atrate", 70), C("방어력 배율", "dfrate", 70), C("체력 배율", "hprate", 65),
         C("회복량 배율", "healrate", 70), C("골드 배율", "goldrate", 65), C("경험치 배율", "exprate", 70),
-        C("최대 스태미나", "spmax", 75), C("스태미나 회복", "spheal", 75), C("가방 증량", "weightmax", 65, "소지 무게 증가량"),
+        C("최대 스태미나", "spmax", 75), C("스태미나 회복", "spheal", 75), C("가방 증량", "weightmax", 65, "소지 최대 무게 증가량 (장비)"),
+        C("슬롯 증가", "slotmax", 65, "가방 슬롯 개수 증가량 (장비)"),
         C("특수 효과", "specialEffect", 200, null, true),
     }).ToArray();
 
@@ -97,12 +98,21 @@ public class DataTableWindow : EditorWindow
 
     private static readonly Col[] MonsterSpawnCols = MonsterLead.ToArray();
 
+    private static readonly Col[] MonsterFleeCarve = MonsterLead.Concat(new[]
+    {
+        C("도망 체력%", "fleeHpPercent", 80, "체력이 이 비율[%] 이하가 되면 도망칠 수 있음 (0이면 도망치지 않음)"),
+        C("도망 확률", "fleeChance", 70, "그 상태에서 자기 턴마다 도망칠 확률 [%]"),
+        C("도려내기 횟수", "carveCount", 85, "쓰러뜨린 뒤 도려낼 수 있는 횟수 (0이면 불가)"),
+        C("필요 칼 티어", "carveToolTier", 85, "도려내는 데 필요한 칼의 티어"),
+    }).ToArray();
+
     // ===== 상태 =====
     private Mode mode;
     private int itemTab, monsterTab;
     private List<SerializedObject> rows = new List<SerializedObject>();
     private Dictionary<int, string> itemNames = new Dictionary<int, string>();
     private SerializedObject resourceTable; // [자원] 탭이 보여 주는 ResourceSpawnTable 에셋
+    private SerializedObject ruleTable;     // [레벨] / [SP 소모] / [숙련도] 탭이 보여 주는 규칙 표 에셋
     private Vector2 scroll;
     private string search = "";
     private bool dirty;
@@ -142,9 +152,25 @@ public class DataTableWindow : EditorWindow
 
         rows = new List<SerializedObject>();
         resourceTable = null;
+        ruleTable = null;
 
         switch (mode)
         {
+            case Mode.Level:
+                ruleTable = LoadRuleTable("t:LevelTable");
+                break;
+            case Mode.SPCost:
+                ruleTable = LoadRuleTable("t:SPCostTable");
+                break;
+            case Mode.Proficiency:
+                ruleTable = LoadRuleTable("t:ProficiencyTable");
+                break;
+            case Mode.PlayerBase:
+                ruleTable = LoadRuleTable("t:PlayerBaseTable");
+                break;
+            case Mode.Sound:
+                ruleTable = LoadRuleTable("t:SoundTable");
+                break;
             case Mode.Item:
                 rows = items.Select(i => new SerializedObject(i)).ToList();
                 break;
@@ -165,6 +191,15 @@ public class DataTableWindow : EditorWindow
         }
     }
 
+    // 프로젝트에서 규칙 표 에셋 하나를 찾아 편집용으로 연다 (없으면 null)
+    private static SerializedObject LoadRuleTable(string filter)
+    {
+        string guid = AssetDatabase.FindAssets(filter).FirstOrDefault();
+        if (guid == null) return null;
+        Object asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GUIDToAssetPath(guid));
+        return asset != null ? new SerializedObject(asset) : null;
+    }
+
     private void Save()
     {
         if (!dirty) return;
@@ -179,7 +214,42 @@ public class DataTableWindow : EditorWindow
         switch (mode)
         {
             case Mode.Resource: DrawResourceMode(); break;
+            case Mode.Level:
+            case Mode.SPCost:
+            case Mode.Proficiency:
+            case Mode.PlayerBase:
+            case Mode.Sound: DrawRuleMode(); break;
             default: DrawRowsMode(); break;
+        }
+    }
+
+    // ===== [레벨] / [SP 소모] / [숙련도] 탭: 에셋 하나가 표 하나 =====
+    private void DrawRuleMode()
+    {
+        if (ruleTable == null || ruleTable.targetObject == null)
+        {
+            EditorGUILayout.HelpBox(
+                "표 에셋이 아직 없습니다. 메뉴 Soul > 규칙 표 에셋 만들기 (없는 것만) 를 누르거나 에디터를 다시 열면 자동으로 만들어집니다.",
+                MessageType.Info);
+            return;
+        }
+
+        EditorGUILayout.LabelField($"에셋: {AssetDatabase.GetAssetPath(ruleTable.targetObject)}", EditorStyles.miniLabel);
+
+        bool changed = false;
+        switch (mode)
+        {
+            case Mode.Level: changed = RuleTableDrawers.DrawLevelTable(ruleTable, ref scroll); break;
+            case Mode.SPCost: changed = RuleTableDrawers.DrawSPCostTable(ruleTable); break;
+            case Mode.Proficiency: changed = RuleTableDrawers.DrawProficiencyTable(ruleTable); break;
+            case Mode.PlayerBase: changed = RuleTableDrawers.DrawPlayerBaseTable(ruleTable); break;
+            case Mode.Sound: changed = RuleTableDrawers.DrawSoundTable(ruleTable); break;
+        }
+
+        if (changed)
+        {
+            EditorUtility.SetDirty(ruleTable.targetObject);
+            dirty = true;
         }
     }
 
@@ -188,7 +258,7 @@ public class DataTableWindow : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-        int newMode = GUILayout.Toolbar((int)mode, ModeNames, EditorStyles.toolbarButton, GUILayout.Width(200));
+        int newMode = GUILayout.Toolbar((int)mode, ModeNames, EditorStyles.toolbarButton, GUILayout.Width(560));
         if (newMode != (int)mode)
         {
             Save();
@@ -201,9 +271,9 @@ public class DataTableWindow : EditorWindow
         if (mode == Mode.Item)
             itemTab = GUILayout.Toolbar(itemTab, ItemTabNames, EditorStyles.toolbarButton, GUILayout.Width(380));
         else if (mode == Mode.Monster)
-            monsterTab = GUILayout.Toolbar(monsterTab, MonsterTabNames, EditorStyles.toolbarButton, GUILayout.Width(380));
+            monsterTab = GUILayout.Toolbar(monsterTab, MonsterTabNames, EditorStyles.toolbarButton, GUILayout.Width(480));
 
-        if (mode != Mode.Resource)
+        if (mode == Mode.Item || mode == Mode.Monster)
         {
             GUILayout.Space(12);
             GUILayout.Label("검색", GUILayout.Width(30));
@@ -253,6 +323,7 @@ public class DataTableWindow : EditorWindow
             case 1: return MonsterStats;
             case 2: return MonsterReward;
             case 3: return MonsterSpawnCols;
+            case 4: return MonsterFleeCarve;
             default: return MonsterBasic;
         }
     }
@@ -260,9 +331,10 @@ public class DataTableWindow : EditorWindow
     // 표 오른쪽에 붙는 "목록형" 칸(재료/드랍/출현 지역)의 머리글. 없으면 null
     private string ExtraHeader()
     {
-        if (mode == Mode.Item && itemTab == 3) return "재료 (아이템 ID x 수량)";
+        if (mode == Mode.Item && itemTab == 3) return "재료 (아이템 ID x 수량)   |   필요 도구 (종류, T=티어, 내구도 소모)";
         if (mode == Mode.Monster && monsterTab == 2) return "드랍 (아이템 ID x 최소~최대 @확률%)";
         if (mode == Mode.Monster && monsterTab == 3) return "출현 (지역 ID / 비중)";
+        if (mode == Mode.Monster && monsterTab == 4) return "도려내서 얻는 것 (아이템 ID x 최소~최대 @확률%)";
         return null;
     }
 
@@ -294,7 +366,7 @@ public class DataTableWindow : EditorWindow
         EditorGUILayout.BeginHorizontal();
         foreach (Col c in cols)
             GUILayout.Label(new GUIContent(c.title, c.tip), header, GUILayout.Width(c.width), GUILayout.Height(30));
-        if (extraHeader != null) GUILayout.Label(extraHeader, header, GUILayout.Width(480), GUILayout.Height(30));
+        if (extraHeader != null) GUILayout.Label(extraHeader, header, GUILayout.Width(extraHeader.Length > 40 ? 760 : 480), GUILayout.Height(30));
         EditorGUILayout.EndHorizontal();
 
         // 줄
@@ -319,11 +391,16 @@ public class DataTableWindow : EditorWindow
             }
 
             if (mode == Mode.Item && itemTab == 3)
+            {
                 DrawIngredients(so);
+                DrawRecipeTools(so);
+            }
             else if (mode == Mode.Monster && monsterTab == 2)
-                DrawDrops(so);
+                DrawDrops(so, "drops");
             else if (mode == Mode.Monster && monsterTab == 3)
                 DrawSpawns(so);
+            else if (mode == Mode.Monster && monsterTab == 4)
+                DrawDrops(so, "carveDrops");
 
             EditorGUILayout.EndHorizontal();
             if (EditorGUI.EndChangeCheck())
@@ -388,9 +465,9 @@ public class DataTableWindow : EditorWindow
     }
 
     // 몬스터 드랍: [아이템ID (이름) x 최소~최대 @확률% -]
-    private void DrawDrops(SerializedObject so)
+    private void DrawDrops(SerializedObject so, string listPath)
     {
-        SerializedProperty list = so.FindProperty("drops");
+        SerializedProperty list = so.FindProperty(listPath);
         if (list == null) return;
 
         int removeAt = -1;
@@ -420,6 +497,40 @@ public class DataTableWindow : EditorWindow
             added.FindPropertyRelative("amountMin").intValue = 1;
             added.FindPropertyRelative("amountMax").intValue = 1;
             added.FindPropertyRelative("chance").floatValue = 100f;
+        }
+    }
+
+    // 아이템 레시피의 필요 도구: [종류 T티어 내구도소모 -] [+]. 제작하면 도구의 내구도만 깎인다.
+    private void DrawRecipeTools(SerializedObject so)
+    {
+        SerializedProperty list = so.FindProperty("recipe.tools");
+        if (list == null) return;
+
+        GUILayout.Space(14);
+        GUILayout.Label("도구", EditorStyles.miniBoldLabel, GUILayout.Width(28));
+
+        int removeAt = -1;
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            SerializedProperty t = list.GetArrayElementAtIndex(i);
+            TableField.Draw(t.FindPropertyRelative("toolType"), 72);
+            GUILayout.Label("T", EditorStyles.miniLabel, GUILayout.Width(10));
+            TableField.Draw(t.FindPropertyRelative("tier"), 28);
+            GUILayout.Label("-", EditorStyles.miniLabel, GUILayout.Width(8));
+            SerializedProperty cost = t.FindPropertyRelative("durabilityCost");
+            TableField.Draw(cost, 30);
+            cost.intValue = Mathf.Max(1, cost.intValue);
+            if (GUILayout.Button("x", GUILayout.Width(20))) removeAt = i;
+            GUILayout.Space(8);
+        }
+        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUILayout.Button("+", GUILayout.Width(24)))
+        {
+            list.InsertArrayElementAtIndex(list.arraySize);
+            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            added.FindPropertyRelative("tier").intValue = 0;
+            added.FindPropertyRelative("durabilityCost").intValue = 1;
         }
     }
 

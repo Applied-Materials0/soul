@@ -296,6 +296,19 @@ public class CraftRecipePanel : MonoBehaviour
             string color = have >= ing.amount ? "#FFFFFF" : "#FF6666";
             parts.Add($"<color={color}>{ingName} {ing.amount}개 (보유 {have})</color>");
         }
+
+        // 필요한 도구: 제작하면 내구도가 깎인다 (도구는 사라지지 않음)
+        if (recipe.tools != null)
+        {
+            foreach (RecipeTool tool in recipe.tools)
+            {
+                if (tool == null) continue;
+                int durability = InventoryManager.Instance.GetToolDurability(tool.toolType, tool.tier);
+                string color = durability >= Mathf.Max(1, tool.durabilityCost) ? "#FFFFFF" : "#FF6666";
+                string tier = tool.tier > 0 ? $" 티어{tool.tier}+" : "";
+                parts.Add($"<color={color}>[{ToolTypeInfo.Name(tool.toolType)}{tier} 내구도 -{tool.durabilityCost}]</color>");
+            }
+        }
         text.text = title + "\n" + string.Join("   ", parts);
     }
 

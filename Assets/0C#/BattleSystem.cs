@@ -44,6 +44,7 @@ public class BattleSystem : MonoBehaviour
         playerDefending = false;
         monsterDefending = false;
         suppressed = false;
+        lineShownAt = Time.time; // FieldSearch가 방금 띄운 "OO이(가) 나타났다!"가 읽힐 시간을 센다
 
         if (hud == null) hud = MonsterHUD.Create(field.SearchText.transform, field.SearchText.font);
         hud.Show(m.monsterName, monsterHp, m.hpMax);
@@ -66,6 +67,7 @@ public class BattleSystem : MonoBehaviour
         else
         {
             yield return MonsterTurn(true); // 몬스터의 선제 행동
+            EndTurn();
         }
         busy = false;
     }
@@ -94,6 +96,17 @@ public class BattleSystem : MonoBehaviour
     private IEnumerator AttackRoutine()
     {
         busy = true;
+
+        if (!PaySP(SPAction.Attack))
+        {
+            yield return Say("SP가 부족해 움직일 수 없다!");
+            yield return MonsterTurn();
+            EndTurn();
+            busy = false;
+            yield break;
+        }
+
+        PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
 
         bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
         BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, targetDefending);
@@ -135,6 +148,7 @@ public class BattleSystem : MonoBehaviour
         }
 
         yield return MonsterTurn();
+        EndTurn();
         busy = false;
     }
 
@@ -142,9 +156,20 @@ public class BattleSystem : MonoBehaviour
     private IEnumerator DefendRoutine()
     {
         busy = true;
+
+        if (!PaySP(SPAction.Defend))
+        {
+            yield return Say("SP가 부족해 움직일 수 없다!");
+            yield return MonsterTurn();
+            EndTurn();
+            busy = false;
+            yield break;
+        }
         playerDefending = true;
+        PlaySound(SoundEvent.Defend); // 방어 효과음 (효과음 표)
         yield return Say("방어 태세를 취했다.");
         yield return MonsterTurn();
+        EndTurn();
         busy = false;
     }
 
@@ -152,11 +177,21 @@ public class BattleSystem : MonoBehaviour
     {
         busy = true;
 
+        if (!PaySP(SPAction.Run))
+        {
+            yield return Say("SP가 부족해 도망칠 수 없다!");
+            yield return MonsterTurn();
+            EndTurn();
+            busy = false;
+            yield break;
+        }
+
         if (suppressed)
         {
             // 제압당해서 도망에 실패하고, 이 턴을 소모한다
             yield return Say($"{monster.monsterName}에게 제압당해 도망칠 수 없다!");
             yield return MonsterTurn();
+            EndTurn();
             busy = false;
             yield break;
         }
@@ -186,6 +221,16 @@ public class BattleSystem : MonoBehaviour
 
         string name = monster.monsterName;
 
+        // 체력이 일정 비율 이하로 떨어지면 도망치는 몬스터 (예: 토끼). 도망치면 보상 없이 전투가 끝난다
+        float fleeRatio = monsterHp / (float)Mathf.Max(1, monster.hpMax);
+        if (monster.fleeHpPercent > 0f && fleeRatio * 100f <= monster.fleeHpPercent && BattleCalc.Roll(monster.fleeChance))
+        {
+            yield return Say($"{name}{Josa(name, "이", "가")} 도망쳤다!");
+            field.RestoreExploreButtons();
+            EndBattle();
+            yield break;
+        }
+
         // 행동 선택: 체력이 30% 이하이면 방어를 고를 확률이 높아진다
         float hpRatio = monsterHp / (float)Mathf.Max(1, monster.hpMax);
         float defendChance = hpRatio <= 0.3f ? monster.defendChanceLowHp : monster.defendChance;
@@ -200,8 +245,9 @@ public class BattleSystem : MonoBehaviour
             bool defended = playerDefending;
             BattleCalc.HitResult h = BattleCalc.MonsterAttack(monster, defended);
 
-            // 1) 공격 알림. 이 문구가 떠 있는 동안 맞았다면 화면이 바로 붉어진다
-            field.SearchText.SetText(preemptive ? $"{name}의 선제공격!" : $"{name}의 공격!");
+            // 1) 공격 알림 + 공격받는 효과음. 이 문구가 떠 있는 동안 맞았다면 화면이 바로 붉어진다
+            yield return Say(preemptive ? $"{name}의 선제공격!" : $"{name}의 공격!");
+            PlaySound(SoundEvent.EnemyAttack);
 
             bool perfectBlock = defended && !h.dodged && h.noEffect;
             bool gotHit = !h.dodged && !perfectBlock; // 타격 여부: 회피하지도, 완전히 막지도 못함
@@ -257,10 +303,11 @@ public class BattleSystem : MonoBehaviour
         int gold = Mathf.RoundToInt(monster.gold * BattleCalc.Mult(GameManager.GoldR));
         int exp = Mathf.RoundToInt(monster.exp * BattleCalc.Mult(GameManager.ExpR));
         GameManager.Gold += gold;
-        GameManager.Exp += exp;
+        List<LevelSystem.LevelUp> levelUps = LevelSystem.AddExp(exp); // 레벨 표에 따라 레벨업
 
         // 아이템 드랍: 줄마다 확률을 따로 판정하고, 수량은 최소~최대 중에서 뽑는다
         List<string> drops = new List<string>();
+        bool bagFull = false;
         if (InventoryManager.Instance != null)
         {
             foreach (MonsterDrop d in monster.drops)
@@ -270,17 +317,33 @@ public class BattleSystem : MonoBehaviour
                 if (item == null) continue;
 
                 int amount = Random.Range(d.amountMin, Mathf.Max(d.amountMin, d.amountMax) + 1);
-                InventoryManager.Instance.AddItem(item, amount);
-                drops.Add(amount > 1 ? $"{item.itemName} x{amount}" : item.itemName);
+
+                // 가방의 슬롯/무게 한도 안에서 넣을 수 있는 만큼만 얻는다
+                int got = InventoryManager.Instance.AddItem(item, amount);
+                if (got < amount) bagFull = true;
+                if (got > 0) drops.Add(got > 1 ? $"{item.itemName} x{got}" : item.itemName);
             }
         }
         RefreshPlayerUI();
 
         string reward = $"골드 +{gold}, 경험치 +{exp}";
         if (drops.Count > 0) reward += "\n획득: " + string.Join(", ", drops);
-        field.SearchText.SetText(reward);
+        if (bagFull) reward += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
+        foreach (LevelSystem.LevelUp up in levelUps)
+        {
+            reward += $"\n레벨이 올랐다! Lv.{up.newLevel}";
+            string gains = "";
+            if (up.hpMax != 0) gains += $" 체력 +{up.hpMax}";
+            if (up.at != 0) gains += $" 공격력 +{up.at}";
+            if (up.df != 0) gains += $" 방어력 +{up.df}";
+            if (up.spMax != 0) gains += $" SP +{up.spMax}";
+            if (up.speed != 0) gains += $" 속도 +{up.speed}";
+            if (gains.Length > 0) reward += $" ({gains.Trim()})";
+        }
+        yield return Say(reward); // 직전 문구("쓰러뜨렸다!")가 충분히 보인 뒤에 보상을 보여 줌
 
         field.RestoreExploreButtons();
+        field.StartCarving(monster); // 칼로 도려낼 수 있는 몬스터면 [도려내기] 버튼을 켠다
         EndBattle();
         busy = false;
     }
@@ -290,6 +353,7 @@ public class BattleSystem : MonoBehaviour
     private IEnumerator FaintRoutine()
     {
         yield return Say("눈앞이 캄캄해졌다...");
+        yield return new WaitForSeconds(LineDelay); // 문구를 읽을 시간
 
         GameManager.Hp = BattleCalc.PlayerMaxHp();
         GameManager.isfaint = false;
@@ -310,11 +374,39 @@ public class BattleSystem : MonoBehaviour
     // =========================================================
     //  도구
     // =========================================================
-    // 문구를 보여 주고 잠깐 기다린다 (한 줄씩 순서대로 읽히도록)
+    private float lineShownAt; // 마지막 문구를 띄운 시각
+
+    // 문구를 보여 준다. 직전 문구가 LineDelay 동안은 보이도록 필요하면 그만큼 기다린 뒤 띄우고,
+    // 띄운 뒤에는 기다리지 않는다. 그래서 한 턴의 마지막 문구는 바로 보이고 곧바로 다음 행동을 고를 수 있다.
     private IEnumerator Say(string text)
     {
+        float remain = lineShownAt + LineDelay - Time.time;
+        if (remain > 0f) yield return new WaitForSeconds(remain);
         field.SearchText.SetText(text);
-        yield return new WaitForSeconds(LineDelay);
+        lineShownAt = Time.time;
+    }
+
+    // 한 턴이 끝났을 때: 마지막 문구 아래에 "무엇을 할까?"를 덧붙인다 (입력은 이미 가능한 상태)
+    private void EndTurn()
+    {
+        if (!active) return;
+        field.SearchText.SetText(field.SearchText.text + "\n무엇을 할까?");
+    }
+
+    // 효과음 표(SoundTable)의 소리를 재생
+    private void PlaySound(SoundEvent sound)
+    {
+        GameTables.Sounds.Play(sound, field.BtnAudio);
+    }
+
+    // 행동에 필요한 SP를 낸다 (SP 소모 표). 모자라면 false: 호출한 쪽이 "움직일 수 없다"로 턴을 넘긴다
+    private bool PaySP(SPAction action)
+    {
+        int cost = GameTables.SPCosts.Get(action);
+        if (GameManager.SP < cost) return false;
+        GameManager.SP -= cost;
+        RefreshPlayerUI();
+        return true;
     }
 
     private static void RefreshPlayerUI()

@@ -59,8 +59,20 @@ public class MapManager : MonoBehaviour
         // 2. 소리 재생
         if (BtnAudio != null) BtnAudio.Play();
 
-        // 3. UI 활성화
+        // 3. 이전에 보던 구역 정보창은 닫고 시작 (이동한 뒤라 현재 위치가 바뀌었을 수 있음)
+        CloseRegionInfo();
+
+        // 4. UI 활성화
         MapUI.SetActive(true);
+        PlayerUI.RefreshAll(); // 맵의 SP 텍스트를 지금 값으로
+    }
+
+    // 열려 있던 구역 정보창(입장 버튼이 있는 창)을 닫는다. 남아 있으면 이동 전의 구역 정보와 입장 버튼이 그대로 보인다.
+    private void CloseRegionInfo()
+    {
+        if (MapUI == null) return;
+        MapInfoPanel info = MapUI.GetComponentInChildren<MapInfoPanel>(true);
+        if (info != null) info.CloseMapInfo();
     }
 
     // 지도 닫기 (X 버튼이 인스펙터에서 이 함수를 이름으로 부르므로, 매개변수를 추가하면 안 됨!)
@@ -85,6 +97,7 @@ public class MapManager : MonoBehaviour
 
         // 2. UI 비활성화
         MapUI.SetActive(false);
+        CloseRegionInfo();
     }
 
 }

@@ -19,15 +19,25 @@ public class MonsterHUD : MonoBehaviour
     // =========================================================
     public static MonsterHUD Create(Transform context, TMP_FontAsset font)
     {
-        Canvas canvas = context.GetComponentInParent<Canvas>();
-        Transform parent = canvas != null ? canvas.rootCanvas.transform : context;
+        // 장면의 다른 UI에 가려지지 않도록 전용 캔버스(항상 맨 위에 그림)를 만든다. 크기 기준은 장면의 캔버스처럼 픽셀 그대로.
+        GameObject canvasGo = new GameObject("MonsterHUD Canvas", typeof(Canvas), typeof(CanvasScaler));
+        Canvas canvas = canvasGo.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
+        canvasGo.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
         // 가로 760, 세로 110의 틀을 화면 위쪽 가운데에 붙인다
         // (맨 위 50px는 지역 이름 텍스트가 쓰고 있어서 그 아래에 둔다)
-        RectTransform root = CraftQuantityPopup.NewRect("MonsterHUD", parent, new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(760f, 110f));
+        RectTransform root = CraftQuantityPopup.NewRect("MonsterHUD", canvasGo.transform, new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(760f, 110f));
+
+        // 밝은 배경에서도 이름이 읽히도록 반투명한 어두운 바탕
+        Image backing = root.gameObject.AddComponent<Image>();
+        backing.color = new Color(0f, 0f, 0f, 0.35f);
+        backing.raycastTarget = false;
+
         MonsterHUD hud = root.gameObject.AddComponent<MonsterHUD>();
         hud.Build(root, font);
-        root.gameObject.SetActive(false);
+        canvasGo.SetActive(false); // 전투 중에만 보이도록 캔버스째 켜고 끈다
         return hud;
     }
 
@@ -40,6 +50,8 @@ public class MonsterHUD : MonoBehaviour
             CraftQuantityPopup.NewRect("Name", root, top, Vector2.zero, new Vector2(760f, 56f)),
             44, TextAlignmentOptions.Center, font);
         nameText.fontStyle = FontStyles.Bold;
+        nameText.outlineWidth = 0.25f;
+        nameText.outlineColor = new Color32(0, 0, 0, 255);
 
         // 게이지 바탕 = 빈 게이지(빨간색)
         RectTransform bar = CraftQuantityPopup.NewRect("Bar", root, top, new Vector2(0f, -62f), new Vector2(640f, 40f));
@@ -61,6 +73,8 @@ public class MonsterHUD : MonoBehaviour
         hpRt.offsetMax = Vector2.zero;
         hpText = CraftQuantityPopup.AddText(hpRt, 26, TextAlignmentOptions.Center, font);
         hpText.fontStyle = FontStyles.Bold;
+        hpText.outlineWidth = 0.25f;
+        hpText.outlineColor = new Color32(0, 0, 0, 255);
     }
 
     // =========================================================
@@ -71,7 +85,7 @@ public class MonsterHUD : MonoBehaviour
     {
         nameText.text = monsterName;
         SetHp(hp, hpMax);
-        gameObject.SetActive(true);
+        transform.parent.gameObject.SetActive(true); // 전용 캔버스
     }
 
     // 체력이 바뀔 때(전투에서 피해를 입을 때) 호출: 게이지와 수치를 갱신
@@ -87,6 +101,6 @@ public class MonsterHUD : MonoBehaviour
 
     public void Hide()
     {
-        gameObject.SetActive(false);
+        transform.parent.gameObject.SetActive(false);
     }
 }

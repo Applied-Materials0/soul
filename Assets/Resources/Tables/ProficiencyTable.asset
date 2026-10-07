@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e223ef563519814e92698fec0e0e5ec, type: 3}
+  m_Name: ProficiencyTable
+  m_EditorClassIdentifier: Assembly-CSharp::ProficiencyTable
+  defs:
+  - kind: 0
+    label: "\uB3C4\uB824\uB0B4\uAE30"
+    expPerUse: 1
+    levels:
+    - level: 1
+      expToNext: 5
+      bonusPercent: 0
+    - level: 2
+      expToNext: 10
+      bonusPercent: 10
+    - level: 3
+      expToNext: 20
+      bonusPercent: 20
+    - level: 4
+      expToNext: 35
+      bonusPercent: 30
+    - level: 5
+      expToNext: 55
+      bonusPercent: 40
+    - level: 6
+      expToNext: 80
+      bonusPercent: 50
+    - level: 7
+      expToNext: 110
+      bonusPercent: 60
+    - level: 8
+      expToNext: 150
+      bonusPercent: 70
+    - level: 9
+      expToNext: 200
+      bonusPercent: 80
+    - level: 10
+      expToNext: 0
+      bonusPercent: 100

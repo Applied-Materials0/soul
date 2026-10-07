@@ -27,6 +27,11 @@ MonoBehaviour:
   defendChance: 10
   defendChanceLowHp: 20
   suppressChance: 10
+  fleeHpPercent: 0
+  fleeChance: 50
+  carveCount: 5
+  carveToolTier: 1
+  carveDrops: []
   exp: 5
   gold: 5
   drops: []

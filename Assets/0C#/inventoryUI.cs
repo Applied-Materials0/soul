@@ -213,6 +213,7 @@ public class InventoryManager : MonoBehaviour
 
         if (BtnAudio != null) BtnAudio.Play();
         inventoryUI.SetActive(true);
+        PlayerUI.RefreshAll(); // 스탯 창 텍스트를 지금 값으로
     }
 
     // 가방 닫기 (X 버튼이 인스펙터에서 이 함수를 이름으로 부르므로, 매개변수를 추가하면 안 됨!)
@@ -249,7 +250,7 @@ public class InventoryManager : MonoBehaviour
         bool willStatBeActive = !StatUI.activeSelf;
         StatUI.SetActive(willStatBeActive);
 
-        if (willStatBeActive) HideInfoPanel();
+        if (willStatBeActive) { HideInfoPanel(); PlayerUI.RefreshAll(); }
     }
 
     public void CloseStat()
@@ -389,7 +390,92 @@ public class InventoryManager : MonoBehaviour
         return total;
     }
 
-    // 해당 레시피로 최대 몇 개까지 만들 수 있는지 계산
+    // =========================================================
+    //  가방 한도: 슬롯 개수와 무게
+    // =========================================================
+    // 한도 = 기본값(기본 능력치 표) + 장비 보너스. 장비 시스템이 GameManager.SlotBonus / WeightBonus를 채우면 자동으로 반영된다.
+    public int SlotLimit { get { return Mathf.Max(0, GameManager.SlotMax + GameManager.SlotBonus); } }
+    public int WeightLimit { get { return Mathf.Max(0, GameManager.WeightMax + GameManager.WeightBonus); } }
+    public int UsedSlots { get { return itemList.Count; } }
+
+    // 지금 들고 있는 무게 합계 (아이템 1개 무게 x 수량)
+    public int CurrentWeight
+    {
+        get
+        {
+            long total = 0;
+            foreach (ItemStack s in itemList)
+                total += (long)s.itemData.weight * s.amount;
+            return (int)System.Math.Min(total, int.MaxValue);
+        }
+    }
+
+    // 아이템을 더 넣을 수 없는 이유
+    public enum AddBlock { None, Slots, Weight }
+
+    // 마지막 AddItem이 일부 또는 전부 넣지 못한 이유 (None이면 전부 넣었음)
+    public AddBlock LastAddBlock { get; private set; }
+
+    public static string BlockMessage(AddBlock block)
+    {
+        switch (block)
+        {
+            case AddBlock.Slots: return "가방이 가득 찼습니다!";
+            case AddBlock.Weight: return "너무 무거워서 더 들 수 없습니다!";
+            default: return "";
+        }
+    }
+
+    // 슬롯과 무게 한도 안에서 want개 중 몇 개까지 넣을 수 있는지 계산한다
+    public int GetAddableAmount(Item item, int want, out AddBlock block)
+    {
+        block = AddBlock.None;
+        if (item == null || want <= 0) return 0;
+
+        // 슬롯: 같은 아이템 스택의 남은 자리 + 빈 슬롯 수 x 슬롯당 최대 수량
+        int limit = StackLimit(item);
+        long bySlots = 0;
+        foreach (ItemStack s in itemList)
+            if (s.itemData.id == item.id) bySlots += Mathf.Max(0, limit - s.amount);
+        bySlots += (long)Mathf.Max(0, SlotLimit - itemList.Count) * limit;
+
+        // 무게: 남은 무게 여유 / 아이템 1개 무게
+        long byWeight = item.weight > 0 ? (long)Mathf.Max(0, WeightLimit - CurrentWeight) / item.weight : long.MaxValue;
+
+        long addable = System.Math.Min(want, System.Math.Min(bySlots, byWeight));
+        if (addable < want) block = bySlots <= byWeight ? AddBlock.Slots : AddBlock.Weight;
+        return (int)addable;
+    }
+
+    // 한글 폰트 (획득 표시 등 다른 UI가 가방 UI와 같은 폰트를 쓰도록)
+    public TMP_FontAsset UIFont { get { return FindUIFont(); } }
+
+    // =========================================================
+    //  도구: 필요 티어 이상이고 내구도가 남은 도구 (낮은 티어 먼저, 같으면 앞쪽 슬롯 먼저)
+    // =========================================================
+    private List<ItemStack> EligibleTools(ToolType type, int tier)
+    {
+        return itemList
+            .Where(s => s.itemData.toolType == type && s.itemData.tier >= tier && s.durability > 0)
+            .OrderBy(s => s.itemData.tier)
+            .ToList();
+    }
+
+    // 사용할 수 있는 해당 도구들의 남은 내구도 합계
+    public int GetToolDurability(ToolType type, int tier)
+    {
+        int total = 0;
+        foreach (ItemStack s in EligibleTools(type, tier)) total += s.durability;
+        return total;
+    }
+
+    // =========================================================
+    //  제작
+    // =========================================================
+    // 마지막 제작이 실패한 이유 (제작 창이 보여 줌)
+    public string LastCraftFailReason { get; private set; }
+
+    // 해당 레시피로 최대 몇 개까지 만들 수 있는지 계산 (재료와 필요한 도구의 내구도 모두 고려)
     public int GetMaxCraftableAmount(Recipe recipe)
     {
         if (recipe == null || recipe.ingredients.Count == 0) return 0;
@@ -404,10 +490,22 @@ public class InventoryManager : MonoBehaviour
             int possible = hasCount / ing.amount;
             if (possible < maxCraft) maxCraft = possible;
         }
+
+        // 도구: 1회 제작에 내구도 durabilityCost가 깎이므로 남은 내구도로 몇 번 만들 수 있는지
+        if (recipe.tools != null)
+        {
+            foreach (RecipeTool t in recipe.tools)
+            {
+                if (t == null) continue;
+                int possible = GetToolDurability(t.toolType, t.tier) / Mathf.Max(1, t.durabilityCost);
+                if (possible < 1) return 0; // 도구가 없거나 내구도 부족
+                if (possible < maxCraft) maxCraft = possible;
+            }
+        }
         return maxCraft;
     }
 
-    // 실제 제작 실행 (재료 소모 + 아이템 추가)
+    // 실제 제작 실행 (재료 소모 + 도구 내구도 소모 + 아이템 추가)
     public bool TryCraftItem(Recipe recipe, int craftCount)
     {
         return TryCraftItem(GetItemData(recipe.resultItemId), recipe, craftCount);
@@ -416,9 +514,19 @@ public class InventoryManager : MonoBehaviour
     // result: 이 레시피로 만들어지는 아이템 (아이템 에셋에 들어 있는 레시피는 그 아이템을 만든다)
     public bool TryCraftItem(Item result, Recipe recipe, int craftCount)
     {
+        LastCraftFailReason = "";
         if (result == null || recipe == null) return false;
         if (craftCount <= 0 || GetMaxCraftableAmount(recipe) < craftCount)
+        {
+            LastCraftFailReason = "재료나 도구가 부족합니다!";
             return false;
+        }
+
+        // 완성품이 들어갈 자리와 무게가 있는지는 재료를 뺀 뒤에야 알 수 있다.
+        // 그래서 현재 상태를 복사해 두었다가, 안 되면 그대로 되돌린다.
+        List<ItemStack> snapshot = itemList
+            .Select(s => new ItemStack(s.itemData, s.amount) { durability = s.durability })
+            .ToList();
 
         // 1. 재료 소모
         foreach (var ing in recipe.ingredients)
@@ -426,8 +534,38 @@ public class InventoryManager : MonoBehaviour
             RemoveItem(ing.itemId, ing.amount * craftCount);
         }
 
-        // 2. 완성품 추가
-        AddItem(result, recipe.resultAmount * craftCount);
+        // 2. 완성품이 가방에 다 들어가는지 확인
+        int total = recipe.resultAmount * craftCount;
+        AddBlock block;
+        if (GetAddableAmount(result, total, out block) < total)
+        {
+            itemList = snapshot;
+            RefreshInventoryUI();
+            GameManager.Weight = CurrentWeight;
+            PlayerUI.RefreshAll();
+            LastCraftFailReason = BlockMessage(block);
+            return false;
+        }
+
+        // 3. 도구 내구도 소모 (사라지지는 않고 내구도만 깎임)
+        if (recipe.tools != null)
+        {
+            foreach (RecipeTool t in recipe.tools)
+            {
+                if (t == null) continue;
+                int remaining = Mathf.Max(1, t.durabilityCost) * craftCount;
+                foreach (ItemStack s in EligibleTools(t.toolType, t.tier))
+                {
+                    int take = Mathf.Min(s.durability, remaining);
+                    s.durability -= take;
+                    remaining -= take;
+                    if (remaining <= 0) break;
+                }
+            }
+        }
+
+        // 4. 완성품 추가
+        AddItem(result, total);
         return true;
     }
 
@@ -438,13 +576,22 @@ public class InventoryManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 아이템 획득 시 호출.
-    /// 같은 아이템의 빈자리가 있는 스택(앞쪽 슬롯부터)을 먼저 채우고, 남으면 새 슬롯을 만든다.
+    /// 아이템 획득 시 호출. 슬롯 개수와 무게 한도 안에서 넣을 수 있는 만큼만 넣고, 실제로 넣은 개수를 돌려준다.
+    /// (못 넣은 이유는 LastAddBlock). 같은 아이템의 빈자리가 있는 스택(앞쪽 슬롯부터)을 먼저 채우고, 남으면 새 슬롯을 만든다.
     /// 도구/장비(countmax = 1)는 하나마다 슬롯이 따로 생기고 내구도도 각자 가진다.
+    /// 넣은 아이템은 화면 중앙에 이미지가 잠깐 표시된다.
     /// </summary>
-    public void AddItem(Item newItem, int amount = 1)
+    public int AddItem(Item newItem, int amount = 1)
     {
-        if (newItem == null || amount <= 0) return;
+        LastAddBlock = AddBlock.None;
+        if (newItem == null || amount <= 0) return 0;
+
+        AddBlock block;
+        amount = GetAddableAmount(newItem, amount, out block);
+        LastAddBlock = block;
+        if (amount <= 0) return 0;
+
+        int added = amount;
         int limit = StackLimit(newItem);
 
         // 1. 자리가 남은 기존 스택 채우기
@@ -469,6 +616,10 @@ public class InventoryManager : MonoBehaviour
             amount -= add;
         }
 
+        GameManager.Weight = CurrentWeight;
+        PlayerUI.RefreshAll();
+        ItemGainToast.Show(newItem, added);
+        return added;
     }
 
     /// <summary>
@@ -506,6 +657,9 @@ public class InventoryManager : MonoBehaviour
         {
             RefreshSlot(stack);
         }
+
+        GameManager.Weight = CurrentWeight;
+        PlayerUI.RefreshAll();
     }
 }
 [System.Serializable]

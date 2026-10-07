@@ -33,8 +33,10 @@ public static class TableField
                 p.enumValueIndex = EditorGUILayout.Popup(p.enumValueIndex, p.enumDisplayNames, w);
                 break;
             case SerializedPropertyType.ObjectReference:
-                // 이미지 칸(Sprite)이 대부분이라 Sprite로 받고, 그 외 타입이면 Object로 받는다
-                System.Type type = p.type.Contains("Sprite") ? typeof(Sprite) : typeof(Object);
+                // 이미지(Sprite)와 소리(AudioClip) 칸은 그 종류만 고를 수 있게 하고, 그 외에는 Object로 받는다
+                System.Type type = p.type.Contains("Sprite") ? typeof(Sprite)
+                    : p.type.Contains("AudioClip") ? typeof(AudioClip)
+                    : typeof(Object);
                 p.objectReferenceValue = EditorGUILayout.ObjectField(p.objectReferenceValue, type, false, w);
                 break;
             default:

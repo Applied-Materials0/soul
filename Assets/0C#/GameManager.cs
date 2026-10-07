@@ -11,16 +11,21 @@ public class GameManager : MonoBehaviour
         {
             Once = true;
             Level = 1;
-            ExpNext = 10;
-            SPMax = 100;
-            Mana = 10;
-            ManaMax = 10;
-            WeightMax = 10000;
-            Hp = 10;
-            HpMax = 10;
-            At = 10;
-            Df = 10;
-            DefendBonus = 50f;
+            ExpNext = LevelSystem.ExpToNext(1); // 레벨 표(LevelTable)의 1레벨 필요 경험치
+
+            // 시작 능력치와 가방 한도는 기본 능력치 표(PlayerBaseTable)에서 읽음
+            PlayerBaseTable b = GameTables.PlayerBase;
+            SPMax = b.spMax;
+            Mana = b.mana;
+            ManaMax = b.mana;
+            Hp = b.hpMax;
+            HpMax = b.hpMax;
+            At = b.at;
+            Df = b.df;
+            Speed = b.speed;
+            SlotMax = b.slotMax;
+            WeightMax = b.weightMax;
+            DefendBonus = b.defendBonus;
         }
 
         // 루프타운에 들어올 때마다 행동력(SP)만 최대치로 회복
@@ -48,7 +53,10 @@ public class GameManager : MonoBehaviour
     static public int Speed;            //속도 (첫 조우에 높을 수록 선 턴)
     static public float HpRateAt;       //체력 비례 공격[%]
     static public int FixAt;            //고정 공격력
-    static public int EquipAt;          //도구 및 장비 공격력 합 (장비 시스템이 채움)
+    static public int SlotMax;          //슬롯 최대 개수 기본값 (기본 능력치 표)
+    static public int SlotBonus;        //장비로 늘어난 슬롯 개수 (장비 시스템이 채움). 실제 한도 = SlotMax + SlotBonus
+    static public int WeightBonus;      //장비로 늘어난 최대 무게 (장비 시스템이 채움). 실제 한도 = WeightMax + WeightBonus
+    static public int EquipAt;         //도구 및 장비 공격력 합 (장비 시스템이 채움)
     static public float DefendBonus;    //[방어] 시 방어력 증가 [%], 기본 50 (장비로 추가될 수 있음)
     static public float BreakDf;        //관통률 [%] 방관
     static public float Abs;            //체력 흡수[%] 공격력 비율만큼 흡수 Absorption

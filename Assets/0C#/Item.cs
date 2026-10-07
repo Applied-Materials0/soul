@@ -8,7 +8,9 @@ public enum ToolType
     Pickaxe,    // 곡괭이: 채광
     Hammer,     // 망치
     Sickle,     // 낫: 풀, 작물
-    Bottle      // 병: 물
+    Bottle,     // 병: 물
+    Knife,      // 칼: 도려내기 (가죽, 고기)
+    Mortar      // 절구: 자원 분쇄
 }
 
 // 아이템 정의 데이터. 아이템 하나 = .asset 파일 하나 (Create > Soul > Item).
@@ -58,6 +60,7 @@ public class Item : ScriptableObject
     public int spmax;          // 최대 스태미나 증가
     public int spheal;         // 스태미나 회복
     public int weightmax;      // 소지 무게 증가
+    public int slotmax;        // 소지 슬롯 증가 (장비)
 
     [Header("표시 / 제작")]
     public Sprite icon;        // 아이템 이미지
@@ -82,7 +85,38 @@ public class Recipe
 {
     public List<Ingredient> ingredients = new List<Ingredient>(); // 필요 재료 목록
 
+    // 필요한 도구: 제작할 때 내구도만 깎이고 사라지지는 않는다 (예: 간이 절구로 분쇄, 망치로 금속판 제작)
+    public List<RecipeTool> tools = new List<RecipeTool>();
+
     [HideInInspector]
     public int resultItemId;      // 완성품 아이템 ID (Item.OnValidate가 자동으로 채움)
     public int resultAmount = 1;  // 1회 제작 시 생산 수량
+}
+
+// 레시피에 필요한 도구 한 줄
+[System.Serializable]
+public class RecipeTool
+{
+    public ToolType toolType;                // 필요한 도구 종류
+    public int tier;                         // 필요한 도구 티어 (이 티어 이상이면 사용 가능)
+    [Min(1)] public int durabilityCost = 1;  // 1회 제작에 깎이는 도구 내구도
+}
+
+// 도구 종류의 한글 이름
+public static class ToolTypeInfo
+{
+    public static string Name(ToolType type)
+    {
+        switch (type)
+        {
+            case ToolType.Axe: return "도끼";
+            case ToolType.Pickaxe: return "곡괭이";
+            case ToolType.Hammer: return "망치";
+            case ToolType.Sickle: return "낫";
+            case ToolType.Bottle: return "수통";
+            case ToolType.Knife: return "칼";
+            case ToolType.Mortar: return "절구";
+            default: return "도구";
+        }
+    }
 }

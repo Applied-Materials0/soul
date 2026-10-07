@@ -49,6 +49,7 @@ public class FieldSearch : MonoBehaviour
     public MonsterDatabase monsterDB;
     private Monster currentMonster; // 지금 마주친 몬스터 (전투 구현 때 사용)
     private BattleSystem battle;    // 턴제 전투 진행 (Awake에서 같은 오브젝트에 붙임)
+    private CarveSystem carve;      // 쓰러뜨린 몬스터를 칼로 도려내기 (Awake에서 같은 오브젝트에 붙임)
 
     // 내부 탐색/채집 상태 변수
     private int events;   // 탐색 이벤트 번호
@@ -72,6 +73,11 @@ public class FieldSearch : MonoBehaviour
         battle = GetComponent<BattleSystem>();
         if (battle == null) battle = gameObject.AddComponent<BattleSystem>();
         battle.Init(this);
+
+        // 몬스터를 쓰러뜨린 뒤 칼로 도려내는 시스템도 같은 오브젝트에 붙인다
+        carve = GetComponent<CarveSystem>();
+        if (carve == null) carve = gameObject.AddComponent<CarveSystem>();
+        carve.Init(this);
     }
 
     private void OnDestroy()
@@ -96,6 +102,8 @@ public class FieldSearch : MonoBehaviour
             ToolType.Pickaxe => "곡괭이",
             ToolType.Sickle => "낫",
             ToolType.Bottle => "수통",
+            ToolType.Knife => "칼",
+            ToolType.Mortar => "절구",
             _ => "도구"
         };
     }
@@ -106,14 +114,19 @@ public class FieldSearch : MonoBehaviour
     // =========================================================
     public void SearchBtnOn()
     {
-        if (GameManager.SP <= 0)
+        // 새로 탐색하면 이전에 도려내던 사체는 두고 떠난다
+        if (carve != null) carve.End();
+
+        // SP 소모량은 SP 소모 표(Soul > 데이터 표 > SP 소모)에서 정함
+        int searchCost = GameTables.SPCosts.Get(SPAction.Search);
+        if (GameManager.SP < searchCost)
         {
             BtnAudio.Play();
             SearchText.SetText("SP가 부족합니다!");
             return;
         }
 
-        GameManager.SP -= 1;
+        GameManager.SP -= searchCost;
         if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateStatText();
 
         SearchAudio.Stop();
@@ -239,13 +252,26 @@ public class FieldSearch : MonoBehaviour
     // =========================================================
     public void GatherBtnOn()
     {
+        // 몬스터를 쓰러뜨린 뒤라면 같은 버튼이 [도려내기]로 동작함
+        if (carve != null && carve.Active)
+        {
+            carve.OnCarve();
+            return;
+        }
         ProcessGathering();
+    }
+
+    // 몬스터를 쓰러뜨렸을 때 BattleSystem이 호출: 칼로 도려낼 수 있는 몬스터면 [도려내기]를 켠다
+    public void StartCarving(Monster m)
+    {
+        if (carve != null) carve.Begin(m);
     }
 
     private void ProcessGathering()
     {
-        // 1. SP(행동력) 체크
-        if (GameManager.SP < 1)
+        // 1. SP(행동력) 체크 (SP 소모 표의 채집 소모량)
+        int gatherCost = GameTables.SPCosts.Get(SPAction.Gather);
+        if (GameManager.SP < gatherCost)
         {
             BtnAudio.Play();
             SearchText.text = "행동력(SP)이 부족합니다!";
@@ -255,6 +281,15 @@ public class FieldSearch : MonoBehaviour
         // 아이템 고유 번호로 ItemDatabase(InventoryManager.itemDB)에서 원본 데이터를 찾습니다.
         Item targetResource = InventoryManager.Instance.GetItemData(currentItemIndex);
         if (targetResource == null) return; // 원인은 GetItemData가 로그로 알려줌
+
+        // 가방이 가득 찼거나 너무 무거우면 도구 내구도와 SP를 쓰기 전에 막는다
+        InventoryManager.AddBlock bagBlock;
+        if (InventoryManager.Instance.GetAddableAmount(targetResource, 1, out bagBlock) < 1)
+        {
+            BtnAudio.Play();
+            SearchText.text = InventoryManager.BlockMessage(bagBlock);
+            return;
+        }
 
         string resourceName = targetResource.itemName;
         if (resourceName == "가득찬 물통")
@@ -294,10 +329,11 @@ public class FieldSearch : MonoBehaviour
         }
 
         // 3. 자원 차감 및 인벤토리 추가
-        int gainedAmount = Mathf.Min(sourceHP, damage);
-        InventoryManager.Instance.AddItem(targetResource, gainedAmount);
+        int wanted = Mathf.Min(sourceHP, damage);
+        int gainedAmount = InventoryManager.Instance.AddItem(targetResource, wanted);
+        bool bagLimited = gainedAmount < wanted; // 가방 때문에 일부만 얻음
         sourceHP -= gainedAmount;
-        GameManager.SP -= 1;
+        GameManager.SP -= gatherCost;
         if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateStatText(); //스탯창 갱신
 
         // 4. 사운드 재생
@@ -310,6 +346,7 @@ public class FieldSearch : MonoBehaviour
             GatherBtn.SetActive(false);
         }
         SearchText.text = $"{resourceName} {gainedAmount:N0}개를 획득했다. (남은 체력: {sourceHP:N0})";
+        if (bagLimited) SearchText.text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
 
         if (isBroken && usedTool != null)
         {

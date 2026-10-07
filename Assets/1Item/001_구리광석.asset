@@ -18,7 +18,7 @@ MonoBehaviour:
   countmax: 20
   durabilitymax: 0
   toolType: 0
-  tier: 0
+  tier: 1
   toolattack: 0
   description: "\uAD6C\uB9AC\uAC00 \uC18C\uB7C9 \uD568\uC720\uB41C \uAD11\uC11D.
     \uAD6C\uB9AC \uC8FC\uAD34\uB85C \uC81C\uB828\uD558\uC5EC \uC4F0\uC778\uB2E4."
@@ -45,8 +45,10 @@ MonoBehaviour:
   spmax: 0
   spheal: 0
   weightmax: 0
+  slotmax: 0
   icon: {fileID: -4209461767521648114, guid: d85f948239ff7534786411a9a933f326, type: 3}
   recipe:
     ingredients: []
+    tools: []
     resultItemId: 1
     resultAmount: 1

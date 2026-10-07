@@ -16,10 +16,10 @@ MonoBehaviour:
   itemName: "\uB098\uBB34 \uBC29\uD328"
   weight: 250
   countmax: 1
-  durabilitymax: 50
-  toolType: 3
+  durabilitymax: 30
+  toolType: 0
   tier: 1
-  toolattack: 1
+  toolattack: 0
   description: "\uCC38\uB098\uBB34\uB97C \uC5EE\uC5B4 \uB9CC\uB4E0 \uBC29\uD328\uB85C
     \uD53C\uD574\uB97C \uB9C9\uB294\uB370 \uC4F0\uC778\uB2E4."
   specialEffect: 
@@ -45,6 +45,7 @@ MonoBehaviour:
   spmax: 0
   spheal: 0
   weightmax: 0
+  slotmax: 0
   icon: {fileID: -7866962194647477418, guid: d124f708aedbc1f4389061e828de9cea, type: 3}
   recipe:
     ingredients:
@@ -54,5 +55,6 @@ MonoBehaviour:
       amount: 3
     - itemId: 13
       amount: 5
+    tools: []
     resultItemId: 7
     resultAmount: 1

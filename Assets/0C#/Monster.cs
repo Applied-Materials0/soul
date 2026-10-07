@@ -29,6 +29,15 @@ public class Monster : ScriptableObject
     [Range(0f, 100f)] public float defendChanceLowHp = 40f;  // 체력이 30% 이하일 때 방어를 고를 확률 [%]
     [Range(0f, 100f)] public float suppressChance = 10f;     // 제압 확률 [%]: 자기 턴마다 이 확률로 플레이어를 제압해 다음 턴에 도망치지 못하게 함
 
+    [Header("도망 (체력이 낮아지면 도망치는 몬스터. 예: 토끼)")]
+    [Range(0f, 100f)] public float fleeHpPercent = 0f;  // 체력이 이 비율[%] 이하가 되면 도망칠 수 있음 (0이면 도망치지 않음)
+    [Range(0f, 100f)] public float fleeChance = 50f;    // 그 상태에서 자기 턴마다 도망칠 확률 [%]
+
+    [Header("도려내기 (처치 후 칼로 가죽/고기 얻기. 털짐승)")]
+    [Min(0)] public int carveCount = 0;                 // 도려낼 수 있는 횟수 (0이면 도려낼 수 없음)
+    [Min(0)] public int carveToolTier = 0;              // 필요한 칼의 티어
+    public List<MonsterDrop> carveDrops = new List<MonsterDrop>(); // 한 번 도려낼 때 얻는 것들 (가죽, 고기 등)
+
     [Header("처치 보상")]
     public int exp;                // 경험치
     public int gold;               // 골드

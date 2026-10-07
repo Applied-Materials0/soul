@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b20fafed2664285439eeb69f51b1efd9, type: 3}
+  m_Name: SoundTable
+  m_EditorClassIdentifier: Assembly-CSharp::SoundTable
+  entries:
+  - sound: 0
+    label: "\uACF5\uACA9"
+    clip: {fileID: 8300000, guid: 14ba57c6b3c718d44845ccd73c86f20d, type: 3}
+    volume: 0.5
+    note: "\uD50C\uB808\uC774\uC5B4\uAC00 \uACF5\uACA9\uD560 \uB54C (\uAE30\uBCF8:
+      war2)"
+  - sound: 1
+    label: "\uACF5\uACA9\uBC1B\uC74C"
+    clip: {fileID: 8300000, guid: 14ba57c6b3c718d44845ccd73c86f20d, type: 3}
+    volume: 0.5
+    note: "\uBAAC\uC2A4\uD130\uAC00 \uACF5\uACA9\uD574 \uC62C \uB54C (\uAE30\uBCF8:
+      war2)"
+  - sound: 2
+    label: "\uBC29\uC5B4"
+    clip: {fileID: 8300000, guid: 140b4690dd9f24747801c7556a70806c, type: 3}
+    volume: 1
+    note: "\uD50C\uB808\uC774\uC5B4\uAC00 \uBC29\uC5B4\uD560 \uB54C (\uAE30\uBCF8:
+      metal)"

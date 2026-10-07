@@ -138,6 +138,7 @@ public class ItemInfoPanel : MonoBehaviour
         if (item.spmax > 0) sb.AppendLine($" 최대 스태미나 : {item.spmax}");
         if (item.spheal > 0) sb.AppendLine($" 스태미나 회복량 : {item.spheal}");
         if (item.weightmax > 0) sb.AppendLine($" 가방 무게 증량 : {item.weightmax}");
+        if (item.slotmax > 0) sb.AppendLine($" 슬롯 증량 : {item.slotmax}");
 
         // 3. 특수 기믹/효과가 있다면 황금색(TMP 태그)으로 강조 출력!
         if (!string.IsNullOrEmpty(item.specialEffect))

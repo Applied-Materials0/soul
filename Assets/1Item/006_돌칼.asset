@@ -17,7 +17,7 @@ MonoBehaviour:
   weight: 300
   countmax: 1
   durabilitymax: 50
-  toolType: 3
+  toolType: 6
   tier: 1
   toolattack: 1
   description: "\uB3CC\uC744 \uC5EE\uC5B4 \uB9CC\uB4E0 \uCE7C\uB85C \uC801\uC744
