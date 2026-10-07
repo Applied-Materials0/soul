@@ -3085,7 +3085,7 @@ MonoBehaviour:
   contentTransform: {fileID: 1896265725}
   slotPrefab: {fileID: 1089823436}
   infoPanelPrefab: {fileID: 1644154848}
-  itemDB: {fileID: 0}
+  itemDB: {fileID: 11400000, guid: eba019e148169c240814594c59d46245, type: 2}
   itemList:
   - itemData: {fileID: 11400000, guid: 6a27344979685a34baa3e4a0a6aff940, type: 2}
     amount: 0

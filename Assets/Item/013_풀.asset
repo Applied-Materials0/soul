@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "001_\uAD6C\uB9AC\uAD11\uC11D"
+  m_Name: "013_\uD480"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 1
-  itemName: "\uAD6C\uB9AC \uAD11\uC11D"
-  weight: 100
-  countmax: 199
-  durabilitymax: 0
+  id: 13
+  itemName: "\uD480"
+  weight: 300
+  countmax: 1
+  durabilitymax: 59
   toolType: 0
   tier: 0
   toolattack: 0
-  description: "\uAD6C\uB9AC\uAC00 \uC18C\uB7C9 \uD568\uC720\uB41C \uAD11\uC11D.
-    \uAD6C\uB9AC \uC8FC\uAD34\uB85C \uC81C\uB828\uD558\uC5EC \uC4F0\uC778\uB2E4."
+  description: "\uC57C\uC0DD\uC758 \uD480. \uC9C8\uACA8\uC11C \uBC27\uC904\uB85C
+    \uC5EE\uC5B4 \uC4F0\uC778\uB2E4."
   specialEffect: 
   at: 0
   df: 0
@@ -45,8 +45,8 @@ MonoBehaviour:
   spmax: 0
   spheal: 0
   weightmax: 0
-  icon: {fileID: -4209461767521648114, guid: d85f948239ff7534786411a9a933f326, type: 3}
+  icon: {fileID: 2407195833089805127, guid: 40ef830653f191e4da1911c9efa9d1bf, type: 3}
   recipe:
     ingredients: []
-    resultItemId: 1
+    resultItemId: 13
     resultAmount: 1

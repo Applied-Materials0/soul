@@ -20,7 +20,8 @@ MonoBehaviour:
   toolType: 0
   tier: 0
   toolattack: 0
-  description: "\uD754\uD55C \uB3CC."
+  description: "\uD754\uD55C \uC11D\uD68C\uC11D \uC870\uAC01. \uC6D0\uC2DC\uC801\uC778
+    \uB3C4\uAD6C \uC81C\uC791\uC5D0 \uC4F0\uC778\uB2E4."
   specialEffect: 
   at: 0
   df: 0
@@ -47,5 +48,5 @@ MonoBehaviour:
   icon: {fileID: 6032186475404308979, guid: 9e6fded1c40887043a62697f190b174b, type: 3}
   recipe:
     ingredients: []
-    resultItemId: 0
+    resultItemId: 2
     resultAmount: 1
