@@ -85,6 +85,9 @@ public class DataTableWindow : EditorWindow
         C("체력", "hpMax", 60, "최대 체력"), C("공격력", "at", 60), C("방어력", "df", 60),
         C("속도", "speed", 55, "높을수록 먼저 행동"), C("회피율", "avoid", 60, "%"),
         C("치명타 확률", "criticalrate", 70, "%"), C("치명타 피해", "critical", 70, "% 증가"),
+        C("방어 확률", "defendChance", 65, "자기 턴에 방어를 고를 확률 [%]"),
+        C("저체력 방어", "defendChanceLowHp", 75, "체력 30% 이하일 때 방어 확률 [%]"),
+        C("제압 확률", "suppressChance", 70, "턴마다 플레이어를 제압할 확률 [%]"),
     }).ToArray();
 
     private static readonly Col[] MonsterReward = MonsterLead.Concat(new[]

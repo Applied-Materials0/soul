@@ -24,6 +24,11 @@ public class Monster : ScriptableObject
     public float criticalrate;     // 치명타 확률 [%]
     public float critical;         // 치명타 피해 증가 [%]
 
+    [Header("전투 행동")]
+    [Range(0f, 100f)] public float defendChance = 10f;       // 자기 턴에 방어를 고를 확률 [%] (체력이 충분할 때)
+    [Range(0f, 100f)] public float defendChanceLowHp = 40f;  // 체력이 30% 이하일 때 방어를 고를 확률 [%]
+    [Range(0f, 100f)] public float suppressChance = 10f;     // 제압 확률 [%]: 자기 턴마다 이 확률로 플레이어를 제압해 다음 턴에 도망치지 못하게 함
+
     [Header("처치 보상")]
     public int exp;                // 경험치
     public int gold;               // 골드

@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
             HpMax = 10;
             At = 10;
             Df = 10;
+            DefendBonus = 50f;
         }
 
         // 루프타운에 들어올 때마다 행동력(SP)만 최대치로 회복
@@ -47,6 +48,8 @@ public class GameManager : MonoBehaviour
     static public int Speed;            //속도 (첫 조우에 높을 수록 선 턴)
     static public float HpRateAt;       //체력 비례 공격[%]
     static public int FixAt;            //고정 공격력
+    static public int EquipAt;          //도구 및 장비 공격력 합 (장비 시스템이 채움)
+    static public float DefendBonus;    //[방어] 시 방어력 증가 [%], 기본 50 (장비로 추가될 수 있음)
     static public float BreakDf;        //관통률 [%] 방관
     static public float Abs;            //체력 흡수[%] 공격력 비율만큼 흡수 Absorption
     static public float Avoid;          //회피율 값의 확률로 데미지 0으로 만듦

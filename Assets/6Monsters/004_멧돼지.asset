@@ -24,6 +24,9 @@ MonoBehaviour:
   avoid: 0
   criticalrate: 10
   critical: 10
+  defendChance: 10
+  defendChanceLowHp: 20
+  suppressChance: 10
   exp: 5
   gold: 5
   drops: []
