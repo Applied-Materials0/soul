@@ -48,6 +48,8 @@ public class FieldSearch : MonoBehaviour
     [Tooltip("몬스터 도감. 연결하면 현재 지역에 출현하는 몬스터가 비중대로 뽑힘. Create > Soul > Monster Database 로 만들어 연결")]
     public MonsterDatabase monsterDB;
     private Monster currentMonster; // 지금 마주친 몬스터 (전투 구현 때 사용)
+    private int monsterHp;          // 지금 마주친 몬스터의 현재 체력
+    private MonsterHUD monsterHud;  // 몬스터 이름/체력 게이지 (처음 필요할 때 만들어짐)
 
     // 내부 탐색/채집 상태 변수
     private int events;   // 탐색 이벤트 번호
@@ -100,6 +102,8 @@ public class FieldSearch : MonoBehaviour
     // =========================================================
     public void SearchBtnOn()
     {
+        HideMonsterHud(); // 새로 탐색하면 이전 몬스터 표시는 지움
+
         if (GameManager.SP <= 0)
         {
             BtnAudio.Play();
@@ -192,11 +196,36 @@ public class FieldSearch : MonoBehaviour
                 Debug.LogWarning($"[FieldSearch] 지역 ID {GameManager.selectedRegionID}에 출현하는 몬스터가 없습니다. " +
                     "몬스터 에셋의 출현 지역(spawns)과 MonsterDatabase 목록(Collect All Monsters)을 확인하세요. 임시 몬스터로 대체합니다.");
             }
+            HideMonsterHud();
             SetMonsterEncounter("적과 마주쳤다!", Random.Range(1, 21));
             return;
         }
 
         SetMonsterEncounter($"{picked.monsterName}{HasJongseong(picked.monsterName, "이", "가")} 나타났다!", picked.id);
+
+        // 화면 중앙 상단에 몬스터 이름과 체력 게이지 표시 (처음엔 체력이 가득 참)
+        monsterHp = picked.hpMax;
+        ShowMonsterHud(picked);
+    }
+
+    // 몬스터 이름과 체력 게이지를 화면 중앙 상단에 표시
+    private void ShowMonsterHud(Monster m)
+    {
+        if (monsterHud == null) monsterHud = MonsterHUD.Create(SearchText.transform, SearchText.font);
+        monsterHud.Show(m.monsterName, monsterHp, m.hpMax);
+    }
+
+    private void HideMonsterHud()
+    {
+        if (monsterHud != null) monsterHud.Hide();
+    }
+
+    // 마주친 몬스터의 현재 체력을 바꾸고 게이지에 반영 (전투를 구현할 때 피해를 줄 때 호출)
+    public void SetMonsterHp(int hp)
+    {
+        if (currentMonster == null) return;
+        monsterHp = Mathf.Clamp(hp, 0, currentMonster.hpMax);
+        if (monsterHud != null) monsterHud.SetHp(monsterHp, currentMonster.hpMax);
     }
 
     // 탐색 결과 세팅 세부 함수
@@ -339,6 +368,7 @@ public class FieldSearch : MonoBehaviour
     {
         SearchAudio.Stop();
         RunAudio.Play();
+        HideMonsterHud(); // 도망쳤으니 몬스터 표시를 지움
         SearchText.text = "무사히 도망쳤다.";
         RunBtn.SetActive(false);
         SearchBtn.SetActive(true);
