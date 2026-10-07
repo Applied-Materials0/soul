@@ -102,8 +102,14 @@ public class ItemInfoPanel : MonoBehaviour
         }
         // 2. 수치가 0보다 큰 항목만 알아서 줄바꿈 출력!
         //if (item.count > 1)
-        sb.AppendLine($" 수   량 : {InventoryManager.Instance.GetItemCount(item.id)} 개");
-        if (item.weight > 0) sb.AppendLine($" 중   량 : {item.weight} kg");
+        int owned = InventoryManager.Instance.GetItemCount(item.id);
+        sb.AppendLine($" 수   량 : {owned} 개");
+        // 중량은 보유한 수량 전체의 무게로 표시 (item.weight는 1개당 무게)
+        if (item.weight > 0)
+        {
+            string unit = owned > 1 ? $" (개당 {item.weight} kg)" : "";
+            sb.AppendLine($" 중   량 : {item.weight * Mathf.Max(owned, 1)} kg{unit}");
+        }
         if (item.durabilitymax > 0)
         {
             // 도구는 슬롯마다 내구도가 따로이므로 클릭한 슬롯(스택)의 현재 내구도를 표시

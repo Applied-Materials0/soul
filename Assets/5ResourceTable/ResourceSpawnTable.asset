@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a491ca12070de8247accd3f8c2f07f4a, type: 3}
+  m_Name: ResourceSpawnTable
+  m_EditorClassIdentifier: Assembly-CSharp::ResourceSpawnTable
+  entries:
+  - label: "\uB098\uBB47\uAC00\uC9C0"
+    weight: 10
+    foundText: "\uB098\uBB47\uAC00\uC9C0\uB97C \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 0
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 3
+    sound: 0
+  - label: "\uB364\uBD88"
+    weight: 9
+    foundText: "\uB364\uBD88\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 13
+    toolType: 4
+    tier: 0
+    hpMin: 1
+    hpMax: 4
+    sound: 1
+  - label: "\uCC38\uB098\uBB34"
+    weight: 17
+    foundText: "\uCC38\uB098\uBB34\uB97C \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uBC8C\uBAA9"
+    itemId: 0
+    toolType: 1
+    tier: 1
+    hpMin: 3
+    hpMax: 9
+    sound: 2
+  - label: "\uAD6C\uB9AC \uC870\uAC01"
+    weight: 3
+    foundText: "\uAD6C\uB9AC \uC870\uAC01\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 1
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uAD6C\uB9AC \uAD11\uC11D"
+    weight: 1
+    foundText: "\uAD6C\uB9AC \uAD11\uC11D\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uAD11"
+    itemId: 1
+    toolType: 2
+    tier: 1
+    hpMin: 5
+    hpMax: 14
+    sound: 3
+  - label: "\uC7A1\uC11D \uC870\uAC01"
+    weight: 10
+    foundText: "\uC7A1\uC11D \uC870\uAC01\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 2
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uC7A1\uC11D"
+    weight: 15
+    foundText: "\uC7A1\uC11D\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC11D"
+    itemId: 2
+    toolType: 2
+    tier: 1
+    hpMin: 3
+    hpMax: 9
+    sound: 3
+  - label: "\uD480"
+    weight: 10
+    foundText: "\uD480\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 13
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 1
+  - label: "\uB538\uAE30"
+    weight: 5
+    foundText: "\uB538\uAE30\uB97C \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 16
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 4
+    sound: 1
+  - label: "\uC625\uC218\uC218"
+    weight: 2
+    foundText: "\uC625\uC218\uC218\uB97C \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 17
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 4
+    sound: 1
+  - label: "\uBC8C\uC9D1"
+    weight: 3
+    foundText: "\uBC8C\uC9D1\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 18
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uB2EC\uAC40"
+    weight: 1
+    foundText: "\uB2EC\uAC40\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 19
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 4
+    sound: 0
+  - label: "\uC8FC\uD669 \uBC84\uC12F"
+    weight: 5
+    foundText: "\uC8FC\uD669 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 26
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uD478\uB978 \uBC84\uC12F"
+    weight: 3
+    foundText: "\uD478\uB978 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 27
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uBD89\uC740 \uBC84\uC12F"
+    weight: 1
+    foundText: "\uBD89\uC740 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 28
+    toolType: 0
+    tier: 0
+    hpMin: 1
+    hpMax: 1
+    sound: 0
+  - label: "\uC5F0\uBABB"
+    weight: 5
+    foundText: "\uC5F0\uBABB\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uB2F4\uAE30"
+    itemId: 15
+    toolType: 5
+    tier: 0
+    hpMin: 100
+    hpMax: 100
+    sound: 4
+  probabilityPreview: "\uBE44\uC911 \uD569\uACC4: 100\r\n\uB098\uBB47\uAC00\uC9C0:
+    10%  (\uBE44\uC911 10)\r\n\uB364\uBD88: 9%  (\uBE44\uC911 9)\r\n\uCC38\uB098\uBB34:
+    17%  (\uBE44\uC911 17)\r\n\uAD6C\uB9AC \uC870\uAC01: 3%  (\uBE44\uC911 3)\r\n\uAD6C\uB9AC
+    \uAD11\uC11D: 1%  (\uBE44\uC911 1)\r\n\uC7A1\uC11D \uC870\uAC01: 10%  (\uBE44\uC911
+    10)\r\n\uC7A1\uC11D: 15%  (\uBE44\uC911 15)\r\n\uD480: 10%  (\uBE44\uC911 10)\r\n\uB538\uAE30:
+    5%  (\uBE44\uC911 5)\r\n\uC625\uC218\uC218: 2%  (\uBE44\uC911 2)\r\n\uBC8C\uC9D1:
+    3%  (\uBE44\uC911 3)\r\n\uB2EC\uAC40: 1%  (\uBE44\uC911 1)\r\n\uC8FC\uD669 \uBC84\uC12F:
+    5%  (\uBE44\uC911 5)\r\n\uD478\uB978 \uBC84\uC12F: 3%  (\uBE44\uC911 3)\r\n\uBD89\uC740
+    \uBC84\uC12F: 1%  (\uBE44\uC911 1)\r\n\uC5F0\uBABB: 5%  (\uBE44\uC911 5)\r\n"

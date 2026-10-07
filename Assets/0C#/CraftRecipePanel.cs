@@ -64,7 +64,7 @@ public class CraftRecipePanel : MonoBehaviour
         title.fontStyle = FontStyles.Bold;
 
         CraftQuantityPopup.CreateButton(panel, "Close", "닫기", font, new Color(0.55f, 0.25f, 0.25f),
-            new Vector2(1f, 1f), new Vector2(-15f, -15f), new Vector2(110f, 56f), () => Close());
+            new Vector2(1f, 1f), new Vector2(-15f, -15f), new Vector2(110f, 56f), () => { PlayButtonSound(); Close(); });
 
         // 스크롤 목록
         RectTransform scroll = CraftQuantityPopup.NewRect("Scroll", panel, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -119,6 +119,32 @@ public class CraftRecipePanel : MonoBehaviour
     {
         if (IsOpen) Close();
         else Open();
+    }
+
+    // 가방의 버튼음과 같은 소리 (제작 버튼으로 열 때 나는 소리와 맞춤)
+    private static void PlayButtonSound()
+    {
+        InventoryManager inv = InventoryManager.Instance;
+        if (inv != null && inv.BtnAudio != null) inv.BtnAudio.Play();
+        else SoundManager.Instance?.PlaySlotClickSound();
+    }
+
+    // ESC용: 가장 위의 한 겹만 닫고, 닫은 것이 있으면 true (수량 팝업 -> 레시피 창)
+    public bool CloseTopLayer()
+    {
+        if (popup != null && popup.gameObject.activeSelf)
+        {
+            SoundManager.Instance?.PlaySlotClickSound();
+            popup.Close();
+            return true;
+        }
+        if (IsOpen)
+        {
+            PlayButtonSound();
+            Close();
+            return true;
+        }
+        return false;
     }
 
     public void Open()

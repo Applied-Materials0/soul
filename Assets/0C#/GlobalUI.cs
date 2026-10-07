@@ -45,23 +45,26 @@ public class GlobalUI : MonoBehaviour
         // ESC 키 (공통 닫기)
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if ((InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen) || (MapManager.Instance != null && MapManager.Instance.IsMapOpen))
-            {
-                HandleEscapeKey();
-            }
-                
+            HandleEscapeKey();
         }
     }
+
+    // ESC: 가장 위에 있는 창부터 한 겹씩 닫음 (제작 팝업 -> 레시피 창 -> 가방 -> 지도)
+    // 인스펙터 연결(inventoryManager)이 비어 있어도 동작하도록 InventoryManager.Instance를 직접 사용함
     private void HandleEscapeKey()
     {
-        // 우선순위에 따라 원하는 창부터 순서대로 닫기
-        if (inventoryManager != null && inventoryManager.IsInventoryOpen)
+        InventoryManager inv = InventoryManager.Instance;
+        MapManager map = MapManager.Instance;
+
+        if (inv != null && inv.CloseTopCraftLayer()) return;
+
+        if (inv != null && inv.IsInventoryOpen)
         {
-            inventoryManager.CloseInventory();
+            inv.CloseInventory();
         }
-        else if (MapManager.Instance != null && MapManager.Instance.IsMapOpen)
+        else if (map != null && map.IsMapOpen)
         {
-            MapManager.Instance.CloseMap();
+            map.CloseMap();
         }
     }
 

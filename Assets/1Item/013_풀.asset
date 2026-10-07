@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Item
   id: 13
   itemName: "\uD480"
-  weight: 300
-  countmax: 1
-  durabilitymax: 59
+  weight: 1
+  countmax: 50
+  durabilitymax: 0
   toolType: 0
   tier: 0
   toolattack: 0

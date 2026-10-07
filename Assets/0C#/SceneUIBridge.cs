@@ -16,7 +16,7 @@ public class SceneUIBridge : MonoBehaviour
     //씬의 가방 버튼이 누를 함수
     public void ClickOpenInventory()
     {
-        BtnAudio.Play();
+        // 버튼음은 InventoryManager가 재생함 (여기서도 재생하면 소리가 두 번 남)
         if (InventoryManager.Instance != null)
         {
             InventoryManager.Instance.ToggleInventory();
@@ -30,12 +30,11 @@ public class SceneUIBridge : MonoBehaviour
     //씬의 지도 버튼이 누를 함수
     public void ClickOpenMap()
     {
-        BtnAudio.Play();
-        Debug.Log("맵 SP 텍스트 갱신 요청 정상");
+        // 버튼음은 MapManager가 재생함 (여기서도 재생하면 소리가 두 번 남)
         if (MapManager.Instance != null)
         {
             MapManager.Instance.ToggleMap();
-            PlayerUI.Instance.UpdateSP();
+            if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateSP();
         }
         else
         {

@@ -9,13 +9,13 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
-    path: Assets/Scenes/TitleScene.unity
+    path: Assets/3Scenes/TitleScene.unity
     guid: 1feb89ef6991dd8478c33c2e58ef9060
   - enabled: 1
-    path: Assets/Scenes/LoopTown.unity
+    path: Assets/3Scenes/LoopTown.unity
     guid: 18669d57d4b937f438e08b4c266d7830
   - enabled: 1
-    path: Assets/Scenes/Field.unity
+    path: Assets/3Scenes/Field.unity
     guid: d4ec7066ccbb82e4994eae8d8f46f027
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}

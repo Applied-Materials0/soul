@@ -56,17 +56,17 @@ public class FieldSearch : MonoBehaviour
     private int currentRequiredTier;
     private GatherSoundType currentSoundType;
 
-    private void Awake() // ★ 대문자 A로 수정
+    // FieldSearch는 이 씬의 UI(텍스트, 버튼, 소리)를 직접 들고 있으므로 씬마다 새로 만들어져야 한다.
+    // DontDestroyOnLoad로 살려 두면 두 번째 진입 때 새 FieldSearch가 파괴되고, 이미 사라진 UI를 가리키는
+    // 옛 인스턴스가 쓰여서 버튼이 먹통이 되었음.
+    private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        Instance = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this) Instance = null;
     }
     private void Start()
     {

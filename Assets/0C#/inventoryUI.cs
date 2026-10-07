@@ -208,19 +208,26 @@ public class InventoryManager : MonoBehaviour
     {
         if (MapManager.Instance != null)
         {
-            MapManager.Instance.CloseMap();
+            MapManager.Instance.CloseMap(false); // 소리는 아래에서 한 번만
         }
 
         if (BtnAudio != null) BtnAudio.Play();
         inventoryUI.SetActive(true);
     }
 
-    public void CloseInventory()
+    // playSound를 false로 하면 소리 없이 닫음. 이미 닫혀 있으면 소리를 내지 않음.
+    public void CloseInventory(bool playSound = true)
     {
-        if (BtnAudio != null) BtnAudio.Play();
+        if (playSound && inventoryUI.activeSelf && BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
         if (recipePanel != null) recipePanel.Close(true);
         inventoryUI.SetActive(false);
+    }
+
+    // ESC 키용: 제작 팝업 → 레시피 창 순서로 한 겹만 닫고, 닫은 것이 있으면 true
+    public bool CloseTopCraftLayer()
+    {
+        return recipePanel != null && recipePanel.CloseTopLayer();
     }
 
     // 스탯 버튼: 스탯창을 켜면 정보창(ItemInfoPanel)은 숨기고, 한 번 더 누르면 스탯창을 끔
