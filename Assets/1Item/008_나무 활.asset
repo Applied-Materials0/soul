@@ -10,20 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "000_\uCC38\uB098\uBB34"
+  m_Name: "008_\uB098\uBB34 \uD65C"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 0
-  itemName: "\uCC38\uB098\uBB34"
-  weight: 50
-  countmax: 20
-  durabilitymax: 0
-  toolType: 0
-  tier: 0
-  toolattack: 0
-  description: "\uD754\uD55C \uCC38\uB098\uBB34. \uB2E4\uC591\uD55C \uB3C4\uAD6C\uC640
-    \uAC74\uCD95\uC758 \uAE30\uBCF8 \uC7AC\uB8CC."
+  id: 8
+  itemName: "\uB098\uBB34 \uD65C"
+  weight: 150
+  countmax: 1
+  durabilitymax: 50
+  toolType: 3
+  tier: 1
+  toolattack: 1
+  description: "\uCC38\uB098\uBB34\uB85C \uB9CC\uB4E0 \uC6D0\uC2DC\uC801\uC778 \uD65C."
   specialEffect: 
-  at: 0
+  at: 3
   df: 0
   hp: 0
   heal: 0
@@ -45,8 +44,14 @@ MonoBehaviour:
   spmax: 0
   spheal: 0
   weightmax: 0
-  icon: {fileID: 2313463732811680064, guid: a11bbf8103cb51d4ba29848c1ff95534, type: 3}
+  icon: {fileID: 8652625658316714873, guid: 7e331708cee445542851e5e06890defe, type: 3}
   recipe:
-    ingredients: []
-    resultItemId: 0
+    ingredients:
+    - itemId: 0
+      amount: 3
+    - itemId: 2
+      amount: 3
+    - itemId: 13
+      amount: 5
+    resultItemId: 8
     resultAmount: 1

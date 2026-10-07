@@ -73,6 +73,8 @@ public class MapInfoPanel : MonoBehaviour
         WalkAudio.Play();
         if (currentData != null && !string.IsNullOrEmpty(currentData.sceneName))
         {
+            // 이동할 지역의 ID를 기억해 둔다 (FieldManager의 지역 이름, FieldSearch의 몬스터 출현이 이 값을 사용)
+            GameManager.selectedRegionID = currentData.id;
 
             //기존 SceneManager.LoadScene(...) 대신 FadeManager 사용!
             if (FadeManager.Instance != null)

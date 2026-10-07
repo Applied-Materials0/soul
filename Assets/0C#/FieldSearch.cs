@@ -45,6 +45,10 @@ public class FieldSearch : MonoBehaviour
     [Tooltip("자원이 나왔을 때 어떤 자원인지를 정하는 표. Create > Soul > Resource Spawn Table 로 만들어 연결. 비워 두면 기본 비율 사용")]
     public ResourceSpawnTable resourceTable;
 
+    [Tooltip("몬스터 도감. 연결하면 현재 지역에 출현하는 몬스터가 비중대로 뽑힘. Create > Soul > Monster Database 로 만들어 연결")]
+    public MonsterDatabase monsterDB;
+    private Monster currentMonster; // 지금 마주친 몬스터 (전투 구현 때 사용)
+
     // 내부 탐색/채집 상태 변수
     private int events;   // 탐색 이벤트 번호
     private int mob;      // 마주친 몬스터 번호
@@ -169,10 +173,30 @@ public class FieldSearch : MonoBehaviour
         GatherBtn.SetActive(false);
     }
 
-    // 몬스터 조우 (몬스터 번호는 임시로 1~20 중 무작위. 몬스터 도감을 만들면 지역별 출현 가중치로 대체)
+    // 몬스터 조우: 지금 있는 지역(GameManager.selectedRegionID)에 출현하는 몬스터 중 비중(weight)대로 뽑는다
     private void SearchMonster()
     {
-        SetMonsterEncounter("적과 마주쳤다!", Random.Range(1, 21));
+        Monster picked = monsterDB != null ? monsterDB.PickForRegion(GameManager.selectedRegionID) : null;
+        currentMonster = picked;
+
+        if (picked == null)
+        {
+            // 도감이 연결되지 않았거나 이 지역에 출현하는 몬스터가 없을 때: 예전처럼 번호만 임시로 뽑는다
+            if (monsterDB == null)
+            {
+                Debug.LogWarning("[FieldSearch] monsterDB가 연결되지 않았습니다. Field 씬의 FieldManager 오브젝트에 있는 FieldSearch에 " +
+                    "MonsterDatabase 에셋을 연결하고 씬을 저장하세요. 임시 몬스터로 대체합니다.");
+            }
+            else
+            {
+                Debug.LogWarning($"[FieldSearch] 지역 ID {GameManager.selectedRegionID}에 출현하는 몬스터가 없습니다. " +
+                    "몬스터 에셋의 출현 지역(spawns)과 MonsterDatabase 목록(Collect All Monsters)을 확인하세요. 임시 몬스터로 대체합니다.");
+            }
+            SetMonsterEncounter("적과 마주쳤다!", Random.Range(1, 21));
+            return;
+        }
+
+        SetMonsterEncounter($"{picked.monsterName}{HasJongseong(picked.monsterName, "이", "가")} 나타났다!", picked.id);
     }
 
     // 탐색 결과 세팅 세부 함수

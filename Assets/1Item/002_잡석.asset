@@ -15,7 +15,7 @@ MonoBehaviour:
   id: 2
   itemName: "\uC7A1\uC11D"
   weight: 50
-  countmax: 199
+  countmax: 20
   durabilitymax: 0
   toolType: 0
   tier: 0
