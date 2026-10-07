@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -191,6 +192,69 @@ public class DataTableWindow : EditorWindow
         }
     }
 
+    // ===== [+ 새 아이템] / [+ 새 몬스터]: 에셋을 만들고 도감에 자동 등록 =====
+    // 에셋이 이미 있는 폴더에 만들고(없으면 fallback 폴더를 만듦), 파일 이름은 "번호_이름.asset"
+    private static string FolderOf<T>(string fallback) where T : Object
+    {
+        string guid = AssetDatabase.FindAssets("t:" + typeof(T).Name).FirstOrDefault();
+        if (guid != null)
+            return Path.GetDirectoryName(AssetDatabase.GUIDToAssetPath(guid)).Replace("\\", "/");
+
+        if (!AssetDatabase.IsValidFolder(fallback))
+            AssetDatabase.CreateFolder("Assets", fallback.Substring("Assets/".Length));
+        return fallback;
+    }
+
+    private void CreateNewItem()
+    {
+        Save();
+        int newId = AssetDatabase.FindAssets("t:Item")
+            .Select(g => AssetDatabase.LoadAssetAtPath<Item>(AssetDatabase.GUIDToAssetPath(g)))
+            .Where(i => i != null).Select(i => i.id).DefaultIfEmpty(-1).Max() + 1;
+
+        Item item = ScriptableObject.CreateInstance<Item>();
+        item.id = newId;
+        item.itemName = "새 아이템";
+        item.countmax = 99;
+
+        // 아이콘: 2Sprites 폴더에서 ID에 맞는 4자리 이름의 스프라이트를 찾아 넣는다 (ID 14 -> 0014)
+        item.icon = DatabaseSync.FindSpriteForId(newId);
+        if (item.icon == null)
+            Debug.LogWarning($"[데이터 표] 2Sprites 폴더에서 '{newId:0000}' 스프라이트를 찾지 못해 아이콘을 비워 두었습니다.");
+
+        // 파일 이름은 "번호_이름" (번호는 3자리)
+        string path = AssetDatabase.GenerateUniqueAssetPath($"{FolderOf<Item>("Assets/1Item")}/{DatabaseSync.ItemFileName(item)}.asset");
+        AssetDatabase.CreateAsset(item, path);
+        AssetDatabase.SaveAssets();
+        FinishCreate();
+    }
+
+    private void CreateNewMonster()
+    {
+        Save();
+        int newId = AssetDatabase.FindAssets("t:Monster")
+            .Select(g => AssetDatabase.LoadAssetAtPath<Monster>(AssetDatabase.GUIDToAssetPath(g)))
+            .Where(m => m != null).Select(m => m.id).DefaultIfEmpty(-1).Max() + 1;
+
+        Monster monster = ScriptableObject.CreateInstance<Monster>();
+        monster.id = newId;
+        monster.monsterName = "새 몬스터";
+
+        string path = AssetDatabase.GenerateUniqueAssetPath($"{FolderOf<Monster>("Assets/6Monsters")}/{newId:000}_새 몬스터.asset");
+        AssetDatabase.CreateAsset(monster, path);
+        AssetDatabase.SaveAssets();
+        FinishCreate();
+    }
+
+    // 도감에 등록하고 표를 새로 읽은 뒤, 새 줄이 보이도록 맨 아래로 스크롤
+    private void FinishCreate()
+    {
+        DatabaseSync.SyncAll();
+        Refresh();
+        scroll = new Vector2(scroll.x, float.MaxValue);
+        Repaint();
+    }
+
     // 프로젝트에서 규칙 표 에셋 하나를 찾아 편집용으로 연다 (없으면 null)
     private static SerializedObject LoadRuleTable(string filter)
     {
@@ -205,6 +269,9 @@ public class DataTableWindow : EditorWindow
         if (!dirty) return;
         AssetDatabase.SaveAssets();
         dirty = false;
+
+        // 표에서 아이템의 번호나 이름을 바꿨다면 파일 이름도 "번호_이름"에 맞춘다
+        if (mode == Mode.Item) DatabaseSync.NormalizeItemFileNames();
     }
 
     private void OnGUI()
@@ -278,6 +345,14 @@ public class DataTableWindow : EditorWindow
             GUILayout.Space(12);
             GUILayout.Label("검색", GUILayout.Width(30));
             search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.Width(160));
+
+            // 새 항목 추가: 에셋을 만들고 도감에 자동 등록
+            GUILayout.Space(8);
+            if (GUILayout.Button(mode == Mode.Item ? "+ 새 아이템" : "+ 새 몬스터", EditorStyles.toolbarButton, GUILayout.Width(80)))
+            {
+                if (mode == Mode.Item) CreateNewItem();
+                else CreateNewMonster();
+            }
         }
 
         GUILayout.FlexibleSpace();

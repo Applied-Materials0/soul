@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "001_\uAD6C\uB9AC\uAD11\uC11D"
+  m_Name: "009_\uB098\uBB34 \uD654\uC0B4"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 1
-  itemName: "\uAD6C\uB9AC \uAD11\uC11D"
-  weight: 100
-  countmax: 20
+  id: 9
+  itemName: "\uB098\uBB34 \uD654\uC0B4"
+  weight: 5
+  countmax: 50
   durabilitymax: 0
   toolType: 0
   tier: 1
   toolattack: 0
-  description: "\uAD6C\uB9AC\uAC00 \uC18C\uB7C9 \uD568\uC720\uB41C \uAD11\uC11D.
-    \uAD6C\uB9AC \uC8FC\uAD34\uB85C \uC81C\uB828\uD558\uC5EC \uC4F0\uC778\uB2E4."
+  description: "\uCC38\uB098\uBB34\uB85C \uB9CC\uB4E0 \uC870\uC7A1\uD55C \uD654\uC0B4.\\n\uD65C\uC758
+    \uACF5\uACA9\uB825\uC5D0 \uB530\uB978\uB2E4."
   specialEffect: 
-  at: 0
+  at: 3
   df: 0
   hp: 0
   heal: 0
@@ -46,9 +46,15 @@ MonoBehaviour:
   spheal: 0
   weightmax: 0
   slotmax: 0
-  icon: {fileID: -4209461767521648114, guid: d85f948239ff7534786411a9a933f326, type: 3}
+  icon: {fileID: 3965758638191431310, guid: dd371a06541e3134ab02d0d223427dfc, type: 3}
   recipe:
-    ingredients: []
+    ingredients:
+    - itemId: 0
+      amount: 3
+    - itemId: 2
+      amount: 3
+    - itemId: 13
+      amount: 5
     tools: []
-    resultItemId: 1
+    resultItemId: 9
     resultAmount: 1

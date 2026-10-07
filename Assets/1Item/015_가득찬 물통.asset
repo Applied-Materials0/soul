@@ -10,20 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "010_\uB3CC\uD654\uC0B4"
+  m_Name: "015_\uAC00\uB4DD\uCC2C \uBB3C\uD1B5"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 10
-  itemName: "\uB3CC \uD654\uC0B4"
-  weight: 10
-  countmax: 50
+  id: 15
+  itemName: "\uAC00\uB4DD\uCC2C \uBB3C\uD1B5"
+  weight: 150
+  countmax: 1
   durabilitymax: 0
   toolType: 0
-  tier: 1
+  tier: 0
   toolattack: 0
-  description: "\uC7A1\uC11D\uC744 \uAE4E\uC544 \uB9CC\uB4E0 \uD654\uC0B4.\\n \uCD94\uAC00
-    \uACF5\uACA9\uB825: 1"
+  description: 
   specialEffect: 
-  at: 3
+  at: 0
   df: 0
   hp: 0
   heal: 0
@@ -46,15 +45,9 @@ MonoBehaviour:
   spheal: 0
   weightmax: 0
   slotmax: 0
-  icon: {fileID: -8999544654852872013, guid: 15aa28f441cb1d54abc3a995f0d81e28, type: 3}
+  icon: {fileID: 1734450685577689515, guid: 33dba1ace25bec543a3a9b844854cc7a, type: 3}
   recipe:
-    ingredients:
-    - itemId: 0
-      amount: 3
-    - itemId: 2
-      amount: 3
-    - itemId: 13
-      amount: 5
+    ingredients: []
     tools: []
-    resultItemId: 10
+    resultItemId: 15
     resultAmount: 1

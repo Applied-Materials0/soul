@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "005_\uB3CC\uB9DD\uCE58"
+  m_Name: "005_\uB3CC \uB9DD\uCE58"
   m_EditorClassIdentifier: Assembly-CSharp::Item
   id: 5
   itemName: "\uB3CC \uB9DD\uCE58"

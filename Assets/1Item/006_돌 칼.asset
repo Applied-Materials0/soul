@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
+  m_Name: "006_\uB3CC \uCE7C"
+  m_EditorClassIdentifier: Assembly-CSharp::Item
+  id: 6
+  itemName: "\uB3CC \uCE7C"
+  weight: 300
+  countmax: 1
+  durabilitymax: 50
+  toolType: 6
+  tier: 1
+  toolattack: 1
+  description: "\uB3CC\uC744 \uC5EE\uC5B4 \uB9CC\uB4E0 \uCE7C\uB85C \uC801\uC744
+    \uBCA0\uB294\uB370 \uC4F0\uC778\uB2E4."
+  specialEffect: 
+  at: 3
+  df: 0
+  hp: 0
+  heal: 0
+  hprateat: 0
+  fixat: 0
+  breakdf: 0
+  abs: 0
+  avoid: 0
+  criticalrate: 0
+  critical: 0
+  manamax: 0
+  manaheal: 0
+  atrate: 0
+  dfrate: 0
+  hprate: 0
+  healrate: 0
+  goldrate: 0
+  exprate: 0
+  spmax: 0
+  spheal: 0
+  weightmax: 0
+  icon: {fileID: -2053394916973472229, guid: ac22a89c098fc504f97524821018e349, type: 3}
+  recipe:
+    ingredients:
+    - itemId: 0
+      amount: 3
+    - itemId: 2
+      amount: 3
+    - itemId: 13
+      amount: 5
+    resultItemId: 6
+    resultAmount: 1
