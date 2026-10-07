@@ -72,7 +72,6 @@ public class GlobalUI : MonoBehaviour
     public void RegisterUI(FieldSearch newFieldSearch)
     {
         fieldSearch = newFieldSearch;
-        Debug.Log("FieldSearch가 GlobalUI에 성공적으로 등록되었습니다.");
     }
 
 }

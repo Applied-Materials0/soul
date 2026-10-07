@@ -206,7 +206,6 @@ public class FieldSearch : MonoBehaviour
     // =========================================================
     public void GatherBtnOn()
     {
-        Debug.Log("채집 버튼 입력 정상");
         ProcessGathering();
     }
 
@@ -266,7 +265,6 @@ public class FieldSearch : MonoBehaviour
         InventoryManager.Instance.AddItem(targetResource, gainedAmount);
         sourceHP -= gainedAmount;
         GameManager.SP -= 1;
-        Debug.Log(InventoryManager.Instance.GetItemCount(targetResource.id));//현재 아이템 갯수
         if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateStatText(); //스탯창 갱신
 
         // 4. 사운드 재생

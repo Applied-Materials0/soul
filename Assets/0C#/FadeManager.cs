@@ -58,7 +58,7 @@ public class FadeManager : MonoBehaviour
         // 4. 지도 UI 닫기 (검은 화면 뒤에서 지도가 닫히므로 안 보임!)
         if (MapManager.Instance != null)
         {
-            MapManager.Instance.CloseMap(false); // 입장 소리(WalkAudio)만 들리도록 버튼음 없이 닫음
+            MapManager.Instance.CloseMapQuiet(); // 입장 소리(WalkAudio)만 들리도록 버튼음 없이 닫음
         }
 
         // 5. 새 씬에서 화면 스르륵 다시 밝아지기 (페이드 인)

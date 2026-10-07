@@ -6,17 +6,24 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        Level = 1;
-        ExpNext = 10;
-        SP = 100;
-        SPMax = 100;
-        Mana = 10;
-        ManaMax = 10;
-        WeightMax = 10000;
-        Hp = 10;
-        HpMax = 10;
-        At = 10;
-        Df = 10;
+        // 기본 스탯은 게임을 처음 켰을 때 한 번만 설정함 (씬을 다시 불러와도 초기화하지 않음)
+        if (!Once)
+        {
+            Once = true;
+            Level = 1;
+            ExpNext = 10;
+            SPMax = 100;
+            Mana = 10;
+            ManaMax = 10;
+            WeightMax = 10000;
+            Hp = 10;
+            HpMax = 10;
+            At = 10;
+            Df = 10;
+        }
+
+        // 루프타운에 들어올 때마다 행동력(SP)만 최대치로 회복
+        SP = SPMax;
     }
     //플레이어 누적 능력치 변수
     static public int Gold;             //돈

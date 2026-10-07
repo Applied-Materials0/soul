@@ -77,7 +77,7 @@ public class ResourceSpawnTable : ScriptableObject
     }
 
     [ContextMenu("기본값으로 되돌리기")]
-    private void ResetToDefaults()
+    public void ResetToDefaults()
     {
         entries = CreateDefaultEntries();
         OnValidate();

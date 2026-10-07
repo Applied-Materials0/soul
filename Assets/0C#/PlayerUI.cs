@@ -58,8 +58,6 @@ public class PlayerUI : MonoBehaviour
     {
         int sp = GameManager.SP;
         int spmax = GameManager.SPMax;
-        Debug.Log("맵 SP 텍스트 갱신 정상");
         SPText.text = $"SP: {sp:N0} / {spmax:N0}";
-        Debug.Log(GameManager.SP);
     }
 }

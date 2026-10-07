@@ -53,7 +53,7 @@ public class MapManager : MonoBehaviour
         // 1. 지도를 열 때 인벤토리가 열려있다면 닫기
         if (InventoryManager.Instance != null)
         {
-            InventoryManager.Instance.CloseInventory(false); // 소리는 아래에서 한 번만
+            InventoryManager.Instance.CloseInventoryQuiet(); // 소리는 아래에서 한 번만
         }
 
         // 2. 소리 재생
@@ -63,9 +63,20 @@ public class MapManager : MonoBehaviour
         MapUI.SetActive(true);
     }
 
-    // playSound를 false로 하면 소리 없이 닫음 (씬 이동처럼 다른 소리가 이미 나는 경우).
-    // 이미 닫혀 있으면 아무 소리도 내지 않음.
-    public void CloseMap(bool playSound = true)
+    // 지도 닫기 (X 버튼이 인스펙터에서 이 함수를 이름으로 부르므로, 매개변수를 추가하면 안 됨!)
+    public void CloseMap()
+    {
+        CloseMapInternal(true);
+    }
+
+    // 소리 없이 닫기: 씬 이동처럼 다른 소리가 이미 나는 경우에 사용
+    public void CloseMapQuiet()
+    {
+        CloseMapInternal(false);
+    }
+
+    // 이미 닫혀 있으면 아무 소리도 내지 않음
+    private void CloseMapInternal(bool playSound)
     {
         if (MapUI == null || !MapUI.activeSelf) return;
 

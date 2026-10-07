@@ -73,7 +73,6 @@ public class MapInfoPanel : MonoBehaviour
         WalkAudio.Play();
         if (currentData != null && !string.IsNullOrEmpty(currentData.sceneName))
         {
-            Debug.Log($"[{currentData.RegionName}] 구역으로 이동합니다! (Scene: {currentData.sceneName})");
 
             //기존 SceneManager.LoadScene(...) 대신 FadeManager 사용!
             if (FadeManager.Instance != null)

@@ -208,15 +208,27 @@ public class InventoryManager : MonoBehaviour
     {
         if (MapManager.Instance != null)
         {
-            MapManager.Instance.CloseMap(false); // 소리는 아래에서 한 번만
+            MapManager.Instance.CloseMapQuiet(); // 소리는 아래에서 한 번만
         }
 
         if (BtnAudio != null) BtnAudio.Play();
         inventoryUI.SetActive(true);
     }
 
-    // playSound를 false로 하면 소리 없이 닫음. 이미 닫혀 있으면 소리를 내지 않음.
-    public void CloseInventory(bool playSound = true)
+    // 가방 닫기 (X 버튼이 인스펙터에서 이 함수를 이름으로 부르므로, 매개변수를 추가하면 안 됨!)
+    public void CloseInventory()
+    {
+        CloseInventoryInternal(true);
+    }
+
+    // 소리 없이 닫기: 지도를 열면서 가방을 닫는 경우처럼 다른 소리가 이미 나는 경우에 사용
+    public void CloseInventoryQuiet()
+    {
+        CloseInventoryInternal(false);
+    }
+
+    // 이미 닫혀 있으면 소리를 내지 않음
+    private void CloseInventoryInternal(bool playSound)
     {
         if (playSound && inventoryUI.activeSelf && BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
@@ -319,7 +331,6 @@ public class InventoryManager : MonoBehaviour
         if (ownedTools.Count == 0)
         {
             checkResult = ToolCheckResult.NoTool;
-            Debug.Log("해당 도구 없음");
             return null;
         }
 
@@ -350,7 +361,6 @@ public class InventoryManager : MonoBehaviour
                 targetStack.durability = usedTool.durabilitymax;
             }
         }
-        Debug.Log("내구도 차감");
         return usedTool;
     }
 
@@ -459,7 +469,6 @@ public class InventoryManager : MonoBehaviour
             amount -= add;
         }
 
-        Debug.Log($"[AddItem] {newItem.itemName} 획득 (총 보유 {GetItemCount(newItem.id)}개)");
     }
 
     /// <summary>
