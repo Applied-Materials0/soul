@@ -101,10 +101,12 @@ public static class Proficiency
             ProficiencyLevel l = Current(def);
             float mult = BattleCalc.Mult(l != null ? l.expBonusPercent : 0f);
             int playerExp = Mathf.Max(1, Mathf.RoundToInt(def.playerExpPerUse * mult));
-            foreach (LevelSystem.LevelUp up in LevelSystem.AddExp(playerExp))
+            int oldLevel = GameManager.Level;
+            string levelText = LevelSystem.Describe(oldLevel, LevelSystem.AddExp(playerExp));
+            if (levelText.Length > 0)
             {
                 if (sb.Length > 0) sb.Append('\n');
-                sb.Append($"레벨이 올랐다! Lv.{up.newLevel}");
+                sb.Append(levelText);
             }
         }
 

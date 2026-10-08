@@ -111,6 +111,7 @@ public class MapInfoPanel : MonoBehaviour
 
             // 이동할 지역의 ID를 기억해 둔다 (FieldManager의 지역 이름, FieldSearch의 몬스터 출현이 이 값을 사용)
             GameManager.selectedRegionID = currentData.id;
+            RegionTitle.Queue(currentData.RegionName); // 도착해서 화면이 밝아지면 지역 이름을 크게 보여 줌
 
             //기존 SceneManager.LoadScene(...) 대신 FadeManager 사용!
             if (FadeManager.Instance != null)

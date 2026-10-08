@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class PlayerUI : MonoBehaviour
 {
@@ -67,6 +68,58 @@ public class PlayerUI : MonoBehaviour
         return $"\n 무게: {inv.CurrentWeight:N0} / {inv.WeightLimit:N0}   슬롯: {inv.UsedSlots} / {inv.SlotLimit}";
     }
 
+    // =========================================================
+    //  내 체력 게이지: 스탯 텍스트 바로 위에 붙는다 (필드의 스탯 텍스트, 가방의 스탯 창 모두).
+    //  몬스터 체력 게이지와 같은 모양: 빈 부분은 빨간색, 현재 체력만큼 왼쪽부터 초록색
+    // =========================================================
+    private RectTransform hpBarRoot;
+    private RectTransform hpBarFill;
+    private TextMeshProUGUI hpBarText;
+    private static readonly Color HpEmptyColor = new Color(0.75f, 0.15f, 0.15f, 1f);
+    private static readonly Color HpFillColor = new Color(0.20f, 0.75f, 0.25f, 1f);
+
+    private void BuildHpBar()
+    {
+        hpBarRoot = CraftQuantityPopup.NewRect("PlayerHpBar", statText.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 26f));
+        hpBarRoot.pivot = new Vector2(0f, 0f);
+        Image back = hpBarRoot.gameObject.AddComponent<Image>();
+        back.color = HpEmptyColor;
+        back.raycastTarget = false;
+
+        hpBarFill = CraftQuantityPopup.NewRect("Fill", hpBarRoot, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        hpBarFill.anchorMin = Vector2.zero;
+        hpBarFill.anchorMax = Vector2.one;
+        hpBarFill.offsetMin = Vector2.zero;
+        hpBarFill.offsetMax = Vector2.zero;
+        Image fill = hpBarFill.gameObject.AddComponent<Image>();
+        fill.color = HpFillColor;
+        fill.raycastTarget = false;
+
+        RectTransform textRt = CraftQuantityPopup.NewRect("Text", hpBarRoot, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.offsetMin = Vector2.zero;
+        textRt.offsetMax = Vector2.zero;
+        hpBarText = CraftQuantityPopup.AddText(textRt, 20, TextAlignmentOptions.Center, statText.font);
+        hpBarText.fontStyle = FontStyles.Bold;
+        hpBarText.outlineWidth = 0.25f;
+        hpBarText.outlineColor = new Color32(0, 0, 0, 255);
+    }
+
+    private void UpdateHpBar(int hp, int hpMax)
+    {
+        if (hpBarRoot == null) BuildHpBar();
+
+        float ratio = hpMax > 0 ? Mathf.Clamp01(hp / (float)hpMax) : 0f;
+        hpBarFill.anchorMax = new Vector2(ratio, 1f);
+        hpBarText.text = $"HP {hp:N0} / {hpMax:N0}";
+
+        // 스탯 글자 덩어리의 왼쪽 위 모서리 바로 위에 놓는다
+        statText.ForceMeshUpdate();
+        Bounds b = statText.textBounds;
+        hpBarRoot.localPosition = new Vector3(b.min.x, b.max.y + 10f, 0f);
+    }
+
     // 증감률이 0이 아니면 "(+30%)" 같은 꼬리표 (늘면 초록, 줄면 빨강)
     private static string RateNote(float rate)
     {
@@ -106,6 +159,8 @@ public class PlayerUI : MonoBehaviour
         {
             statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} \n HP: {hp:N0} / {hpmax:N0} </b>   \n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
         }
+
+        if (statText != null) UpdateHpBar(hp, Mathf.RoundToInt(hpmax));
 
         // SP 텍스트(맵 화면)가 연결되어 있으면 함께 갱신
         if (SPText != null)

@@ -15,27 +15,27 @@ MonoBehaviour:
   entries:
   - action: 0
     label: "\uD0D0\uC0C9"
-    cost: 1
+    cost: 5
     note: "\uD0D0\uC0C9 \uBC84\uD2BC\uC744 \uD55C \uBC88 \uB204\uB97C \uB54C"
   - action: 1
     label: "\uCC44\uC9D1"
-    cost: 1
+    cost: 5
     note: "\uC790\uC6D0\uC744 \uD55C \uBC88 \uCC44\uC9D1\uD560 \uB54C"
   - action: 2
     label: "\uB3C4\uB824\uB0B4\uAE30"
-    cost: 1
+    cost: 5
     note: "\uCE7C\uB85C \uD55C \uBC88 \uB3C4\uB824\uB0BC \uB54C"
   - action: 3
     label: "\uACF5\uACA9"
-    cost: 1
+    cost: 5
     note: "\uC804\uD22C\uC5D0\uC11C \uACF5\uACA9\uD560 \uB54C"
   - action: 4
     label: "\uBC29\uC5B4"
-    cost: 1
+    cost: 5
     note: "\uC804\uD22C\uC5D0\uC11C \uBC29\uC5B4\uD560 \uB54C"
   - action: 5
     label: "\uB3C4\uB9DD"
-    cost: 0
+    cost: 5
     note: "\uC804\uD22C\uC5D0\uC11C \uB3C4\uB9DD\uC744 \uC2DC\uB3C4\uD560 \uB54C"
   - action: 6
     label: "\uC9C0\uC5ED \uC774\uB3D9"

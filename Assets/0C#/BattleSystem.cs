@@ -283,7 +283,7 @@ public class BattleSystem : MonoBehaviour
     //  "{몬스터}의 공격!"(선공이면 "선제공격!") -> 맞았으면 바로 화면이 살짝 붉어짐 -> 잠시 뒤 결과
     //    - 회피: "피했다!"
     //    - 방어 중이고 피해가 0: "완벽하게 방어했다!"
-    //    - 방어 중이고 일부만 막음: "방어에 성공했다!" -> "N의 데미지를 받았다!"
+    //    - 방어 중이고 일부만 막음: "적의 공격을 받아냈다!" -> "N의 데미지를 받았다!"
     //    - 피해 0: "효과가 없는 것 같다..."
     //    - 그 외: "N의 데미지를 받았다!"
     // 방어를 고르면: "{몬스터}의 방어!" (결과는 플레이어가 다음에 공격할 때 "방어에 성공했다!" 또는 "방어가 실패했다..."로 나옴)
@@ -400,7 +400,7 @@ public class BattleSystem : MonoBehaviour
                 RefreshPlayerUI();
                 if (defended)
                 {
-                    steps.Add(new Step("방어에 성공했다!", HitResultDelay));
+                    steps.Add(new Step("적의 공격을 받아냈다!", HitResultDelay));
                     steps.Add(new Step($"{h.damage}의 데미지를 받았다!", LineDelay));
                 }
                 else
@@ -446,6 +446,7 @@ public class BattleSystem : MonoBehaviour
         int gold = Mathf.RoundToInt(monster.gold * BattleCalc.Mult(GameManager.GoldR));
         int exp = Mathf.RoundToInt(monster.exp * BattleCalc.Mult(GameManager.ExpR));
         GameManager.Gold += gold;
+        int oldLevel = GameManager.Level;
         List<LevelSystem.LevelUp> levelUps = LevelSystem.AddExp(exp); // 레벨 표에 따라 레벨업
 
         // 아이템 드랍: 줄마다 확률을 따로 판정하고, 수량은 최소~최대 중에서 뽑는다
@@ -472,17 +473,8 @@ public class BattleSystem : MonoBehaviour
         string reward = $"골드 +{gold}, 경험치 +{exp}";
         if (drops.Count > 0) reward += "\n획득: " + string.Join(", ", drops);
         if (bagFull) reward += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
-        foreach (LevelSystem.LevelUp up in levelUps)
-        {
-            reward += $"\n레벨이 올랐다! Lv.{up.newLevel}";
-            string gains = "";
-            if (up.hpMax != 0) gains += $" 체력 +{up.hpMax}";
-            if (up.at != 0) gains += $" 공격력 +{up.at}";
-            if (up.df != 0) gains += $" 방어력 +{up.df}";
-            if (up.spMax != 0) gains += $" SP +{up.spMax}";
-            if (up.speed != 0) gains += $" 속도 +{up.speed}";
-            if (gains.Length > 0) reward += $" ({gains.Trim()})";
-        }
+        string levelText = LevelSystem.Describe(oldLevel, levelUps); // 레벨이 올랐다! 이전 -> 현재 (늘어난 능력치 합계)
+        if (levelText.Length > 0) reward += "\n" + levelText;
         yield return Say(reward); // 직전 문구("쓰러뜨렸다!")가 충분히 보인 뒤에 보상을 보여 줌
 
         field.RestoreExploreButtons();
@@ -491,12 +483,11 @@ public class BattleSystem : MonoBehaviour
         busy = false;
     }
 
-    // 플레이어 체력이 0이 되었을 때
-    // (임시 처리: 체력을 가득 채워 루프 타운으로 돌려보낸다. 기절 규칙을 정하면 여기만 고치면 된다.)
+    // 플레이어 체력이 0이 되었을 때: 체력을 채우고 병원비/아이템 손실을 처리한 뒤,
+    // 화면이 완전히 어두워지고 -> 마을로 이동하고 -> "눈 앞이 깜깜해졌다..."가 뜬 뒤 글자와 검은 화면이 함께 걷히는 연출
     private IEnumerator FaintRoutine()
     {
-        yield return Say("눈앞이 캄캄해졌다...");
-        yield return new WaitForSeconds(LineDelay); // 문구를 읽을 시간
+        yield return new WaitForSeconds(LineDelay); // 직전 문구(데미지 등)를 읽을 시간
 
         GameManager.Hp = BattleCalc.PlayerMaxHp();
         GameManager.isfaint = false;
@@ -504,14 +495,11 @@ public class BattleSystem : MonoBehaviour
         // 기절하면 병원비를 내고 아이템 일부를 잃는다 (기본 능력치 표의 [기절] 설정)
         string penalty = InventoryManager.Instance != null ? InventoryManager.Instance.ApplyFaintPenalty() : "";
         RefreshPlayerUI();
-        ItemGainToast.ShowMessage(string.IsNullOrEmpty(penalty) ? "병원에서 치료를 받았다." : "병원에서 치료를 받았다. " + penalty + ".");
-
-        // 알림 글자가 완전히 사라진 뒤에 화면이 어두워지며 마을로 간다
-        yield return new WaitForSeconds(ItemGainToast.MessageDuration);
+        string after = string.IsNullOrEmpty(penalty) ? "병원에서 치료를 받았다." : "병원에서 치료를 받았다. " + penalty + ".";
 
         EndBattle();
         busy = false;
-        field.ReturnToTown();
+        FaintSequence.Play("눈 앞이 깜깜해졌다...", after);
     }
 
     // 가방이나 맵이 열려 있는 동안에는 몬스터 이름/체력 게이지를 숨기고, 닫으면 다시 보여 준다

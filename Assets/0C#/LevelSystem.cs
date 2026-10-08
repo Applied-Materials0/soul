@@ -15,6 +15,25 @@ public static class LevelSystem
         return GameTables.Levels.ExpToNext(level);
     }
 
+    // 레벨업 알림 문구: "레벨이 올랐다! Lv.2 -> Lv.4 (체력 +10 공격력 +3)". 능력치는 오른 레벨 전체의 합계. 오르지 않았으면 빈 문자열
+    public static string Describe(int oldLevel, List<LevelUp> ups)
+    {
+        if (ups == null || ups.Count == 0) return "";
+        int hp = 0, at = 0, df = 0, sp = 0, speed = 0;
+        foreach (LevelUp up in ups) { hp += up.hpMax; at += up.at; df += up.df; sp += up.spMax; speed += up.speed; }
+
+        string gains = "";
+        if (hp != 0) gains += $" 체력 +{hp}";
+        if (at != 0) gains += $" 공격력 +{at}";
+        if (df != 0) gains += $" 방어력 +{df}";
+        if (sp != 0) gains += $" SP +{sp}";
+        if (speed != 0) gains += $" 속도 +{speed}";
+
+        string text = $"레벨이 올랐다! Lv.{oldLevel} -> Lv.{GameManager.Level}";
+        if (gains.Length > 0) text += $" ({gains.Trim()})";
+        return text;
+    }
+
     // 경험치를 더한다. 레벨이 올랐으면 오른 레벨마다 한 항목씩 돌려준다.
     public static List<LevelUp> AddExp(int amount)
     {

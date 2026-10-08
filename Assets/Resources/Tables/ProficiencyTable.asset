@@ -108,71 +108,71 @@ MonoBehaviour:
       expToNext: 40
       bonusPercent: 10
       extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMax: 1
+      expBonusPercent: 10
+      spReducePercent: 10
     - level: 3
       expToNext: 80
       bonusPercent: 20
       extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMax: 2
+      expBonusPercent: 10
+      spReducePercent: 10
     - level: 4
       expToNext: 140
       bonusPercent: 30
       extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMax: 3
+      expBonusPercent: 10
+      spReducePercent: 10
     - level: 5
       expToNext: 220
       bonusPercent: 40
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 1
+      extraMax: 3
+      expBonusPercent: 20
+      spReducePercent: 20
     - level: 6
       expToNext: 320
       bonusPercent: 50
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 1
+      extraMax: 4
+      expBonusPercent: 20
+      spReducePercent: 20
     - level: 7
       expToNext: 440
       bonusPercent: 60
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 1
+      extraMax: 5
+      expBonusPercent: 20
+      spReducePercent: 20
     - level: 8
       expToNext: 600
       bonusPercent: 70
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 1
+      extraMax: 6
+      expBonusPercent: 20
+      spReducePercent: 20
     - level: 9
       expToNext: 800
       bonusPercent: 80
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 1
+      extraMax: 7
+      expBonusPercent: 20
+      spReducePercent: 20
     - level: 10
       expToNext: 0
       bonusPercent: 100
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      extraMin: 2
+      extraMax: 7
+      expBonusPercent: 30
+      spReducePercent: 30
   - id: 2
     kind: 5
     tool: 2
     label: "\uD68C\uBCF5"
     expPerUse: 1
-    playerExpPerUse: 1
+    playerExpPerUse: 0
     levels:
     - level: 1
       expToNext: 20

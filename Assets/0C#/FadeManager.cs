@@ -71,6 +71,8 @@ public class FadeManager : MonoBehaviour
         }
         fadeCanvasGroup.alpha = 0f;
 
+        RegionTitle.ShowQueued(); // 도착한 지역 이름을 화면 가운데에 보여 줌
+
         isFading = false;
     }
 }
