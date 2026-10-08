@@ -22,4 +22,8 @@ public class PlayerBaseTable : ScriptableObject
 
     [Header("전투")]
     public float defendBonus = 50f;     // [방어] 시 방어력 증가 [%] (장비로 추가될 수 있음)
+
+    [Header("기절 (체력이 0이 되었을 때의 대가)")]
+    [Min(0)] public int hospitalFee = 10;                  // 병원비(골드). 가진 골드보다 많으면 가진 만큼만 냄
+    [Range(0f, 100f)] public float itemLossPercent = 10f;  // 잃는 아이템 비율 [%] (각 아이템 수량에서). 도구/장비(한 슬롯에 1개인 것, 도구 종류가 있는 것)는 잃지 않음
 }

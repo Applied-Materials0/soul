@@ -23,7 +23,7 @@ public class DataTableWindow : EditorWindow
     private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound }
     private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음" };
 
-    private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피" };
+    private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피", "사용 효과" };
     private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역", "도망/도려내기" };
 
     // ===== 아이템 열 =====
@@ -66,6 +66,13 @@ public class DataTableWindow : EditorWindow
     private static readonly Col[] ItemRecipe = ItemLead.Concat(new[]
     {
         C("1회 생산", "recipe.resultAmount", 65, "제작 1회에 만들어지는 수량"),
+    }).ToArray();
+
+    private static readonly Col[] ItemUse = ItemLead.Concat(new[]
+    {
+        C("체력 회복", "useHp", 75, "사용하면 회복하는 체력 (하나라도 0보다 크면 인벤토리에서 [사용] 가능)"),
+        C("SP 회복", "useSp", 75, "사용하면 회복하는 SP"),
+        C("마나 회복", "useMana", 75, "사용하면 회복하는 마나"),
     }).ToArray();
 
     // ===== 몬스터 열 =====
@@ -205,10 +212,11 @@ public class DataTableWindow : EditorWindow
         return fallback;
     }
 
-    private void CreateNewItem()
+    // forcedId가 0 이상이면 그 번호로, 아니면 가장 큰 번호 + 1로 만든다
+    private void CreateNewItem(int forcedId = -1)
     {
         Save();
-        int newId = AssetDatabase.FindAssets("t:Item")
+        int newId = forcedId >= 0 ? forcedId : AssetDatabase.FindAssets("t:Item")
             .Select(g => AssetDatabase.LoadAssetAtPath<Item>(AssetDatabase.GUIDToAssetPath(g)))
             .Where(i => i != null).Select(i => i.id).DefaultIfEmpty(-1).Max() + 1;
 
@@ -229,10 +237,10 @@ public class DataTableWindow : EditorWindow
         FinishCreate();
     }
 
-    private void CreateNewMonster()
+    private void CreateNewMonster(int forcedId = -1)
     {
         Save();
-        int newId = AssetDatabase.FindAssets("t:Monster")
+        int newId = forcedId >= 0 ? forcedId : AssetDatabase.FindAssets("t:Monster")
             .Select(g => AssetDatabase.LoadAssetAtPath<Monster>(AssetDatabase.GUIDToAssetPath(g)))
             .Where(m => m != null).Select(m => m.id).DefaultIfEmpty(-1).Max() + 1;
 
@@ -322,12 +330,14 @@ public class DataTableWindow : EditorWindow
         }
     }
 
-    // 위쪽 줄: 모드, 탭, 검색, 새로고침, 저장
+    // 위쪽 두 줄. 창이 좁아도 버튼이 밀려나지 않도록, 탭은 남는 폭을 나눠 쓰고 버튼은 항상 오른쪽 끝에 고정 폭으로 둔다.
+    //  1줄: 모드 탭 .............. [새로고침] [저장]
+    //  2줄: 세부 탭 ... [검색칸] [+ 새 항목]   (아이템/몬스터 모드에서만)
     private void DrawToolbar()
     {
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-        int newMode = GUILayout.Toolbar((int)mode, ModeNames, EditorStyles.toolbarButton, GUILayout.Width(560));
+        int newMode = GUILayout.Toolbar((int)mode, ModeNames, EditorStyles.toolbarButton);
         if (newMode != (int)mode)
         {
             Save();
@@ -336,31 +346,30 @@ public class DataTableWindow : EditorWindow
             Refresh();
         }
 
-        GUILayout.Space(12);
-        if (mode == Mode.Item)
-            itemTab = GUILayout.Toolbar(itemTab, ItemTabNames, EditorStyles.toolbarButton, GUILayout.Width(380));
-        else if (mode == Mode.Monster)
-            monsterTab = GUILayout.Toolbar(monsterTab, MonsterTabNames, EditorStyles.toolbarButton, GUILayout.Width(480));
+        if (GUILayout.Button("새로고침", EditorStyles.toolbarButton, GUILayout.Width(64))) Refresh();
+        if (GUILayout.Button(dirty ? "저장 *" : "저장", EditorStyles.toolbarButton, GUILayout.Width(56))) Save();
+        EditorGUILayout.EndHorizontal();
 
         if (mode == Mode.Item || mode == Mode.Monster)
         {
-            GUILayout.Space(12);
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            if (mode == Mode.Item)
+                itemTab = GUILayout.Toolbar(itemTab, ItemTabNames, EditorStyles.toolbarButton);
+            else
+                monsterTab = GUILayout.Toolbar(monsterTab, MonsterTabNames, EditorStyles.toolbarButton);
+
             GUILayout.Label("검색", GUILayout.Width(30));
-            search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.Width(160));
+            search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(70), GUILayout.MaxWidth(170));
 
             // 새 항목 추가: 에셋을 만들고 도감에 자동 등록
-            GUILayout.Space(8);
-            if (GUILayout.Button(mode == Mode.Item ? "+ 새 아이템" : "+ 새 몬스터", EditorStyles.toolbarButton, GUILayout.Width(80)))
+            if (GUILayout.Button(mode == Mode.Item ? "+ 새 아이템" : "+ 새 몬스터", EditorStyles.toolbarButton, GUILayout.Width(90)))
             {
                 if (mode == Mode.Item) CreateNewItem();
                 else CreateNewMonster();
             }
+            EditorGUILayout.EndHorizontal();
         }
-
-        GUILayout.FlexibleSpace();
-        if (GUILayout.Button("새로고침", EditorStyles.toolbarButton, GUILayout.Width(60))) Refresh();
-        if (GUILayout.Button(dirty ? "저장 *" : "저장", EditorStyles.toolbarButton, GUILayout.Width(55))) Save();
-        EditorGUILayout.EndHorizontal();
     }
 
     // ===== [자원] 탭 =====
@@ -375,14 +384,20 @@ public class DataTableWindow : EditorWindow
         }
 
         EditorGUILayout.LabelField($"에셋: {AssetDatabase.GetAssetPath(resourceTable.targetObject)}", EditorStyles.miniLabel);
-        if (ResourceTableDrawer.Draw(resourceTable, ref scroll))
+        if (ResourceTableDrawer.Draw(resourceTable, ref scroll, true))
         {
             EditorUtility.SetDirty(resourceTable.targetObject);
             dirty = true;
         }
     }
 
-    // ===== [아이템] / [몬스터] 탭: 에셋 하나가 한 줄 =====
+    // ===== [아이템] / [몬스터] 탭: 에셋 하나가 한 줄 (엑셀처럼 머리글과 왼쪽 ID/이름 열 고정) =====
+    private const float RowHeight = 26f;
+    private const float HeaderHeight = 34f;
+    private const float CellGap = 4f;
+    private const float InsertButtonWidth = 26f;
+    private const int FrozenColumns = 2; // 왼쪽에 고정할 열 수 (ID, 이름)
+
     private Col[] ColsForTab()
     {
         if (mode == Mode.Item)
@@ -392,6 +407,7 @@ public class DataTableWindow : EditorWindow
                 case 1: return ItemTool;
                 case 2: return ItemStats;
                 case 3: return ItemRecipe;
+                case 4: return ItemUse;
                 default: return ItemBasic;
             }
         }
@@ -417,83 +433,6 @@ public class DataTableWindow : EditorWindow
 
     private string NamePath() { return mode == Mode.Item ? "itemName" : "monsterName"; }
 
-    private void DrawRowsMode()
-    {
-        if (rows.Count == 0)
-        {
-            EditorGUILayout.HelpBox(mode == Mode.Item
-                ? "Item 에셋이 없습니다. Project 창에서 Create > Soul > Item 으로 만드세요."
-                : "Monster 에셋이 없습니다. Project 창에서 Create > Soul > Monster 로 만드세요.", MessageType.Info);
-            return;
-        }
-
-        Col[] cols = ColsForTab();
-        string extraHeader = ExtraHeader();
-
-        // 겹치는 id 찾기 (빨간색으로 표시)
-        HashSet<int> duplicates = new HashSet<int>(
-            rows.Where(r => r.targetObject != null)
-                .GroupBy(r => r.FindProperty("id").intValue).Where(g => g.Count() > 1).Select(g => g.Key));
-
-        scroll = EditorGUILayout.BeginScrollView(scroll);
-
-        // 머리글
-        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel)
-        { alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        EditorGUILayout.BeginHorizontal();
-        foreach (Col c in cols)
-            GUILayout.Label(new GUIContent(c.title, c.tip), header, GUILayout.Width(c.width), GUILayout.Height(30));
-        if (extraHeader != null) GUILayout.Label(extraHeader, header, GUILayout.Width(extraHeader.Length > 40 ? 760 : 480), GUILayout.Height(30));
-        EditorGUILayout.EndHorizontal();
-
-        // 줄
-        foreach (SerializedObject so in rows)
-        {
-            if (so.targetObject == null) continue;
-            so.Update();
-
-            int id = so.FindProperty("id").intValue;
-            string rowName = so.FindProperty(NamePath()).stringValue;
-            if (!MatchesSearch(id, rowName)) continue;
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.BeginHorizontal();
-
-            foreach (Col c in cols)
-            {
-                Color prev = GUI.backgroundColor;
-                if (c.path == "id" && duplicates.Contains(id)) GUI.backgroundColor = Color.red;
-                DrawCell(so, c);
-                GUI.backgroundColor = prev;
-            }
-
-            if (mode == Mode.Item && itemTab == 3)
-            {
-                DrawIngredients(so);
-                DrawRecipeTools(so);
-            }
-            else if (mode == Mode.Monster && monsterTab == 2)
-                DrawDrops(so, "drops");
-            else if (mode == Mode.Monster && monsterTab == 3)
-                DrawSpawns(so);
-            else if (mode == Mode.Monster && monsterTab == 4)
-                DrawDrops(so, "carveDrops");
-
-            EditorGUILayout.EndHorizontal();
-            if (EditorGUI.EndChangeCheck())
-            {
-                so.ApplyModifiedProperties();
-                EditorUtility.SetDirty(so.targetObject);
-                dirty = true;
-            }
-        }
-
-        EditorGUILayout.EndScrollView();
-
-        if (duplicates.Count > 0)
-            EditorGUILayout.HelpBox("ID가 겹치는 항목이 있습니다 (빨간색). 겹치면 도감에서 하나만 쓰입니다.", MessageType.Warning);
-    }
-
     private bool MatchesSearch(int id, string rowName)
     {
         if (string.IsNullOrWhiteSpace(search)) return true;
@@ -501,19 +440,193 @@ public class DataTableWindow : EditorWindow
         return (rowName != null && rowName.Contains(s)) || id.ToString() == s;
     }
 
-    private static void DrawCell(SerializedObject so, Col c)
-    {
-        // PropertyField 대신 TableField: [Header] 제목이 같이 그려져 칸이 한 줄 아래로 밀리는 것을 막음
-        TableField.Draw(so.FindProperty(c.path), c.width);
-    }
-
     private string ItemNameOf(int id)
     {
         return itemNames.TryGetValue(id, out string found) ? found : "(없음)";
     }
 
-    // 아이템 레시피: 재료를 [아이템ID (이름) x 수량 -] 로 한 줄에 나열하고 [+]로 추가
-    private void DrawIngredients(SerializedObject so)
+    // 한 줄 안에서 칸을 왼쪽부터 차례로 놓는 도우미. 칸마다 정해진 자리에 놓이므로 머리글과 어긋나지 않는다.
+    private struct Cursor
+    {
+        public float x;
+        public Rect row;
+        public Cursor(Rect row) { this.row = row; x = row.x; }
+
+        public Rect Take(float width)
+        {
+            Rect r = new Rect(x, row.y + 2f, width, row.height - 4f);
+            x += width + CellGap;
+            return r;
+        }
+
+        public void Skip(float width) { x += width; }
+    }
+
+    private int pendingInsertId = -1; // 줄 앞의 [+] 버튼으로 요청된 "끼워 넣기" 번호
+
+    private void DrawRowsMode()
+    {
+        if (rows.Count == 0)
+        {
+            EditorGUILayout.HelpBox(mode == Mode.Item
+                ? "Item 에셋이 없습니다. 위의 [+ 새 아이템]을 누르거나 Project 창에서 Create > Soul > Item 으로 만드세요."
+                : "Monster 에셋이 없습니다. 위의 [+ 새 몬스터]를 누르거나 Project 창에서 Create > Soul > Monster 로 만드세요.", MessageType.Info);
+            return;
+        }
+
+        Col[] cols = ColsForTab();
+        int frozenCount = Mathf.Min(FrozenColumns, cols.Length);
+
+        // 보여 줄 줄 (검색 결과)
+        List<SerializedObject> view = new List<SerializedObject>();
+        foreach (SerializedObject so in rows)
+        {
+            if (so.targetObject == null) continue;
+            so.Update();
+            if (MatchesSearch(so.FindProperty("id").intValue, so.FindProperty(NamePath()).stringValue)) view.Add(so);
+        }
+
+        // 겹치는 id 찾기 (빨간색으로 표시)
+        HashSet<int> duplicates = new HashSet<int>(
+            rows.Where(r => r.targetObject != null)
+                .GroupBy(r => r.FindProperty("id").intValue).Where(g => g.Count() > 1).Select(g => g.Key));
+
+        // 너비 계산: 왼쪽 고정 부분 = [삽입 버튼] + ID + 이름, 나머지는 스크롤
+        float frozenW = InsertButtonWidth + CellGap + 4f;
+        for (int i = 0; i < frozenCount; i++) frozenW += cols[i].width + CellGap;
+
+        float scrollCols = 0f;
+        for (int i = frozenCount; i < cols.Length; i++) scrollCols += cols[i].width + CellGap;
+
+        float extraW = 0f;
+        foreach (SerializedObject so in view) extraW = Mathf.Max(extraW, ExtraWidth(so));
+        string extraHeader = ExtraHeader();
+        if (extraHeader != null) extraW = Mathf.Max(extraW, 240f); // 머리글이 보일 최소 너비
+        float scrollW = scrollCols + extraW + 24f;
+
+        Rect area = GUILayoutUtility.GetRect(0f, 100000f, 0f, 100000f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+
+        FrozenGrid.Draw(area, ref scroll, view.Count, frozenW, scrollW, RowHeight, HeaderHeight,
+            // 왼쪽 고정 머리글
+            r =>
+            {
+                float x = InsertButtonWidth + CellGap;
+                for (int i = 0; i < frozenCount; i++)
+                {
+                    GUI.Label(new Rect(x, 0f, cols[i].width, r.height), new GUIContent(cols[i].title, cols[i].tip), header);
+                    x += cols[i].width + CellGap;
+                }
+            },
+            // 스크롤 머리글 (가로 스크롤을 따라 움직임)
+            r =>
+            {
+                float x = r.x;
+                for (int i = frozenCount; i < cols.Length; i++)
+                {
+                    GUI.Label(new Rect(x, 0f, cols[i].width, r.height), new GUIContent(cols[i].title, cols[i].tip), header);
+                    x += cols[i].width + CellGap;
+                }
+                if (extraHeader != null)
+                    GUI.Label(new Rect(x, 0f, extraW, r.height), extraHeader, header);
+            },
+            // 왼쪽 고정 줄: [끼워 넣기] ID 이름
+            (r, i) => DrawFrozenCells(r, view[i], cols, frozenCount, duplicates),
+            // 스크롤 줄: 나머지 칸 + 목록형 칸
+            (r, i) => DrawScrollCells(r, view[i], cols, frozenCount));
+
+        if (duplicates.Count > 0)
+            EditorGUILayout.HelpBox("ID가 겹치는 항목이 있습니다 (빨간색). 겹치면 도감에서 하나만 쓰입니다.", MessageType.Warning);
+
+        HandlePendingInsert();
+    }
+
+    private void DrawFrozenCells(Rect row, SerializedObject so, Col[] cols, int frozenCount, HashSet<int> duplicates)
+    {
+        so.Update();
+        int id = so.FindProperty("id").intValue;
+        Cursor c = new Cursor(row);
+
+        // 이 줄 위에 새 항목을 끼워 넣는 버튼 (엑셀의 "줄 삽입")
+        if (GUI.Button(c.Take(InsertButtonWidth), new GUIContent("+", "이 줄 위에 새 항목을 끼워 넣습니다 (이 번호와 뒤의 번호가 1씩 밀림)")))
+            pendingInsertId = id;
+
+        EditorGUI.BeginChangeCheck();
+        for (int k = 0; k < frozenCount; k++)
+        {
+            Color prev = GUI.backgroundColor;
+            if (cols[k].path == "id" && duplicates.Contains(id)) GUI.backgroundColor = Color.red;
+            TableField.Draw(c.Take(cols[k].width), so.FindProperty(cols[k].path));
+            GUI.backgroundColor = prev;
+        }
+        if (EditorGUI.EndChangeCheck())
+        {
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(so.targetObject);
+            dirty = true;
+        }
+    }
+
+    private void DrawScrollCells(Rect row, SerializedObject so, Col[] cols, int frozenCount)
+    {
+        so.Update();
+        Cursor c = new Cursor(row);
+
+        EditorGUI.BeginChangeCheck();
+        for (int k = frozenCount; k < cols.Length; k++)
+            TableField.Draw(c.Take(cols[k].width), so.FindProperty(cols[k].path));
+
+        DrawExtras(ref c, so); // 재료, 드랍, 출현 지역처럼 개수가 정해져 있지 않은 칸
+        if (EditorGUI.EndChangeCheck())
+        {
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(so.targetObject);
+            dirty = true;
+        }
+    }
+
+    // ===== 목록형 칸 (재료/도구/드랍/출현 지역). 칸 개수에 따라 오른쪽으로 길어진다 =====
+    private void DrawExtras(ref Cursor c, SerializedObject so)
+    {
+        if (mode == Mode.Item && itemTab == 3)
+        {
+            DrawIngredients(ref c, so);
+            DrawRecipeTools(ref c, so);
+        }
+        else if (mode == Mode.Monster && monsterTab == 2) DrawDrops(ref c, so, "drops");
+        else if (mode == Mode.Monster && monsterTab == 3) DrawSpawns(ref c, so);
+        else if (mode == Mode.Monster && monsterTab == 4) DrawDrops(ref c, so, "carveDrops");
+    }
+
+    // 목록형 칸이 차지할 너비 (스크롤 영역의 전체 너비를 정하는 데 씀)
+    private float ExtraWidth(SerializedObject so)
+    {
+        if (mode == Mode.Item && itemTab == 3)
+        {
+            SerializedProperty ing = so.FindProperty("recipe.ingredients");
+            SerializedProperty tools = so.FindProperty("recipe.tools");
+            return (ing != null ? ing.arraySize : 0) * 210f + 40f + 40f + (tools != null ? tools.arraySize : 0) * 180f + 40f;
+        }
+        if (mode == Mode.Monster && (monsterTab == 2 || monsterTab == 4))
+        {
+            SerializedProperty drops = so.FindProperty(monsterTab == 2 ? "drops" : "carveDrops");
+            return (drops != null ? drops.arraySize : 0) * 240f + 50f;
+        }
+        if (mode == Mode.Monster && monsterTab == 3)
+        {
+            SerializedProperty spawns = so.FindProperty("spawns");
+            return (spawns != null ? spawns.arraySize : 0) * 160f + 50f;
+        }
+        return 0f;
+    }
+
+    private static void SmallLabel(Rect r, string text)
+    {
+        EditorGUI.LabelField(r, text, EditorStyles.miniLabel);
+    }
+
+    // 아이템 레시피: 재료를 [아이템ID (이름) x 수량 -] 로 나열하고 [+]로 추가
+    private void DrawIngredients(ref Cursor c, SerializedObject so)
     {
         SerializedProperty list = so.FindProperty("recipe.ingredients");
         if (list == null) return;
@@ -523,16 +636,16 @@ public class DataTableWindow : EditorWindow
         {
             SerializedProperty ing = list.GetArrayElementAtIndex(i);
             SerializedProperty idProp = ing.FindPropertyRelative("itemId");
-            EditorGUILayout.PropertyField(idProp, GUIContent.none, GUILayout.Width(36));
-            GUILayout.Label(ItemNameOf(idProp.intValue), EditorStyles.miniLabel, GUILayout.Width(62));
-            GUILayout.Label("x", GUILayout.Width(10));
-            EditorGUILayout.PropertyField(ing.FindPropertyRelative("amount"), GUIContent.none, GUILayout.Width(34));
-            if (GUILayout.Button("-", GUILayout.Width(20))) removeAt = i;
-            GUILayout.Space(6);
+            TableField.Draw(c.Take(40), idProp);
+            SmallLabel(c.Take(70), ItemNameOf(idProp.intValue));
+            SmallLabel(c.Take(10), "x");
+            TableField.Draw(c.Take(38), ing.FindPropertyRelative("amount"));
+            if (GUI.Button(c.Take(22), "-")) removeAt = i;
+            c.Skip(10);
         }
         if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
 
-        if (GUILayout.Button("+", GUILayout.Width(24)))
+        if (GUI.Button(c.Take(26), "+"))
         {
             list.InsertArrayElementAtIndex(list.arraySize);
             SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
@@ -541,8 +654,42 @@ public class DataTableWindow : EditorWindow
         }
     }
 
-    // 몬스터 드랍: [아이템ID (이름) x 최소~최대 @확률% -]
-    private void DrawDrops(SerializedObject so, string listPath)
+    // 아이템 레시피의 필요 도구: [종류 T티어 -내구도소모 x] [+]. 제작하면 도구의 내구도만 깎인다.
+    private void DrawRecipeTools(ref Cursor c, SerializedObject so)
+    {
+        SerializedProperty list = so.FindProperty("recipe.tools");
+        if (list == null) return;
+
+        c.Skip(14);
+        EditorGUI.LabelField(c.Take(30), "도구", EditorStyles.miniBoldLabel);
+
+        int removeAt = -1;
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            SerializedProperty t = list.GetArrayElementAtIndex(i);
+            TableField.Draw(c.Take(76), t.FindPropertyRelative("toolType"));
+            SmallLabel(c.Take(10), "T");
+            TableField.Draw(c.Take(30), t.FindPropertyRelative("tier"));
+            SmallLabel(c.Take(8), "-");
+            SerializedProperty cost = t.FindPropertyRelative("durabilityCost");
+            TableField.Draw(c.Take(34), cost);
+            cost.intValue = Mathf.Max(1, cost.intValue);
+            if (GUI.Button(c.Take(22), "x")) removeAt = i;
+            c.Skip(8);
+        }
+        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUI.Button(c.Take(26), "+"))
+        {
+            list.InsertArrayElementAtIndex(list.arraySize);
+            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            added.FindPropertyRelative("tier").intValue = 0;
+            added.FindPropertyRelative("durabilityCost").intValue = 1;
+        }
+    }
+
+    // 몬스터 드랍/도려내기: [아이템ID (이름) x 최소~최대 @확률% -]
+    private void DrawDrops(ref Cursor c, SerializedObject so, string listPath)
     {
         SerializedProperty list = so.FindProperty(listPath);
         if (list == null) return;
@@ -552,21 +699,21 @@ public class DataTableWindow : EditorWindow
         {
             SerializedProperty d = list.GetArrayElementAtIndex(i);
             SerializedProperty idProp = d.FindPropertyRelative("itemId");
-            EditorGUILayout.PropertyField(idProp, GUIContent.none, GUILayout.Width(34));
-            GUILayout.Label(ItemNameOf(idProp.intValue), EditorStyles.miniLabel, GUILayout.Width(56));
-            GUILayout.Label("x", GUILayout.Width(10));
-            EditorGUILayout.PropertyField(d.FindPropertyRelative("amountMin"), GUIContent.none, GUILayout.Width(28));
-            GUILayout.Label("~", GUILayout.Width(10));
-            EditorGUILayout.PropertyField(d.FindPropertyRelative("amountMax"), GUIContent.none, GUILayout.Width(28));
-            GUILayout.Label("@", GUILayout.Width(12));
-            EditorGUILayout.PropertyField(d.FindPropertyRelative("chance"), GUIContent.none, GUILayout.Width(40));
-            GUILayout.Label("%", GUILayout.Width(14));
-            if (GUILayout.Button("-", GUILayout.Width(20))) removeAt = i;
-            GUILayout.Space(6);
+            TableField.Draw(c.Take(38), idProp);
+            SmallLabel(c.Take(62), ItemNameOf(idProp.intValue));
+            SmallLabel(c.Take(10), "x");
+            TableField.Draw(c.Take(32), d.FindPropertyRelative("amountMin"));
+            SmallLabel(c.Take(10), "~");
+            TableField.Draw(c.Take(32), d.FindPropertyRelative("amountMax"));
+            SmallLabel(c.Take(12), "@");
+            TableField.Draw(c.Take(44), d.FindPropertyRelative("chance"));
+            SmallLabel(c.Take(14), "%");
+            if (GUI.Button(c.Take(22), "-")) removeAt = i;
+            c.Skip(8);
         }
         if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
 
-        if (GUILayout.Button("+", GUILayout.Width(24)))
+        if (GUI.Button(c.Take(26), "+"))
         {
             list.InsertArrayElementAtIndex(list.arraySize);
             SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
@@ -577,42 +724,8 @@ public class DataTableWindow : EditorWindow
         }
     }
 
-    // 아이템 레시피의 필요 도구: [종류 T티어 내구도소모 -] [+]. 제작하면 도구의 내구도만 깎인다.
-    private void DrawRecipeTools(SerializedObject so)
-    {
-        SerializedProperty list = so.FindProperty("recipe.tools");
-        if (list == null) return;
-
-        GUILayout.Space(14);
-        GUILayout.Label("도구", EditorStyles.miniBoldLabel, GUILayout.Width(28));
-
-        int removeAt = -1;
-        for (int i = 0; i < list.arraySize; i++)
-        {
-            SerializedProperty t = list.GetArrayElementAtIndex(i);
-            TableField.Draw(t.FindPropertyRelative("toolType"), 72);
-            GUILayout.Label("T", EditorStyles.miniLabel, GUILayout.Width(10));
-            TableField.Draw(t.FindPropertyRelative("tier"), 28);
-            GUILayout.Label("-", EditorStyles.miniLabel, GUILayout.Width(8));
-            SerializedProperty cost = t.FindPropertyRelative("durabilityCost");
-            TableField.Draw(cost, 30);
-            cost.intValue = Mathf.Max(1, cost.intValue);
-            if (GUILayout.Button("x", GUILayout.Width(20))) removeAt = i;
-            GUILayout.Space(8);
-        }
-        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
-
-        if (GUILayout.Button("+", GUILayout.Width(24)))
-        {
-            list.InsertArrayElementAtIndex(list.arraySize);
-            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
-            added.FindPropertyRelative("tier").intValue = 0;
-            added.FindPropertyRelative("durabilityCost").intValue = 1;
-        }
-    }
-
     // 몬스터 출현 지역: [지역 ID / 비중 -]
-    private void DrawSpawns(SerializedObject so)
+    private void DrawSpawns(ref Cursor c, SerializedObject so)
     {
         SerializedProperty list = so.FindProperty("spawns");
         if (list == null) return;
@@ -621,21 +734,59 @@ public class DataTableWindow : EditorWindow
         for (int i = 0; i < list.arraySize; i++)
         {
             SerializedProperty s = list.GetArrayElementAtIndex(i);
-            GUILayout.Label("지역", EditorStyles.miniLabel, GUILayout.Width(26));
-            EditorGUILayout.PropertyField(s.FindPropertyRelative("regionId"), GUIContent.none, GUILayout.Width(34));
-            GUILayout.Label("비중", EditorStyles.miniLabel, GUILayout.Width(26));
-            EditorGUILayout.PropertyField(s.FindPropertyRelative("weight"), GUIContent.none, GUILayout.Width(34));
-            if (GUILayout.Button("-", GUILayout.Width(20))) removeAt = i;
-            GUILayout.Space(8);
+            SmallLabel(c.Take(28), "지역");
+            TableField.Draw(c.Take(38), s.FindPropertyRelative("regionId"));
+            SmallLabel(c.Take(28), "비중");
+            TableField.Draw(c.Take(38), s.FindPropertyRelative("weight"));
+            if (GUI.Button(c.Take(22), "-")) removeAt = i;
+            c.Skip(10);
         }
         if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
 
-        if (GUILayout.Button("+", GUILayout.Width(24)))
+        if (GUI.Button(c.Take(26), "+"))
         {
             list.InsertArrayElementAtIndex(list.arraySize);
             SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
             added.FindPropertyRelative("regionId").intValue = 1;
             added.FindPropertyRelative("weight").intValue = 1;
         }
+    }
+
+    // ===== 줄 끼워 넣기: 번호를 1씩 밀고 그 자리에 새 항목을 만든다 =====
+    private void HandlePendingInsert()
+    {
+        if (pendingInsertId < 0) return;
+        int id = pendingInsertId;
+        pendingInsertId = -1;
+
+        if (mode == Mode.Item)
+        {
+            int moving = IdInsert.CountItemsFrom(id);
+            if (!EditorUtility.DisplayDialog("아이템 끼워 넣기",
+                $"{id}번 자리에 새 아이템을 끼워 넣습니다.\n\n{id}번부터 뒤의 아이템 {moving}개의 번호가 1씩 밀립니다. " +
+                "레시피의 재료, 몬스터 드랍, 자원 표에서 그 번호를 쓰던 곳도 함께 바뀝니다.\n\n" +
+                "되돌리기 쉽도록 실행 전에 git 커밋을 해 두는 것을 권장합니다.", "끼워 넣기", "취소"))
+                return;
+
+            Save();
+            IdInsert.ShiftItemIds(id);
+            CreateNewItem(id);
+            DatabaseSync.NormalizeItemFileNames(); // 번호가 바뀐 아이템의 파일 이름도 맞춤
+        }
+        else if (mode == Mode.Monster)
+        {
+            int moving = IdInsert.CountMonstersFrom(id);
+            if (!EditorUtility.DisplayDialog("몬스터 끼워 넣기",
+                $"{id}번 자리에 새 몬스터를 끼워 넣습니다.\n\n{id}번부터 뒤의 몬스터 {moving}개의 번호가 1씩 밀립니다.", "끼워 넣기", "취소"))
+                return;
+
+            Save();
+            IdInsert.ShiftMonsterIds(id);
+            CreateNewMonster(id);
+            DatabaseSync.NormalizeMonsterFileNames();
+        }
+
+        Refresh();
+        GUIUtility.ExitGUI(); // 줄 목록이 바뀌었으니 이번 그리기를 여기서 끝낸다
     }
 }

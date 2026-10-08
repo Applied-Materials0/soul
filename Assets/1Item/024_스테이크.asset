@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
+  m_Name: "024_\uC2A4\uD14C\uC774\uD06C"
+  m_EditorClassIdentifier: Assembly-CSharp::Item
+  id: 24
+  itemName: "\uC2A4\uD14C\uC774\uD06C"
+  weight: 30
+  countmax: 10
+  durabilitymax: 0
+  toolType: 0
+  tier: 0
+  toolattack: 0
+  description: 
+  specialEffect: 
+  at: 0
+  df: 0
+  hp: 0
+  heal: 0
+  hprateat: 0
+  fixat: 0
+  breakdf: 0
+  abs: 0
+  avoid: 0
+  criticalrate: 0
+  critical: 0
+  manamax: 0
+  manaheal: 0
+  atrate: 0
+  dfrate: 0
+  hprate: 0
+  healrate: 0
+  goldrate: 0
+  exprate: 0
+  spmax: 0
+  spheal: 0
+  weightmax: 0
+  slotmax: 0
+  useHp: 50
+  useSp: 5
+  useMana: 0
+  icon: {fileID: -5737091476119447231, guid: 36420cbd81ce2fd4b95614b880fce247, type: 3}
+  recipe:
+    ingredients: []
+    tools: []
+    resultItemId: 24
+    resultAmount: 1

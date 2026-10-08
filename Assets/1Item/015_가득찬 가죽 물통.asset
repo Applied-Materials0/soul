@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
+  m_Name: "015_\uAC00\uB4DD\uCC2C \uAC00\uC8FD \uBB3C\uD1B5"
+  m_EditorClassIdentifier: Assembly-CSharp::Item
+  id: 15
+  itemName: "\uAC00\uB4DD\uCC2C \uAC00\uC8FD \uBB3C\uD1B5"
+  weight: 150
+  countmax: 1
+  durabilitymax: 0
+  toolType: 0
+  tier: 1
+  toolattack: 0
+  description: "\uBB3C\uC744 \uAC00\uB4DD \uB2F4\uC740 \uAC00\uC8FD \uBB3C\uD1B5.
+    \uB9C8\uC2DC\uBA74 SP\uB97C \uD68C\uBCF5\uD55C\uB2E4."
+  specialEffect: 
+  at: 0
+  df: 0
+  hp: 0
+  heal: 0
+  hprateat: 0
+  fixat: 0
+  breakdf: 0
+  abs: 0
+  avoid: 0
+  criticalrate: 0
+  critical: 0
+  manamax: 0
+  manaheal: 0
+  atrate: 0
+  dfrate: 0
+  hprate: 0
+  healrate: 0
+  goldrate: 0
+  exprate: 0
+  spmax: 0
+  spheal: 1
+  weightmax: 0
+  slotmax: 0
+  icon: {fileID: 1734450685577689515, guid: 33dba1ace25bec543a3a9b844854cc7a, type: 3}
+  recipe:
+    ingredients: []
+    tools: []
+    resultItemId: 15
+    resultAmount: 1

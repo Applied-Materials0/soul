@@ -82,6 +82,86 @@ public class InventoryManager : MonoBehaviour
 
         // 상시 표시되는 제작 버튼 준비
         SetupCraftButton();
+
+        // 우측 하단에 무게와 슬롯 한도를 작게 보여 주는 글자 준비
+        SetupBagStatusText();
+    }
+
+    // =========================================================
+    //  가방 우측 하단의 무게/슬롯 표시: 스탯 창을 켜지 않아도 가방이 열려 있으면 항상 보인다
+    // =========================================================
+    private RectTransform bagGaugeFill;      // 무게 게이지의 채워진 부분
+    private Image bagGaugeFillImage;
+    private TextMeshProUGUI bagWeightText;   // 게이지 위의 "현재 / 최대" 숫자
+    private TextMeshProUGUI bagSlotText;     // 게이지 위의 "슬롯 사용 / 최대"
+    private string bagStatusShown = "";
+
+    // 무게 게이지 색: 80% 이상 주황색, 90% 이상 빨간색, 그 아래는 초록색
+    private static readonly Color GaugeGreen = new Color(0.20f, 0.75f, 0.25f, 1f);
+    private static readonly Color GaugeOrange = new Color(1.00f, 0.60f, 0.10f, 1f);
+    private static readonly Color GaugeRed = new Color(0.85f, 0.15f, 0.15f, 1f);
+
+    // 우측 하단: 몬스터 체력 게이지처럼 흰색 바탕 위에 현재 무게 비율만큼 색이 차는 막대와 숫자
+    private void SetupBagStatusText()
+    {
+        if (inventoryUI == null) return;
+        TMP_FontAsset font = FindUIFont();
+        Vector2 corner = new Vector2(1f, 0f); // 우측 하단 모서리 기준
+
+        // 슬롯 개수 (게이지 위에 작게)
+        RectTransform slotRt = CraftQuantityPopup.NewRect("BagSlotText", inventoryUI.transform, corner, new Vector2(-30f, 62f), new Vector2(360f, 30f));
+        bagSlotText = CraftQuantityPopup.AddText(slotRt, 22, TextAlignmentOptions.Right, font);
+        bagSlotText.outlineWidth = 0.25f;
+        bagSlotText.outlineColor = new Color32(0, 0, 0, 255);
+
+        // 게이지 바탕 = 흰색
+        RectTransform bar = CraftQuantityPopup.NewRect("BagWeightGauge", inventoryUI.transform, corner, new Vector2(-30f, 28f), new Vector2(360f, 30f));
+        Image back = bar.gameObject.AddComponent<Image>();
+        back.color = Color.white;
+        back.raycastTarget = false;
+
+        // 채워진 부분 = 현재 무게 비율 (왼쪽부터)
+        bagGaugeFill = CraftQuantityPopup.NewRect("Fill", bar, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        bagGaugeFill.anchorMin = Vector2.zero;
+        bagGaugeFill.anchorMax = new Vector2(0f, 1f);
+        bagGaugeFill.offsetMin = Vector2.zero;
+        bagGaugeFill.offsetMax = Vector2.zero;
+        bagGaugeFillImage = bagGaugeFill.gameObject.AddComponent<Image>();
+        bagGaugeFillImage.color = GaugeGreen;
+        bagGaugeFillImage.raycastTarget = false;
+
+        // 숫자 (흰 바탕과 색 막대 위에서 읽히도록 검은 글자)
+        RectTransform textRt = CraftQuantityPopup.NewRect("Text", bar, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        textRt.anchorMin = Vector2.zero;
+        textRt.anchorMax = Vector2.one;
+        textRt.offsetMin = Vector2.zero;
+        textRt.offsetMax = Vector2.zero;
+        bagWeightText = CraftQuantityPopup.AddText(textRt, 20, TextAlignmentOptions.Center, font);
+        bagWeightText.color = Color.black;
+        bagWeightText.fontStyle = FontStyles.Bold;
+
+        slotRt.SetAsLastSibling();
+        bar.SetAsLastSibling(); // 슬롯 위에 그려지도록
+    }
+
+    // 가방이 열려 있는 동안 값이 바뀌면(획득, 소모, 장비로 한도 변경 등) 게이지와 숫자를 갱신한다
+    void Update()
+    {
+        if (bagGaugeFill == null || inventoryUI == null || !inventoryUI.activeInHierarchy) return;
+
+        int weight = CurrentWeight, weightLimit = WeightLimit, used = UsedSlots, slotLimit = SlotLimit;
+
+        string key = $"{weight}/{weightLimit}/{used}/{slotLimit}";
+        if (key == bagStatusShown) return; // 바뀐 것이 없으면 그대로 둔다
+        bagStatusShown = key;
+
+        float ratio = weightLimit > 0 ? Mathf.Clamp01(weight / (float)weightLimit) : 1f;
+        bagGaugeFill.anchorMax = new Vector2(ratio, 1f);
+        bagGaugeFillImage.color = ratio >= 0.9f ? GaugeRed : ratio >= 0.8f ? GaugeOrange : GaugeGreen;
+        bagWeightText.text = $"무게 {weight:N0} / {weightLimit:N0}";
+
+        string slots = $"슬롯 {used} / {slotLimit}";
+        bagSlotText.text = used >= slotLimit ? $"<color=#FF6666>{slots}</color>" : slots; // 슬롯이 가득 차면 빨간색
     }
 
     // 가방 UI 상단의 [제작] 버튼: 스탯 버튼 바로 왼쪽에 같은 모양으로 만든다
@@ -326,7 +406,7 @@ public class InventoryManager : MonoBehaviour
         isBroken = false;
 
         var ownedTools = itemList
-            .Where(stack => stack.itemData.toolType == requiredType && stack.durability > 0)
+            .Where(stack => stack.itemData.toolType == requiredType && IsUsableTool(stack))
             .ToList();
 
         if (ownedTools.Count == 0)
@@ -348,6 +428,7 @@ public class InventoryManager : MonoBehaviour
 
         checkResult = ToolCheckResult.Success;
         Item usedTool = targetStack.itemData;
+        if (IsUnbreakable(targetStack)) return usedTool; // 닳지 않는 도구는 내구도를 깎지 않는다
         targetStack.durability -= 1;
         if (targetStack.durability <= 0)
         {
@@ -453,10 +534,15 @@ public class InventoryManager : MonoBehaviour
     // =========================================================
     //  도구: 필요 티어 이상이고 내구도가 남은 도구 (낮은 티어 먼저, 같으면 앞쪽 슬롯 먼저)
     // =========================================================
+    // 내구도(durabilitymax)가 0인 도구는 닳지 않는 도구다 (예: 가죽 물통). 내구도 검사와 소모를 하지 않는다.
+    public const int UnbreakableDurability = 1000000; // 닳지 않는 도구의 "남은 내구도"로 취급하는 값 (화면에서는 "제한 없음")
+    private static bool IsUnbreakable(ItemStack s) { return s.itemData.durabilitymax <= 0; }
+    private static bool IsUsableTool(ItemStack s) { return IsUnbreakable(s) || s.durability > 0; }
+
     private List<ItemStack> EligibleTools(ToolType type, int tier)
     {
         return itemList
-            .Where(s => s.itemData.toolType == type && s.itemData.tier >= tier && s.durability > 0)
+            .Where(s => s.itemData.toolType == type && s.itemData.tier >= tier && IsUsableTool(s))
             .OrderBy(s => s.itemData.tier)
             .ToList();
     }
@@ -465,7 +551,11 @@ public class InventoryManager : MonoBehaviour
     public int GetToolDurability(ToolType type, int tier)
     {
         int total = 0;
-        foreach (ItemStack s in EligibleTools(type, tier)) total += s.durability;
+        foreach (ItemStack s in EligibleTools(type, tier))
+        {
+            if (IsUnbreakable(s)) return UnbreakableDurability; // 하나라도 닳지 않는 도구가 있으면 제한 없음
+            total += s.durability;
+        }
         return total;
     }
 
@@ -556,6 +646,7 @@ public class InventoryManager : MonoBehaviour
                 int remaining = Mathf.Max(1, t.durabilityCost) * craftCount;
                 foreach (ItemStack s in EligibleTools(t.toolType, t.tier))
                 {
+                    if (IsUnbreakable(s)) break; // 닳지 않는 도구는 내구도를 깎지 않는다
                     int take = Mathf.Min(s.durability, remaining);
                     s.durability -= take;
                     remaining -= take;
@@ -567,6 +658,92 @@ public class InventoryManager : MonoBehaviour
         // 4. 완성품 추가
         AddItem(result, total);
         return true;
+    }
+
+    // =========================================================
+    //  소모품 사용: 사용 효과(체력/SP/마나 회복)가 하나라도 있는 아이템은 인벤토리에서 [사용]할 수 있다
+    // =========================================================
+    public static bool CanUse(Item item)
+    {
+        return item != null && (item.useHp > 0 || item.useSp > 0 || item.useMana > 0);
+    }
+
+    // 스택에서 아이템 1개를 사용한다. 성공하면 true. message에는 결과(또는 못 쓰는 이유)가 담긴다.
+    public bool UseItem(ItemStack stack, out string message)
+    {
+        message = "";
+        if (stack == null || stack.itemData == null || !CanUse(stack.itemData)) return false;
+        Item item = stack.itemData;
+
+        int hpBefore = GameManager.Hp;
+        int spBefore = GameManager.SP;
+        int manaBefore = GameManager.Mana;
+
+        GameManager.Hp = Mathf.Min(BattleCalc.PlayerMaxHp(), GameManager.Hp + Mathf.Max(0, item.useHp));
+        GameManager.SP = Mathf.Min(GameManager.SPMax, GameManager.SP + Mathf.Max(0, item.useSp));
+        GameManager.Mana = Mathf.Min(GameManager.ManaMax, GameManager.Mana + Mathf.Max(0, item.useMana));
+
+        int hp = GameManager.Hp - hpBefore;
+        int sp = GameManager.SP - spBefore;
+        int mana = GameManager.Mana - manaBefore;
+
+        // 이미 전부 가득 차서 아무 효과가 없으면 소모하지 않는다
+        if (hp <= 0 && sp <= 0 && mana <= 0)
+        {
+            message = "이미 가득 차서 사용할 필요가 없습니다.";
+            return false;
+        }
+
+        RemoveFromStack(stack, 1); // 1개 소모 (0개가 되면 슬롯이 사라짐)
+
+        List<string> effects = new List<string>();
+        if (hp > 0) effects.Add($"체력 +{hp}");
+        if (sp > 0) effects.Add($"SP +{sp}");
+        if (mana > 0) effects.Add($"마나 +{mana}");
+        message = $"{item.itemName} 사용: {string.Join(", ", effects)}";
+
+        PlayerUI.RefreshAll();
+        return true;
+    }
+
+    // =========================================================
+    //  기절 페널티 (기본 능력치 표의 [기절] 설정): 병원비를 내고, 아이템 일부를 잃는다
+    //  도구/장비(도구 종류가 있거나 내구도가 있는 아이템)는 잃지 않는다.
+    // =========================================================
+    public string ApplyFaintPenalty()
+    {
+        PlayerBaseTable b = GameTables.PlayerBase;
+        List<string> parts = new List<string>();
+
+        // 병원비: 가진 골드보다 많으면 가진 만큼만 낸다
+        int fee = Mathf.Min(GameManager.Gold, Mathf.Max(0, b.hospitalFee));
+        GameManager.Gold -= fee;
+        if (b.hospitalFee > 0) parts.Add($"병원비 {fee}골드를 냈다");
+
+        // 아이템: 수량의 일정 비율을 잃는다 (소수점 부분은 그 확률로 1개 더 잃음)
+        float rate = Mathf.Clamp(b.itemLossPercent, 0f, 100f) / 100f;
+        bool lostAny = false;
+        if (rate > 0f)
+        {
+            foreach (ItemStack s in itemList.ToList())
+            {
+                Item it = s.itemData;
+                if (it.toolType != ToolType.None || it.durabilitymax > 0) continue; // 도구/장비는 안전
+
+                float exact = s.amount * rate;
+                int lose = Mathf.FloorToInt(exact);
+                if (Random.value < exact - lose) lose++;
+                lose = Mathf.Min(lose, s.amount);
+                if (lose <= 0) continue;
+
+                RemoveFromStack(s, lose);
+                lostAny = true;
+            }
+        }
+        if (lostAny) parts.Add("아이템 일부를 잃었다");
+
+        PlayerUI.RefreshAll();
+        return parts.Count > 0 ? string.Join(", ", parts) : "";
     }
 
     // 한 슬롯에 쌓을 수 있는 최대 수량 (countmax가 0 이하면 제한 없음)

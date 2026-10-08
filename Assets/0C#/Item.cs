@@ -62,6 +62,12 @@ public class Item : ScriptableObject
     public int weightmax;      // 소지 무게 증가
     public int slotmax;        // 소지 슬롯 증가 (장비)
 
+    [Header("사용 효과 (소모품: 하나라도 0보다 크면 인벤토리에서 [사용] 버튼이 생김)")]
+    public int useHp;          // 사용 시 체력 회복
+    public int useSp;          // 사용 시 SP 회복
+    public int useMana;        // 사용 시 마나 회복
+
+
     [Header("표시 / 제작")]
     public Sprite icon;        // 아이템 이미지
     public Recipe recipe;      // 제작법 (재료가 비어 있으면 제작 불가)

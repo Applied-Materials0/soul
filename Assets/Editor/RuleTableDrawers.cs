@@ -270,6 +270,8 @@ public static class RuleTableDrawers
         new BaseRow("슬롯 최대 개수", "slotMax", "가방의 기본 슬롯 개수. 실제 한도 = 이 값 + 장비 보너스(GameManager.SlotBonus)", 1),
         new BaseRow("최대 소지 무게", "weightMax", "가방의 기본 최대 무게. 실제 한도 = 이 값 + 장비 보너스(GameManager.WeightBonus)", 1),
         new BaseRow("방어 보너스 (%)", "defendBonus", "[방어]할 때 방어력이 늘어나는 비율. 기본 50, 장비로 더 늘 수 있음"),
+        new BaseRow("병원비 (골드)", "hospitalFee", "기절하면 내는 병원비. 골드가 모자라면 가진 만큼만 냄", 0),
+        new BaseRow("기절 시 아이템 손실 (%)", "itemLossPercent", "기절하면 잃는 아이템 비율 (도구 제외)", 0),
     };
 
     public static bool DrawPlayerBaseTable(SerializedObject so)

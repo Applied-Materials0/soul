@@ -14,6 +14,6 @@ public class ResourceSpawnTableEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        ResourceTableDrawer.Draw(serializedObject, ref scroll);
+        ResourceTableDrawer.Draw(serializedObject, ref scroll, false);
     }
 }

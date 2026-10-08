@@ -27,6 +27,18 @@ public class ResourceSpawn
 
     [Header("채집 소리")]
     public GatherSoundType sound = GatherSoundType.Default;
+
+    [Header("추가로 얻는 아이템 (예: 벌집 -> 꿀 + 밀랍)")]
+    public List<ResourceExtraYield> extraYields = new List<ResourceExtraYield>();
+}
+
+// 자원 하나를 채집할 때 기본 아이템(itemId)과 함께 추가로 얻는 아이템 한 줄
+[System.Serializable]
+public class ResourceExtraYield
+{
+    public int itemId;                            // 추가로 얻는 아이템 ID
+    [Min(1)] public int multiplier = 1;           // 채집한 양 1당 얻는 개수 (2면 두 배)
+    [Range(0f, 100f)] public float chance = 100f; // 채집할 때마다 얻을 확률 [%]
 }
 
 [CreateAssetMenu(fileName = "ResourceSpawnTable", menuName = "Soul/Resource Spawn Table")]

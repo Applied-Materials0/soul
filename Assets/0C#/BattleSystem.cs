@@ -67,7 +67,6 @@ public class BattleSystem : MonoBehaviour
         else
         {
             yield return MonsterTurn(true); // 몬스터의 선제 행동
-            EndTurn();
         }
         busy = false;
     }
@@ -78,18 +77,21 @@ public class BattleSystem : MonoBehaviour
     public void OnAttack()
     {
         if (!active || busy) return;
+        StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
         StartCoroutine(AttackRoutine());
     }
 
     public void OnDefend()
     {
         if (!active || busy) return;
+        StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
         StartCoroutine(DefendRoutine());
     }
 
     public void OnRun()
     {
         if (!active || busy) return;
+        StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
         StartCoroutine(RunRoutine());
     }
 
@@ -101,7 +103,6 @@ public class BattleSystem : MonoBehaviour
         {
             yield return Say("SP가 부족해 움직일 수 없다!");
             yield return MonsterTurn();
-            EndTurn();
             busy = false;
             yield break;
         }
@@ -148,7 +149,6 @@ public class BattleSystem : MonoBehaviour
         }
 
         yield return MonsterTurn();
-        EndTurn();
         busy = false;
     }
 
@@ -161,7 +161,6 @@ public class BattleSystem : MonoBehaviour
         {
             yield return Say("SP가 부족해 움직일 수 없다!");
             yield return MonsterTurn();
-            EndTurn();
             busy = false;
             yield break;
         }
@@ -169,7 +168,6 @@ public class BattleSystem : MonoBehaviour
         PlaySound(SoundEvent.Defend); // 방어 효과음 (효과음 표)
         yield return Say("방어 태세를 취했다.");
         yield return MonsterTurn();
-        EndTurn();
         busy = false;
     }
 
@@ -181,7 +179,6 @@ public class BattleSystem : MonoBehaviour
         {
             yield return Say("SP가 부족해 도망칠 수 없다!");
             yield return MonsterTurn();
-            EndTurn();
             busy = false;
             yield break;
         }
@@ -191,7 +188,6 @@ public class BattleSystem : MonoBehaviour
             // 제압당해서 도망에 실패하고, 이 턴을 소모한다
             yield return Say($"{monster.monsterName}에게 제압당해 도망칠 수 없다!");
             yield return MonsterTurn();
-            EndTurn();
             busy = false;
             yield break;
         }
@@ -204,7 +200,11 @@ public class BattleSystem : MonoBehaviour
     // =========================================================
     //  몬스터 턴
     // =========================================================
-    // 몬스터가 선공이면(전투 시작 때 Speed가 높아서 먼저 행동) preemptive가 true
+    // 몬스터의 행동은 두 부분으로 나뉜다.
+    //  1) 판정: 공격 알림 문구가 뜨는 바로 그 순간에 끝난다 (체력 감소, 효과음, 맞았다면 화면이 붉어짐).
+    //  2) 문구: 판정 결과를 알려 주는 문구들이 시간 간격을 두고 이어서 나온다 (백그라운드에서 진행).
+    // 판정이 끝나면 곧바로 플레이어가 행동할 수 있고, 그 사이에 행동하면 남은 문구는 건너뛴다.
+    // 아무것도 하지 않으면 문구가 끝까지 나오고, 마지막에 "무엇을 할까?"가 붙는다.
     //
     // 공격 문구 흐름:
     //  "{몬스터}의 공격!"(선공이면 "선제공격!") -> 맞았으면 바로 화면이 살짝 붉어짐 -> 잠시 뒤 결과
@@ -214,6 +214,41 @@ public class BattleSystem : MonoBehaviour
     //    - 피해 0: "효과가 없는 것 같다..."
     //    - 그 외: "N의 데미지를 받았다!"
     // 방어를 고르면: "{몬스터}의 방어!" (결과는 플레이어가 다음에 공격할 때 "방어에 성공했다!" 또는 "방어가 실패했다..."로 나옴)
+
+    // 문구 한 줄: delayBefore초 기다린 뒤에 보여 준다
+    private struct Step
+    {
+        public string text;
+        public float delayBefore;
+        public Step(string text, float delayBefore) { this.text = text; this.delayBefore = delayBefore; }
+    }
+
+    private Coroutine narration; // 몬스터 턴의 문구를 이어서 보여 주는 코루틴
+
+    // 남은 문구를 건너뛰고, 다음 문구는 기다리지 않고 바로 띄우게 한다 (플레이어가 행동할 때 부름)
+    private void StopNarration()
+    {
+        if (narration != null)
+        {
+            StopCoroutine(narration);
+            narration = null;
+        }
+        lineShownAt = float.NegativeInfinity;
+    }
+
+    private IEnumerator Narrate(List<Step> steps)
+    {
+        foreach (Step step in steps)
+        {
+            if (step.delayBefore > 0f) yield return new WaitForSeconds(step.delayBefore);
+            field.SearchText.SetText(step.text);
+            lineShownAt = Time.time;
+        }
+        narration = null;
+        EndTurn(); // 마지막 문구 아래에 "무엇을 할까?"
+    }
+
+    // 몬스터가 선공이면(전투 시작 때 Speed가 높아서 먼저 행동) preemptive가 true
     private IEnumerator MonsterTurn(bool preemptive = false)
     {
         // 이전 제압은 한 턴만 지속되므로 여기서 풀린다
@@ -231,6 +266,8 @@ public class BattleSystem : MonoBehaviour
             yield break;
         }
 
+        List<Step> steps = new List<Step>(); // 판정 결과를 알려 주는 문구들
+
         // 행동 선택: 체력이 30% 이하이면 방어를 고를 확률이 높아진다
         float hpRatio = monsterHp / (float)Mathf.Max(1, monster.hpMax);
         float defendChance = hpRatio <= 0.3f ? monster.defendChanceLowHp : monster.defendChance;
@@ -245,7 +282,7 @@ public class BattleSystem : MonoBehaviour
             bool defended = playerDefending;
             BattleCalc.HitResult h = BattleCalc.MonsterAttack(monster, defended);
 
-            // 1) 공격 알림 + 공격받는 효과음. 이 문구가 떠 있는 동안 맞았다면 화면이 바로 붉어진다
+            // 1) 공격 알림과 동시에 판정을 적용한다: 효과음, 맞았다면 화면이 바로 붉어지고 체력이 줄어듦
             yield return Say(preemptive ? $"{name}의 선제공격!" : $"{name}의 공격!");
             PlaySound(SoundEvent.EnemyAttack);
 
@@ -253,43 +290,58 @@ public class BattleSystem : MonoBehaviour
             bool gotHit = !h.dodged && !perfectBlock; // 타격 여부: 회피하지도, 완전히 막지도 못함
             if (gotHit && flash != null) flash.Play(HitFlashColor);
 
-            // 2) 잠시 뒤 결과
-            yield return new WaitForSeconds(HitResultDelay);
-
+            // 2) 결과 문구는 잠시 뒤에 나온다
             if (h.dodged)
             {
-                yield return Say("피했다!");
+                steps.Add(new Step("피했다!", HitResultDelay));
             }
             else if (perfectBlock)
             {
-                yield return Say("완벽하게 방어했다!");
+                steps.Add(new Step("완벽하게 방어했다!", HitResultDelay));
             }
             else if (h.noEffect)
             {
-                yield return Say("효과가 없는 것 같다...");
+                steps.Add(new Step("효과가 없는 것 같다...", HitResultDelay));
             }
             else
             {
                 GameManager.Hp = Mathf.Max(0, GameManager.Hp - h.damage);
                 RefreshPlayerUI();
-                if (defended) yield return Say("방어에 성공했다!");
-                yield return Say($"{h.damage}의 데미지를 받았다!");
+                if (defended)
+                {
+                    steps.Add(new Step("방어에 성공했다!", HitResultDelay));
+                    steps.Add(new Step($"{h.damage}의 데미지를 받았다!", LineDelay));
+                }
+                else
+                {
+                    steps.Add(new Step($"{h.damage}의 데미지를 받았다!", HitResultDelay));
+                }
             }
         }
         playerDefending = false; // [방어]는 몬스터의 한 번의 행동에만 적용
 
+        // 쓰러지는 장면은 건너뛸 수 없다: 결과 문구를 끝까지 보여 준 뒤 기절 처리
         if (GameManager.Hp <= 0)
         {
+            foreach (Step step in steps)
+            {
+                if (step.delayBefore > 0f) yield return new WaitForSeconds(step.delayBefore);
+                field.SearchText.SetText(step.text);
+                lineShownAt = Time.time;
+            }
             yield return FaintRoutine();
             yield break;
         }
 
-        // 제압: 일정 확률로 플레이어가 다음 턴에 도망치지 못하게 한다
+        // 제압: 일정 확률로 플레이어가 다음 턴에 도망치지 못하게 한다 (판정은 지금, 알림 문구는 이어서)
         if (BattleCalc.Roll(monster.suppressChance))
         {
             suppressed = true;
-            yield return Say($"{monster.monsterName}{Josa(monster.monsterName, "이", "가")} 당신을 제압했다! 다음 턴에는 도망칠 수 없다.");
+            steps.Add(new Step($"{name}{Josa(name, "이", "가")} 당신을 제압했다! 다음 턴에는 도망칠 수 없다.", LineDelay));
         }
+
+        // 판정은 끝났다. 문구는 백그라운드로 이어 보여 주고, 호출한 쪽은 바로 플레이어의 입력을 받는다
+        narration = StartCoroutine(Narrate(steps));
     }
 
     // =========================================================
@@ -357,15 +409,30 @@ public class BattleSystem : MonoBehaviour
 
         GameManager.Hp = BattleCalc.PlayerMaxHp();
         GameManager.isfaint = false;
+
+        // 기절하면 병원비를 내고 아이템 일부를 잃는다 (기본 능력치 표의 [기절] 설정)
+        string penalty = InventoryManager.Instance != null ? InventoryManager.Instance.ApplyFaintPenalty() : "";
         RefreshPlayerUI();
+        ItemGainToast.ShowMessage(string.IsNullOrEmpty(penalty) ? "병원에서 치료를 받았다." : "병원에서 치료를 받았다. " + penalty + ".");
 
         EndBattle();
         busy = false;
         field.ReturnToTown();
     }
 
+    // 가방이나 맵이 열려 있는 동안에는 몬스터 이름/체력 게이지를 숨기고, 닫으면 다시 보여 준다
+    private void Update()
+    {
+        if (!active || hud == null) return;
+
+        bool uiOpen = (InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen)
+            || (MapManager.Instance != null && MapManager.Instance.IsMapOpen);
+        hud.SetVisible(!uiOpen);
+    }
+
     private void EndBattle()
     {
+        StopNarration(); // 이어지던 문구가 있으면 멈춤
         active = false;
         monster = null;
         if (hud != null) hud.Hide();

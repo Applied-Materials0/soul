@@ -51,6 +51,9 @@ public class FieldSearch : MonoBehaviour
     private BattleSystem battle;    // 턴제 전투 진행 (Awake에서 같은 오브젝트에 붙임)
     private CarveSystem carve;      // 쓰러뜨린 몬스터를 칼로 도려내기 (Awake에서 같은 오브젝트에 붙임)
 
+    // 지금 몬스터와 전투 중인가 (전투 중에는 아이템 사용 등을 막는 데 쓰임)
+    public bool InBattle { get { return battle != null && battle.Active; } }
+
     // 내부 탐색/채집 상태 변수
     private int events;   // 탐색 이벤트 번호
     private int mob;      // 마주친 몬스터 번호
@@ -169,7 +172,11 @@ public class FieldSearch : MonoBehaviour
         int hp = Random.Range(lo, hi + 1);
 
         SetSearchTarget(spawn.foundText, spawn.gatherButtonText, 0, spawn.itemId, spawn.toolType, spawn.tier, hp, spawn.sound);
+        currentExtraYields = spawn.extraYields; // 채집할 때 함께 얻는 아이템 (자원 표의 "추가 획득")
     }
+
+    // 지금 찾은 자원을 채집할 때 기본 아이템과 함께 추가로 얻는 아이템들
+    private List<ResourceExtraYield> currentExtraYields;
 
     // 에셋을 아직 연결하지 않았을 때를 위한 기본 표 (코드에 들어 있는 기본값과 같음)
     private ResourceSpawnTable fallbackTable;
@@ -347,6 +354,26 @@ public class FieldSearch : MonoBehaviour
         }
         SearchText.text = $"{resourceName} {gainedAmount:N0}개를 획득했다. (남은 체력: {sourceHP:N0})";
         if (bagLimited) SearchText.text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
+
+        // 추가로 얻는 아이템 (예: 벌집 -> 꿀 + 밀랍). 채집한 양에 배수를 곱해서, 각 줄의 확률대로 얻는다
+        if (gainedAmount > 0 && currentExtraYields != null)
+        {
+            List<string> extraGot = new List<string>();
+            bool extraBagFull = false;
+            foreach (ResourceExtraYield y in currentExtraYields)
+            {
+                if (y == null || !BattleCalc.Roll(y.chance)) continue;
+                Item extra = InventoryManager.Instance.GetItemData(y.itemId);
+                if (extra == null) continue;
+
+                int want = gainedAmount * Mathf.Max(1, y.multiplier);
+                int got = InventoryManager.Instance.AddItem(extra, want);
+                if (got < want) extraBagFull = true;
+                if (got > 0) extraGot.Add($"{extra.itemName} {got:N0}개");
+            }
+            if (extraGot.Count > 0) SearchText.text += "\n추가 획득: " + string.Join(", ", extraGot);
+            if (extraBagFull) SearchText.text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
+        }
 
         if (isBroken && usedTool != null)
         {

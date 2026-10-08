@@ -28,13 +28,21 @@ MonoBehaviour:
   defendChanceLowHp: 0
   suppressChance: 0
   fleeHpPercent: 30
-  fleeChance: 50
+  fleeChance: 0
   carveCount: 2
   carveToolTier: 1
-  carveDrops: []
+  carveDrops:
+  - itemId: 20
+    amountMin: 1
+    amountMax: 1
+    chance: 80
+  - itemId: 31
+    amountMin: 1
+    amountMax: 1
+    chance: 100
   exp: 4
   gold: 4
   drops: []
   spawns:
   - regionId: 1
-    weight: 20
+    weight: 90

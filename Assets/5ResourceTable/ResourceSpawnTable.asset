@@ -21,8 +21,9 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 3
+    hpMax: 5
     sound: 0
+    extraYields: []
   - label: "\uB364\uBD88"
     weight: 9
     foundText: "\uB364\uBD88\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -31,8 +32,9 @@ MonoBehaviour:
     toolType: 4
     tier: 0
     hpMin: 1
-    hpMax: 4
+    hpMax: 10
     sound: 1
+    extraYields: []
   - label: "\uCC38\uB098\uBB34"
     weight: 17
     foundText: "\uCC38\uB098\uBB34\uB97C \uBC1C\uACAC\uD588\uB2E4."
@@ -43,6 +45,7 @@ MonoBehaviour:
     hpMin: 3
     hpMax: 9
     sound: 2
+    extraYields: []
   - label: "\uAD6C\uB9AC \uC870\uAC01"
     weight: 3
     foundText: "\uAD6C\uB9AC \uC870\uAC01\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -53,6 +56,7 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 1
     sound: 0
+    extraYields: []
   - label: "\uAD6C\uB9AC \uAD11\uC11D"
     weight: 1
     foundText: "\uAD6C\uB9AC \uAD11\uC11D\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -63,6 +67,7 @@ MonoBehaviour:
     hpMin: 5
     hpMax: 14
     sound: 3
+    extraYields: []
   - label: "\uC7A1\uC11D \uC870\uAC01"
     weight: 10
     foundText: "\uC7A1\uC11D \uC870\uAC01\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -71,8 +76,9 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 1
+    hpMax: 5
     sound: 0
+    extraYields: []
   - label: "\uC7A1\uC11D"
     weight: 15
     foundText: "\uC7A1\uC11D\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -83,6 +89,7 @@ MonoBehaviour:
     hpMin: 3
     hpMax: 9
     sound: 3
+    extraYields: []
   - label: "\uD480"
     weight: 10
     foundText: "\uD480\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -91,8 +98,9 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 1
+    hpMax: 3
     sound: 1
+    extraYields: []
   - label: "\uB538\uAE30"
     weight: 5
     foundText: "\uB538\uAE30\uB97C \uBC1C\uACAC\uD588\uB2E4."
@@ -101,8 +109,9 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 4
+    hpMax: 5
     sound: 1
+    extraYields: []
   - label: "\uC625\uC218\uC218"
     weight: 2
     foundText: "\uC625\uC218\uC218\uB97C \uBC1C\uACAC\uD588\uB2E4."
@@ -111,8 +120,9 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 4
+    hpMax: 3
     sound: 1
+    extraYields: []
   - label: "\uBC8C\uC9D1"
     weight: 3
     foundText: "\uBC8C\uC9D1\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -123,6 +133,10 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 1
     sound: 0
+    extraYields:
+    - itemId: 30
+      multiplier: 1
+      chance: 100
   - label: "\uB2EC\uAC40"
     weight: 1
     foundText: "\uB2EC\uAC40\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -133,6 +147,7 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 4
     sound: 0
+    extraYields: []
   - label: "\uC8FC\uD669 \uBC84\uC12F"
     weight: 5
     foundText: "\uC8FC\uD669 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -143,6 +158,7 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 1
     sound: 0
+    extraYields: []
   - label: "\uD478\uB978 \uBC84\uC12F"
     weight: 3
     foundText: "\uD478\uB978 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -153,6 +169,7 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 1
     sound: 0
+    extraYields: []
   - label: "\uBD89\uC740 \uBC84\uC12F"
     weight: 1
     foundText: "\uBD89\uC740 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
@@ -163,16 +180,18 @@ MonoBehaviour:
     hpMin: 1
     hpMax: 1
     sound: 0
+    extraYields: []
   - label: "\uC5F0\uBABB"
     weight: 5
     foundText: "\uC5F0\uBABB\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uB2F4\uAE30"
     itemId: 15
     toolType: 5
-    tier: 0
+    tier: 1
     hpMin: 100
     hpMax: 100
     sound: 4
+    extraYields: []
   probabilityPreview: "\uBE44\uC911 \uD569\uACC4: 100\r\n\uB098\uBB47\uAC00\uC9C0:
     10%  (\uBE44\uC911 10)\r\n\uB364\uBD88: 9%  (\uBE44\uC911 9)\r\n\uCC38\uB098\uBB34:
     17%  (\uBE44\uC911 17)\r\n\uAD6C\uB9AC \uC870\uAC01: 3%  (\uBE44\uC911 3)\r\n\uAD6C\uB9AC

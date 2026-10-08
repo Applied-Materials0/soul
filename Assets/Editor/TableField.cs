@@ -44,4 +44,43 @@ public static class TableField
                 break;
         }
     }
+
+    // 칸 위치(Rect)를 직접 지정해서 그린다. 줄에서 칸마다 정해진 자리에 놓이므로, 칸 사이 여백이 쌓여
+    // 뒤로 갈수록 머리글과 어긋나는 일이 없다. (표는 이 방식을 쓴다)
+    public static void Draw(Rect rect, SerializedProperty p)
+    {
+        if (p == null)
+        {
+            GUI.Label(rect, "?");
+            return;
+        }
+
+        switch (p.propertyType)
+        {
+            case SerializedPropertyType.Integer:
+                p.intValue = EditorGUI.IntField(rect, p.intValue);
+                break;
+            case SerializedPropertyType.Float:
+                p.floatValue = EditorGUI.FloatField(rect, p.floatValue);
+                break;
+            case SerializedPropertyType.String:
+                p.stringValue = EditorGUI.TextField(rect, p.stringValue);
+                break;
+            case SerializedPropertyType.Boolean:
+                p.boolValue = EditorGUI.Toggle(rect, p.boolValue);
+                break;
+            case SerializedPropertyType.Enum:
+                p.enumValueIndex = EditorGUI.Popup(rect, p.enumValueIndex, p.enumDisplayNames);
+                break;
+            case SerializedPropertyType.ObjectReference:
+                System.Type type = p.type.Contains("Sprite") ? typeof(Sprite)
+                    : p.type.Contains("AudioClip") ? typeof(AudioClip)
+                    : typeof(Object);
+                p.objectReferenceValue = EditorGUI.ObjectField(rect, p.objectReferenceValue, type, false);
+                break;
+            default:
+                EditorGUI.PropertyField(rect, p, GUIContent.none);
+                break;
+        }
+    }
 }

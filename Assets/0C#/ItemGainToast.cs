@@ -82,11 +82,47 @@ public class ItemGainToast : MonoBehaviour
         label.outlineWidth = 0.25f;
         label.outlineColor = new Color32(0, 0, 0, 255);
 
-        StartCoroutine(Fade(go, group));
+        StartCoroutine(Fade(go, group, HoldTime));
+    }
+
+    private const float MessageHoldTime = 2.5f; // 글자 알림은 읽을 시간을 더 준다
+
+    // 아이템 이미지 없이 글자만 화면 중앙에 잠깐 보여 준다 (아이템 사용 결과, 기절 페널티 안내 등)
+    public static void ShowMessage(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        if (instance == null) instance = Create();
+        instance.SpawnMessage(text);
+    }
+
+    private void SpawnMessage(string text)
+    {
+        while (row.childCount >= MaxShown)
+            DestroyImmediate(row.GetChild(0).gameObject);
+
+        TMP_FontAsset font = InventoryManager.Instance != null ? InventoryManager.Instance.UIFont : null;
+
+        GameObject go = new GameObject("ToastMessage", typeof(RectTransform), typeof(CanvasGroup));
+        RectTransform rt = (RectTransform)go.transform;
+        rt.SetParent(row, false);
+        rt.sizeDelta = new Vector2(1000f, 80f);
+        CanvasGroup group = go.GetComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.blocksRaycasts = false;
+
+        TextMeshProUGUI label = CraftQuantityPopup.AddText(
+            CraftQuantityPopup.NewRect("Label", rt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 80f)),
+            30, TextAlignmentOptions.Center, font);
+        label.text = text;
+        label.fontStyle = FontStyles.Bold;
+        label.outlineWidth = 0.25f;
+        label.outlineColor = new Color32(0, 0, 0, 255);
+
+        StartCoroutine(Fade(go, group, MessageHoldTime));
     }
 
     // 나타남 -> 또렷하게 유지 -> 흐려지며 사라짐
-    private IEnumerator Fade(GameObject go, CanvasGroup group)
+    private IEnumerator Fade(GameObject go, CanvasGroup group, float holdTime)
     {
         float t = 0f;
         while (t < FadeInTime)
@@ -99,7 +135,7 @@ public class ItemGainToast : MonoBehaviour
         group.alpha = 1f;
 
         float hold = 0f;
-        while (hold < HoldTime)
+        while (hold < holdTime)
         {
             if (go == null) yield break;
             hold += Time.unscaledDeltaTime;

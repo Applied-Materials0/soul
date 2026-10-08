@@ -31,7 +31,15 @@ MonoBehaviour:
   fleeChance: 50
   carveCount: 3
   carveToolTier: 1
-  carveDrops: []
+  carveDrops:
+  - itemId: 20
+    amountMin: 1
+    amountMax: 3
+    chance: 100
+  - itemId: 34
+    amountMin: 1
+    amountMax: 1
+    chance: 100
   exp: 2
   gold: 2
   drops: []

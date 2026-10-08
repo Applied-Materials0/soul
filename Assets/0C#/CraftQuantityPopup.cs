@@ -265,7 +265,7 @@ public class CraftQuantityPopup : MonoBehaviour
                 int durabilityHave = InventoryManager.Instance.GetToolDurability(row.tool.toolType, row.tool.tier);
                 string toolColor = durabilityHave >= durabilityNeed ? "#FFFFFF" : "#FF6666";
                 string tierText = row.tool.tier > 0 ? $" (티어 {row.tool.tier} 이상)" : "";
-                row.text.text = $"<color={toolColor}><b>필요 도구: {ToolTypeInfo.Name(row.tool.toolType)}</b>{tierText}  내구도 -{durabilityNeed} (남은 내구도 {durabilityHave})</color>\n"
+                row.text.text = $"<color={toolColor}><b>필요 도구: {ToolTypeInfo.Name(row.tool.toolType)}</b>{tierText}  내구도 -{durabilityNeed} (남은 내구도 {(durabilityHave >= InventoryManager.UnbreakableDurability ? "제한 없음" : durabilityHave.ToString())})</color>\n"
                     + "<size=18><color=#AAAAAA>제작하면 내구도가 줄어듭니다</color></size>";
                 continue;
             }

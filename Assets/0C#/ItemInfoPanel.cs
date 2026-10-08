@@ -81,6 +81,39 @@ public class ItemInfoPanel : MonoBehaviour
         {
             infoIcon.gameObject.SetActive(false);
         }
+
+        // 사용 효과(체력/SP/마나 회복)가 있는 소모품이면 [사용] 버튼을 보여 준다. 전투 중에는 쓸 수 없다.
+        EnsureUseButton();
+        bool inBattle = FieldSearch.Instance != null && FieldSearch.Instance.InBattle;
+        useButton.SetActive(InventoryManager.CanUse(item) && stack != null && !inBattle);
+    }
+
+    // 정보창 아래쪽의 [사용] 버튼 (처음 필요할 때 만든다)
+    private GameObject useButton;
+
+    private void EnsureUseButton()
+    {
+        if (useButton != null) return;
+        TMP_FontAsset font = infoName != null ? infoName.font : null;
+        useButton = CraftQuantityPopup.CreateButton(transform, "UseButton", "사용", font,
+            new Color(0.2f, 0.55f, 0.3f), new Vector2(0.5f, 0f), new Vector2(0f, 40f), new Vector2(260f, 80f), OnClickUse);
+    }
+
+    // [사용]: 아이템 1개를 쓰고 효과를 적용한다. 다 쓰면 정보창을 닫는다.
+    private void OnClickUse()
+    {
+        SoundManager.Instance?.PlaySlotClickSound();
+        if (currentStack == null || InventoryManager.Instance == null) return;
+
+        string message;
+        bool used = InventoryManager.Instance.UseItem(currentStack, out message);
+        ItemGainToast.ShowMessage(message); // 결과(또는 못 쓰는 이유)를 화면 중앙에 알림
+
+        if (!used) return;
+
+        // 마지막 1개를 써서 슬롯이 사라졌으면 정보창을 닫고, 남았으면 수량을 갱신
+        if (InventoryManager.Instance.itemList.Contains(currentStack)) Display(currentItem, currentStack);
+        else HidePanel();
     }
 
     public void CloseInfoPanel()

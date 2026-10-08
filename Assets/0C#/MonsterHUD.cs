@@ -103,4 +103,11 @@ public class MonsterHUD : MonoBehaviour
     {
         transform.parent.gameObject.SetActive(false);
     }
+
+    // 전투 중에 가방/맵 같은 창이 열리면 잠깐 숨기고, 닫히면 다시 보이게 한다
+    public void SetVisible(bool visible)
+    {
+        GameObject canvasObject = transform.parent.gameObject;
+        if (canvasObject.activeSelf != visible) canvasObject.SetActive(visible);
+    }
 }
