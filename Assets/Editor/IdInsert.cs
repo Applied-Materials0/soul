@@ -4,7 +4,7 @@ using UnityEngine;
 
 // 표의 중간에 새 항목을 끼워 넣는다 (엑셀에서 줄을 삽입하는 것과 같음).
 // 끼워 넣은 자리의 번호(ID)와 그 뒤 항목들의 번호가 1씩 밀리고, 그 번호를 가리키던 곳도 같이 바뀐다.
-//  - 아이템: 레시피 재료, 몬스터의 드랍/도려내기 얻는 것, 자원 표의 아이템(기본 + 추가 획득)
+//  - 아이템: 레시피 재료, 사용 후 남는 아이템, 몬스터의 드랍/도려내기 얻는 것, 자원 표의 아이템(기본 + 추가 획득)
 //  - 몬스터: 다른 곳에서 번호로 가리키지 않아 몬스터 번호만 밀린다
 public static class IdInsert
 {
@@ -33,6 +33,7 @@ public static class IdInsert
         // 2) 레시피: 재료의 번호, 완성품 번호(= 자기 자신의 번호)
         foreach (Item item in items)
         {
+            if (item.useResultItemId >= insertId) { Undo.RecordObject(item, "Insert Item"); item.useResultItemId++; EditorUtility.SetDirty(item); }
             if (item.recipe == null) continue;
             Undo.RecordObject(item, "Insert Item");
             foreach (Ingredient ing in item.recipe.ingredients)

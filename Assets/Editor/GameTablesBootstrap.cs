@@ -23,6 +23,7 @@ public static class GameTablesBootstrap
         Ensure<LevelTable>("LevelTable");
         Ensure<ProficiencyTable>("ProficiencyTable");
         Ensure<PlayerBaseTable>("PlayerBaseTable");
+        Ensure<SearchTable>("SearchTable");
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
         SoundTable sounds = Ensure<SoundTable>("SoundTable", out bool created);

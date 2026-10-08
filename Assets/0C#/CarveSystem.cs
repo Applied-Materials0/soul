@@ -105,7 +105,7 @@ public class CarveSystem : MonoBehaviour
 
         // 숙련도 경험치
         ProficiencyDef def = GameTables.Proficiency.Get(ProficiencyKind.Carving);
-        if (def != null && Proficiency.AddExp(ProficiencyKind.Carving, def.expPerUse, out int newLevel))
+        if (def != null && Proficiency.AddExp(def, def.expPerUse, out int newLevel))
             text += $"\n{def.label} 숙련도가 올랐다! Lv.{newLevel}";
 
         if (broken && knife != null) text += $"\n[{knife.itemName}]이(가) 파손되었습니다!";

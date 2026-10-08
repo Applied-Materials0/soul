@@ -35,7 +35,7 @@ MonoBehaviour:
     note: "\uC804\uD22C\uC5D0\uC11C \uBC29\uC5B4\uD560 \uB54C"
   - action: 5
     label: "\uB3C4\uB9DD"
-    cost: 1
+    cost: 0
     note: "\uC804\uD22C\uC5D0\uC11C \uB3C4\uB9DD\uC744 \uC2DC\uB3C4\uD560 \uB54C"
   - action: 6
     label: "\uC9C0\uC5ED \uC774\uB3D9"

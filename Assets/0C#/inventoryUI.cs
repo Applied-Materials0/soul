@@ -94,6 +94,7 @@ public class InventoryManager : MonoBehaviour
     private Image bagGaugeFillImage;
     private TextMeshProUGUI bagWeightText;   // 게이지 위의 "현재 / 최대" 숫자
     private TextMeshProUGUI bagSlotText;     // 게이지 위의 "슬롯 사용 / 최대"
+    private GameObject bagGaugeCanvas;
     private string bagStatusShown = "";
 
     // 무게 게이지 색: 80% 이상 주황색, 90% 이상 빨간색, 그 아래는 초록색
@@ -108,14 +109,24 @@ public class InventoryManager : MonoBehaviour
         TMP_FontAsset font = FindUIFont();
         Vector2 corner = new Vector2(1f, 0f); // 우측 하단 모서리 기준
 
+        // 가방 UI 안의 배치나 겹침에 영향받지 않도록 전용 캔버스(화면 맨 위)에 만들고, 가방이 열린 동안만 켠다
+        GameObject canvasGo = new GameObject("BagGauge Canvas", typeof(Canvas), typeof(CanvasScaler));
+        Canvas gaugeCanvas = canvasGo.GetComponent<Canvas>();
+        gaugeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        gaugeCanvas.sortingOrder = 90;
+        canvasGo.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        DontDestroyOnLoad(canvasGo); // 장면이 바뀌어도 유지 (가방 매니저와 같이 살아남음)
+        bagGaugeCanvas = canvasGo;
+        Transform host = canvasGo.transform;
+
         // 슬롯 개수 (게이지 위에 작게)
-        RectTransform slotRt = CraftQuantityPopup.NewRect("BagSlotText", inventoryUI.transform, corner, new Vector2(-30f, 62f), new Vector2(360f, 30f));
+        RectTransform slotRt = CraftQuantityPopup.NewRect("BagSlotText", host, corner, new Vector2(-30f, 62f), new Vector2(360f, 30f));
         bagSlotText = CraftQuantityPopup.AddText(slotRt, 22, TextAlignmentOptions.Right, font);
         bagSlotText.outlineWidth = 0.25f;
         bagSlotText.outlineColor = new Color32(0, 0, 0, 255);
 
         // 게이지 바탕 = 흰색
-        RectTransform bar = CraftQuantityPopup.NewRect("BagWeightGauge", inventoryUI.transform, corner, new Vector2(-30f, 28f), new Vector2(360f, 30f));
+        RectTransform bar = CraftQuantityPopup.NewRect("BagWeightGauge", host, corner, new Vector2(-30f, 28f), new Vector2(360f, 30f));
         Image back = bar.gameObject.AddComponent<Image>();
         back.color = Color.white;
         back.raycastTarget = false;
@@ -140,14 +151,21 @@ public class InventoryManager : MonoBehaviour
         bagWeightText.color = Color.black;
         bagWeightText.fontStyle = FontStyles.Bold;
 
-        slotRt.SetAsLastSibling();
-        bar.SetAsLastSibling(); // 슬롯 위에 그려지도록
+        canvasGo.SetActive(false);
+    }
+
+    void OnDestroy()
+    {
+        if (bagGaugeCanvas != null) Destroy(bagGaugeCanvas);
     }
 
     // 가방이 열려 있는 동안 값이 바뀌면(획득, 소모, 장비로 한도 변경 등) 게이지와 숫자를 갱신한다
     void Update()
     {
-        if (bagGaugeFill == null || inventoryUI == null || !inventoryUI.activeInHierarchy) return;
+        if (bagGaugeFill == null || inventoryUI == null) return;
+        bool open = inventoryUI.activeInHierarchy;
+        if (bagGaugeCanvas.activeSelf != open) bagGaugeCanvas.SetActive(open);
+        if (!open) return;
 
         int weight = CurrentWeight, weightLimit = WeightLimit, used = UsedSlots, slotLimit = SlotLimit;
 
@@ -401,9 +419,13 @@ public class InventoryManager : MonoBehaviour
     /// 소모 순서: 필요 티어 이상인 도구 중 가장 낮은 티어 먼저, 티어가 같으면 앞쪽(좌상단) 슬롯 먼저.
     /// 도구는 슬롯마다 따로 내구도를 가집니다(countmax = 1).
     /// </summary>
+    // 방금 ConsumeToolDurability로 쓴 도구의 남은 내구도 (닳지 않는 도구는 UnbreakableDurability)
+    public int LastToolDurability { get; private set; }
+
     public Item ConsumeToolDurability(ToolType requiredType, int requiredTier, out ToolCheckResult checkResult, out bool isBroken)
     {
         isBroken = false;
+        LastToolDurability = 0;
 
         var ownedTools = itemList
             .Where(stack => stack.itemData.toolType == requiredType && IsUsableTool(stack))
@@ -428,8 +450,9 @@ public class InventoryManager : MonoBehaviour
 
         checkResult = ToolCheckResult.Success;
         Item usedTool = targetStack.itemData;
-        if (IsUnbreakable(targetStack)) return usedTool; // 닳지 않는 도구는 내구도를 깎지 않는다
+        if (IsUnbreakable(targetStack)) { LastToolDurability = UnbreakableDurability; return usedTool; } // 닳지 않는 도구는 내구도를 깎지 않는다
         targetStack.durability -= 1;
+        LastToolDurability = Mathf.Max(0, targetStack.durability);
         if (targetStack.durability <= 0)
         {
             targetStack.durability = 0;
@@ -665,10 +688,11 @@ public class InventoryManager : MonoBehaviour
     // =========================================================
     public static bool CanUse(Item item)
     {
-        return item != null && (item.useHp > 0 || item.useSp > 0 || item.useMana > 0);
+        return item != null && (item.useHp != 0 || item.useSp != 0 || item.useMana != 0);
     }
 
     // 스택에서 아이템 1개를 사용한다. 성공하면 true. message에는 결과(또는 못 쓰는 이유)가 담긴다.
+    // 마이너스 값이 있는 아이템(독 등)도 먹을 수 있고, 체력은 1 밑으로 내려가지 않는다.
     public bool UseItem(ItemStack stack, out string message)
     {
         message = "";
@@ -679,31 +703,73 @@ public class InventoryManager : MonoBehaviour
         int spBefore = GameManager.SP;
         int manaBefore = GameManager.Mana;
 
-        GameManager.Hp = Mathf.Min(BattleCalc.PlayerMaxHp(), GameManager.Hp + Mathf.Max(0, item.useHp));
-        GameManager.SP = Mathf.Min(GameManager.SPMax, GameManager.SP + Mathf.Max(0, item.useSp));
-        GameManager.Mana = Mathf.Min(GameManager.ManaMax, GameManager.Mana + Mathf.Max(0, item.useMana));
+        GameManager.Hp = Mathf.Clamp(GameManager.Hp + item.useHp, Mathf.Min(1, GameManager.Hp), Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp));
+        GameManager.SP = Mathf.Clamp(GameManager.SP + item.useSp, 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
+        GameManager.Mana = Mathf.Clamp(GameManager.Mana + item.useMana, 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
 
         int hp = GameManager.Hp - hpBefore;
         int sp = GameManager.SP - spBefore;
         int mana = GameManager.Mana - manaBefore;
 
-        // 이미 전부 가득 차서 아무 효과가 없으면 소모하지 않는다
-        if (hp <= 0 && sp <= 0 && mana <= 0)
+        // 이미 전부 가득 차서 아무 효과가 없으면 소모하지 않는다 (마이너스 효과가 있는 아이템은 항상 먹을 수 있음)
+        bool harmful = item.useHp < 0 || item.useSp < 0 || item.useMana < 0;
+        if (!harmful && hp == 0 && sp == 0 && mana == 0)
         {
             message = "이미 가득 차서 사용할 필요가 없습니다.";
             return false;
         }
 
+        // 사용 후 남는 아이템(예: 가득찬 물통 -> 물통)은 내구도를 이어받는다. 내구도가 0이면 파손되어 남지 않는다.
+        Item leftover = item.useResultItemId > 0 ? GetItemData(item.useResultItemId) : null;
+        int carry = -1;
+        if (leftover != null && item.durabilitymax > 0) carry = stack.durability;
+        if (leftover != null && leftover.durabilitymax > 0 && carry < 0) carry = leftover.durabilitymax;
+
         RemoveFromStack(stack, 1); // 1개 소모 (0개가 되면 슬롯이 사라짐)
 
         List<string> effects = new List<string>();
-        if (hp > 0) effects.Add($"체력 +{hp}");
-        if (sp > 0) effects.Add($"SP +{sp}");
-        if (mana > 0) effects.Add($"마나 +{mana}");
-        message = $"{item.itemName} 사용: {string.Join(", ", effects)}";
+        if (hp != 0) effects.Add($"체력 {hp:+#;-#}");
+        if (sp != 0) effects.Add($"SP {sp:+#;-#}");
+        if (mana != 0) effects.Add($"마나 {mana:+#;-#}");
+        message = $"{item.itemName} 사용" + (effects.Count > 0 ? $": {string.Join(", ", effects)}" : "");
+
+        if (leftover != null)
+        {
+            if (leftover.durabilitymax > 0 && carry <= 0)
+                message += $"\n[{leftover.itemName}]이(가) 파손되었다.";
+            else if (AddItem(leftover, 1, carry) < 1)
+                message += $"\n가방이 가득 차서 [{leftover.itemName}]을(를) 버렸다.";
+        }
 
         PlayerUI.RefreshAll();
         return true;
+    }
+
+    // 스택의 절반(내림)을 새 슬롯으로 나눈다. 슬롯이 없거나 수량이 1개면 실패
+    public bool SplitStack(ItemStack stack, out string message)
+    {
+        message = "";
+        if (stack == null || stack.amount < 2) { message = "나눌 수 없습니다. (수량이 1개)"; return false; }
+        if (UsedSlots >= SlotLimit) { message = "빈 슬롯이 없어 나눌 수 없습니다."; return false; }
+
+        int half = stack.amount / 2;
+        stack.amount -= half;
+        ItemStack part = new ItemStack(stack.itemData, half);
+        part.durability = stack.durability;
+        itemList.Insert(itemList.IndexOf(stack) + 1, part);
+
+        RefreshInventoryUI(); // 순서대로 슬롯을 다시 만든다
+        GameManager.Weight = CurrentWeight;
+        PlayerUI.RefreshAll();
+        message = $"{stack.itemData.itemName}을(를) {stack.amount}개와 {half}개로 나눴다.";
+        return true;
+    }
+
+    // 스택 전체를 버린다
+    public void DiscardStack(ItemStack stack)
+    {
+        if (stack == null) return;
+        RemoveFromStack(stack, stack.amount);
     }
 
     // =========================================================
@@ -758,7 +824,7 @@ public class InventoryManager : MonoBehaviour
     /// 도구/장비(countmax = 1)는 하나마다 슬롯이 따로 생기고 내구도도 각자 가진다.
     /// 넣은 아이템은 화면 중앙에 이미지가 잠깐 표시된다.
     /// </summary>
-    public int AddItem(Item newItem, int amount = 1)
+    public int AddItem(Item newItem, int amount = 1, int durability = -1)
     {
         LastAddBlock = AddBlock.None;
         if (newItem == null || amount <= 0) return 0;
@@ -771,10 +837,14 @@ public class InventoryManager : MonoBehaviour
         int added = amount;
         int limit = StackLimit(newItem);
 
+        // durability를 지정한 내구도 아이템(예: 물을 담은 가죽 물통)은 내구도가 다르므로 기존 스택에 합치지 않는다
+        bool keepSeparate = durability >= 0 && newItem.durabilitymax > 0;
+
         // 1. 자리가 남은 기존 스택 채우기
         foreach (ItemStack s in itemList)
         {
             if (amount <= 0) break;
+            if (keepSeparate) break;
             if (s.itemData.id != newItem.id || s.amount >= limit) continue;
 
             int add = Mathf.Min(limit - s.amount, amount);
@@ -788,6 +858,7 @@ public class InventoryManager : MonoBehaviour
         {
             int add = Mathf.Min(limit, amount);
             ItemStack stack = new ItemStack(newItem, add);
+            if (keepSeparate) stack.durability = Mathf.Min(durability, newItem.durabilitymax);
             itemList.Add(stack);
             CreateSlot(stack);
             amount -= add;

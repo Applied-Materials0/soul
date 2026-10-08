@@ -41,7 +41,6 @@ public class Item : ScriptableObject
     public int at;             // 공격력
     public int df;             // 방어력
     public int hp;             // 체력
-    public int heal;           // 회복량
     public float hprateat;     // 체력 비례 공격력
     public int fixat;          // 고정 공격력
     public float breakdf;      // 방어 무시
@@ -50,7 +49,6 @@ public class Item : ScriptableObject
     public float criticalrate; // 치명타 확률
     public float critical;     // 치명타 피해
     public int manamax;        // 최대 마나 증가
-    public int manaheal;       // 마나 회복량
     public float atrate;       // 공격력 비율
     public float dfrate;       // 방어력 비율
     public float hprate;       // 체력 비율
@@ -58,14 +56,14 @@ public class Item : ScriptableObject
     public float goldrate;     // 골드 비율
     public float exprate;      // 경험치 비율
     public int spmax;          // 최대 스태미나 증가
-    public int spheal;         // 스태미나 회복
     public int weightmax;      // 소지 무게 증가
     public int slotmax;        // 소지 슬롯 증가 (장비)
 
-    [Header("사용 효과 (소모품: 하나라도 0보다 크면 인벤토리에서 [사용] 버튼이 생김)")]
+    [Header("사용 효과 (소모품: 하나라도 0이 아니면 인벤토리에서 [사용] 버튼이 생김)")]
     public int useHp;          // 사용 시 체력 회복
     public int useSp;          // 사용 시 SP 회복
     public int useMana;        // 사용 시 마나 회복
+    public int useResultItemId; // 사용 후 남는 아이템 ID (0이면 없음. 내구도를 이어받음)
 
 
     [Header("표시 / 제작")]

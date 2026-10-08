@@ -151,25 +151,56 @@ public static class RuleTableDrawers
         so.Update();
         EditorGUI.BeginChangeCheck();
 
+        EditorGUILayout.HelpBox(
+            "숙련도 종류: [도려내기] = 도려낼 때 얻는 수량이 보너스만큼 늘어남, [채집] = 아래 '도구'로 채집할 때 한 번에 채집하는 양이 보너스만큼 늘어남 (도구가 None이면 맨손). " +
+            "같은 종류의 숙련도를 여러 개 만들 수 있고, 번호(ID)가 겹치지 않아야 진행도가 따로 쌓입니다.",
+            MessageType.None);
+
         SerializedProperty defs = so.FindProperty("defs");
         if (profScrolls.Length != defs.arraySize) profScrolls = new Vector2[defs.arraySize];
 
+        int removeAt = -1;
         for (int d = 0; d < defs.arraySize; d++)
         {
             SerializedProperty def = defs.GetArrayElementAtIndex(d);
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("ID", GUILayout.Width(18));
+            TableField.Draw(def.FindPropertyRelative("id"), 40);
             GUILayout.Label("숙련도", GUILayout.Width(44));
             TableField.Draw(def.FindPropertyRelative("label"), 120);
             GUILayout.Label("종류", GUILayout.Width(30));
-            TableField.Draw(def.FindPropertyRelative("kind"), 110);
+            SerializedProperty kind = def.FindPropertyRelative("kind");
+            TableField.Draw(kind, 110);
+            if (kind.enumValueIndex == (int)ProficiencyKind.Gather)
+            {
+                GUILayout.Label(new GUIContent("도구", "이 도구 종류로 채집하면 경험치가 오르고 보너스가 적용됨"), GUILayout.Width(30));
+                TableField.Draw(def.FindPropertyRelative("tool"), 90);
+            }
             GUILayout.Label(new GUIContent("1회 경험치", "한 번 사용할 때 오르는 숙련도 경험치"), GUILayout.Width(70));
             TableField.Draw(def.FindPropertyRelative("expPerUse"), 50);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("숙련도 삭제", GUILayout.Width(80))) removeAt = d;
             EditorGUILayout.EndHorizontal();
 
             DrawLevels(def.FindPropertyRelative("levels"), ProficiencyRows, "expToNext", "경험치", ref profScrolls[d]);
             EditorGUILayout.EndVertical();
+        }
+        if (removeAt >= 0 && EditorUtility.DisplayDialog("숙련도 삭제", "이 숙련도를 표에서 지울까요?", "삭제", "취소"))
+            defs.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUILayout.Button("+ 숙련도 추가 (마지막 숙련도를 복사)", GUILayout.Height(24)))
+        {
+            int maxId = 0;
+            for (int i = 0; i < defs.arraySize; i++)
+                maxId = Mathf.Max(maxId, defs.GetArrayElementAtIndex(i).FindPropertyRelative("id").intValue);
+
+            defs.InsertArrayElementAtIndex(defs.arraySize);
+            SerializedProperty added = defs.GetArrayElementAtIndex(defs.arraySize - 1);
+            added.FindPropertyRelative("id").intValue = maxId + 1;
+            added.FindPropertyRelative("label").stringValue = "새 숙련도";
+            added.FindPropertyRelative("kind").enumValueIndex = (int)ProficiencyKind.Gather;
         }
 
         bool changed = EditorGUI.EndChangeCheck();
@@ -181,6 +212,81 @@ public static class RuleTableDrawers
         {
             Undo.RecordObject(so.targetObject, "Reset Proficiency Table");
             ((ProficiencyTable)so.targetObject).ResetToDefaults();
+            EditorUtility.SetDirty(so.targetObject);
+            changed = true;
+        }
+        return changed;
+    }
+
+    // =========================================================
+    //  탐색 결과 표: 한 줄 = 탐색했을 때 나올 수 있는 결과 하나
+    // =========================================================
+    public static bool DrawSearchTable(SerializedObject so)
+    {
+        so.Update();
+        EditorGUI.BeginChangeCheck();
+
+        EditorGUILayout.HelpBox(
+            "탐색 버튼을 눌렀을 때 무엇이 나오는지의 비율입니다. 확률 = 내 비중 / 비중 합계 (합이 100일 필요는 없음, 0이면 안 나옴). " +
+            "[자원]이 나오면 어떤 자원인지는 [자원] 탭의 비중으로, [몬스터]가 나오면 어떤 몬스터인지는 몬스터의 출현 지역/비중으로 정해집니다. " +
+            "[이벤트]는 문구만 화면에 나옵니다 (줄을 추가해 이벤트 문구를 여러 개 둘 수 있음).",
+            MessageType.None);
+
+        SerializedProperty entries = so.FindProperty("entries");
+        int total = 0;
+        for (int i = 0; i < entries.arraySize; i++)
+            total += Mathf.Max(0, entries.GetArrayElementAtIndex(i).FindPropertyRelative("weight").intValue);
+
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("종류", header, GUILayout.Width(90));
+        GUILayout.Label("이름", header, GUILayout.Width(130));
+        GUILayout.Label("비중", header, GUILayout.Width(50));
+        GUILayout.Label("확률", header, GUILayout.Width(55));
+        GUILayout.Label("이벤트 문구", header, GUILayout.Width(320));
+        EditorGUILayout.EndHorizontal();
+
+        int removeAt = -1;
+        for (int i = 0; i < entries.arraySize; i++)
+        {
+            SerializedProperty e = entries.GetArrayElementAtIndex(i);
+            SerializedProperty weight = e.FindPropertyRelative("weight");
+            int w = Mathf.Max(0, weight.intValue);
+
+            EditorGUILayout.BeginHorizontal();
+            TableField.Draw(e.FindPropertyRelative("kind"), 90);
+            TableField.Draw(e.FindPropertyRelative("label"), 130);
+            TableField.Draw(weight, 50);
+            weight.intValue = Mathf.Max(0, weight.intValue);
+            GUILayout.Label(total > 0 ? $"{w * 100f / total:0.#}%" : "-", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(55));
+            if (e.FindPropertyRelative("kind").enumValueIndex == (int)SearchOutcomeKind.Event)
+                TableField.Draw(e.FindPropertyRelative("text"), 320);
+            else
+                GUILayout.Space(324);
+            if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
+            EditorGUILayout.EndHorizontal();
+        }
+        if (removeAt >= 0) entries.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUILayout.Button("+ 줄 추가", GUILayout.Height(24)))
+        {
+            entries.InsertArrayElementAtIndex(entries.arraySize);
+            SerializedProperty added = entries.GetArrayElementAtIndex(entries.arraySize - 1);
+            added.FindPropertyRelative("label").stringValue = "새 결과";
+            added.FindPropertyRelative("kind").enumValueIndex = (int)SearchOutcomeKind.Event;
+            added.FindPropertyRelative("weight").intValue = 1;
+            added.FindPropertyRelative("text").stringValue = "";
+        }
+
+        bool changed = EditorGUI.EndChangeCheck();
+        so.ApplyModifiedProperties();
+
+        EditorGUILayout.Space();
+        if (GUILayout.Button("기본값으로 되돌리기") &&
+            EditorUtility.DisplayDialog("기본값으로 되돌리기", "탐색 결과 표의 모든 값이 처음 기본값으로 바뀝니다. 계속할까요?", "되돌리기", "취소"))
+        {
+            Undo.RecordObject(so.targetObject, "Reset Search Table");
+            ((SearchTable)so.targetObject).ResetToDefaults();
             EditorUtility.SetDirty(so.targetObject);
             changed = true;
         }

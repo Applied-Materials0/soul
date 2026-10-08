@@ -5,7 +5,8 @@ using UnityEngine;
 // 에셋은 Assets/Resources/Tables/ProficiencyTable.asset.
 public enum ProficiencyKind
 {
-    Carving,  // 도려내기 (칼로 가죽/고기 얻기)
+    Carving,  // 도려내기 (칼로 가죽/고기 얻기). 얻는 수량이 보너스만큼 늘어남
+    Gather,   // 채집 (아래 "도구" 종류로 채집할 때). 한 번에 채집하는 양이 보너스만큼 늘어남
 }
 
 [System.Serializable]
@@ -19,7 +20,9 @@ public class ProficiencyLevel
 [System.Serializable]
 public class ProficiencyDef
 {
+    public int id;                      // 숙련도 번호 (겹치지 않게. 표의 [+ 숙련도 추가]가 자동으로 매김). 진행도(레벨/경험치)를 이 번호로 구분함
     public ProficiencyKind kind;
+    public ToolType tool;               // 종류가 [채집]일 때, 이 도구 종류로 채집하면 경험치가 오름 (None = 맨손)
     public string label;                // 표에 보이는 이름
     [Min(0)] public int expPerUse = 1;  // 한 번 사용할 때 오르는 숙련도 경험치
     public List<ProficiencyLevel> levels = new List<ProficiencyLevel>();
@@ -29,6 +32,14 @@ public class ProficiencyDef
 public class ProficiencyTable : ScriptableObject
 {
     public List<ProficiencyDef> defs = CreateDefaultDefs();
+
+    // 채집 숙련도 중 해당 도구 종류에 맞는 것
+    public ProficiencyDef GetGather(ToolType tool)
+    {
+        foreach (ProficiencyDef d in defs)
+            if (d != null && d.kind == ProficiencyKind.Gather && d.tool == tool) return d;
+        return null;
+    }
 
     public ProficiencyDef Get(ProficiencyKind kind)
     {

@@ -20,8 +20,8 @@ public class DataTableWindow : EditorWindow
         return new Col { title = title, path = path, width = width, tip = tip, text = text };
     }
 
-    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound }
-    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음" };
+    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound, Search }
+    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음", "탐색 결과" };
 
     private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피", "사용 효과" };
     private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역", "도망/도려내기" };
@@ -51,14 +51,14 @@ public class DataTableWindow : EditorWindow
 
     private static readonly Col[] ItemStats = ItemLead.Concat(new[]
     {
-        C("공격력", "at", 60), C("방어력", "df", 60), C("체력", "hp", 60), C("회복량", "heal", 60),
+        C("공격력", "at", 60), C("방어력", "df", 60), C("체력", "hp", 60),
         C("체력 공격력", "hprateat", 70, "체력 비례 공격력"), C("고정 공격력", "fixat", 70),
         C("관통률", "breakdf", 60, "방어 무시"), C("흡수율", "abs", 60), C("회피율", "avoid", 60),
         C("치명타 확률", "criticalrate", 70), C("치명타 배율", "critical", 70),
-        C("최대 마나", "manamax", 65), C("마나 회복", "manaheal", 65),
+        C("최대 마나", "manamax", 65),
         C("공격력 배율", "atrate", 70), C("방어력 배율", "dfrate", 70), C("체력 배율", "hprate", 65),
         C("회복량 배율", "healrate", 70), C("골드 배율", "goldrate", 65), C("경험치 배율", "exprate", 70),
-        C("최대 스태미나", "spmax", 75), C("스태미나 회복", "spheal", 75), C("가방 증량", "weightmax", 65, "소지 최대 무게 증가량 (장비)"),
+        C("최대 스태미나", "spmax", 75), C("가방 증량", "weightmax", 65, "소지 최대 무게 증가량 (장비)"),
         C("슬롯 증가", "slotmax", 65, "가방 슬롯 개수 증가량 (장비)"),
         C("특수 효과", "specialEffect", 200, null, true),
     }).ToArray();
@@ -73,6 +73,7 @@ public class DataTableWindow : EditorWindow
         C("체력 회복", "useHp", 75, "사용하면 회복하는 체력 (하나라도 0보다 크면 인벤토리에서 [사용] 가능)"),
         C("SP 회복", "useSp", 75, "사용하면 회복하는 SP"),
         C("마나 회복", "useMana", 75, "사용하면 회복하는 마나"),
+        C("사용 후 남는 아이템ID", "useResultItemId", 120, "사용하면 이 아이템 1개가 남음 (예: 가득찬 물통 -> 물통). 내구도는 이어받음. 0이면 없음"),
     }).ToArray();
 
     // ===== 몬스터 열 =====
@@ -178,6 +179,9 @@ public class DataTableWindow : EditorWindow
                 break;
             case Mode.Sound:
                 ruleTable = LoadRuleTable("t:SoundTable");
+                break;
+            case Mode.Search:
+                ruleTable = LoadRuleTable("t:SearchTable");
                 break;
             case Mode.Item:
                 rows = items.Select(i => new SerializedObject(i)).ToList();
@@ -295,6 +299,7 @@ public class DataTableWindow : EditorWindow
             case Mode.SPCost:
             case Mode.Proficiency:
             case Mode.PlayerBase:
+            case Mode.Search:
             case Mode.Sound: DrawRuleMode(); break;
             default: DrawRowsMode(); break;
         }
@@ -321,6 +326,7 @@ public class DataTableWindow : EditorWindow
             case Mode.Proficiency: changed = RuleTableDrawers.DrawProficiencyTable(ruleTable); break;
             case Mode.PlayerBase: changed = RuleTableDrawers.DrawPlayerBaseTable(ruleTable); break;
             case Mode.Sound: changed = RuleTableDrawers.DrawSoundTable(ruleTable); break;
+            case Mode.Search: changed = RuleTableDrawers.DrawSearchTable(ruleTable); break;
         }
 
         if (changed)

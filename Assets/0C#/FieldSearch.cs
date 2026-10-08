@@ -36,12 +36,6 @@ public class FieldSearch : MonoBehaviour
     public GameObject RunBtn;          // 도망 버튼
     public GameObject MapBtn;          // 맵 버튼
 
-    [Header("탐색 결과 비율 (탐색 버튼을 눌렀을 때 무엇이 나올지)")]
-    [Tooltip("비율끼리 비교하는 값이라 합이 100일 필요는 없음. 확률 = 내 값 / 세 값의 합. 0이면 절대 안 나옴")]
-    [Min(0)] public int resourceWeight = 76; // 자원 발견 (나뭇가지, 덤불, 광석, 연못 등. 어떤 자원인지의 비율은 아래 resourceTable 에셋에서 조절)
-    [Min(0)] public int eventWeight = 4;     // 이벤트 (지금은 "아무것도 발견하지 못했다"만 있음)
-    [Min(0)] public int monsterWeight = 20;  // 몬스터 조우
-
     [Tooltip("자원이 나왔을 때 어떤 자원인지를 정하는 표. Create > Soul > Resource Spawn Table 로 만들어 연결. 비워 두면 기본 비율 사용")]
     public ResourceSpawnTable resourceTable;
 
@@ -136,23 +130,21 @@ public class FieldSearch : MonoBehaviour
         RunAudio.Stop();
         SearchAudio.Play();
 
-        // 1단계: 자원 / 이벤트 / 몬스터 중 무엇이 나올지를 인스펙터의 비율대로 정함
-        int resW = Mathf.Max(0, resourceWeight);
-        int evW = Mathf.Max(0, eventWeight);
-        int monW = Mathf.Max(0, monsterWeight);
-        int total = resW + evW + monW;
-
-        if (total <= 0)
+        // 1단계: 무엇이 나올지를 탐색 결과 표(SearchTable)의 비중대로 정함
+        SearchOutcome outcome = GameTables.Search.Pick();
+        if (outcome == null)
         {
-            Debug.LogWarning("[FieldSearch] 탐색 결과 비율(resourceWeight/eventWeight/monsterWeight)이 모두 0입니다.");
-            SearchEvent();
+            Debug.LogWarning("[FieldSearch] 탐색 결과 표의 비중이 모두 0입니다. Soul > 데이터 표 > [탐색 결과] 탭을 확인하세요.");
+            SearchEvent(null);
             return;
         }
 
-        int roll = Random.Range(0, total); // 0 ~ total-1
-        if (roll < resW) SearchResource();
-        else if (roll < resW + evW) SearchEvent();
-        else SearchMonster();
+        switch (outcome.kind)
+        {
+            case SearchOutcomeKind.Resource: SearchResource(); break;
+            case SearchOutcomeKind.Monster: SearchMonster(); break;
+            default: SearchEvent(outcome.text); break;
+        }
     }
 
     // 자원 발견: 어떤 자원이 나올지는 resourceTable(ResourceSpawnTable 에셋)의 비중대로 정함
@@ -163,7 +155,7 @@ public class FieldSearch : MonoBehaviour
         if (spawn == null)
         {
             Debug.LogWarning("[FieldSearch] 뽑을 수 있는 자원이 없습니다. ResourceSpawnTable의 비중을 확인하세요.");
-            SearchEvent();
+            SearchEvent(null);
             return;
         }
 
@@ -193,9 +185,9 @@ public class FieldSearch : MonoBehaviour
     }
 
     // 이벤트: 지금은 아무 일도 없는 경우만 있음. 새 이벤트는 여기에 추가
-    private void SearchEvent()
+    private void SearchEvent(string text)
     {
-        SearchText.SetText("아무것도 발견하지 못했다...");
+        SearchText.SetText(string.IsNullOrEmpty(text) ? "아무것도 발견하지 못했다..." : text);
         GatherBtn.SetActive(false);
     }
 
@@ -299,13 +291,13 @@ public class FieldSearch : MonoBehaviour
         }
 
         string resourceName = targetResource.itemName;
-        if (resourceName == "가득찬 물통")
-        {
-            resourceName = "물";
-        }
+        // 병으로 물을 담는 자원은 아이템 이름(가득찬 ...)이 아니라 "물"을 담는다고 안내한다 (특정 아이템 이름에 묶지 않음)
+        bool fillsWater = currentRequiredTool == ToolType.Bottle;
+        string needName = fillsWater ? "물" : resourceName;
 
         // 2. 도구 조건 판별 및 내구도 자동 차감
         Item usedTool = null;
+        int toolDurabilityLeft = -1; // 쓴 도구의 남은 내구도 (결과 아이템이 내구도를 이어받을 때 사용)
         bool isBroken = false;
         int damage = 1; // 맨손 기본 채집력
 
@@ -316,12 +308,14 @@ public class FieldSearch : MonoBehaviour
 
             // 자원 이름 및 도구 이름 가져오기
             string toolName = GetToolTypeName(currentRequiredTool);
-            string eulLuel = HasJongseong(resourceName, "을", "를"); // 덤불 -> 을 / 딸기 -> 를
+            string eulLuel = HasJongseong(needName, "을", "를"); // 덤불 -> 을 / 딸기 -> 를
             string iGa = HasJongseong(toolName, "이", "가");         // 낫 -> 이 / 도끼 -> 가
 
             if (toolResult == ToolCheckResult.NoTool)
             {
-                SearchText.text = $"채집에 필요한 도구가 없습니다! {resourceName}{eulLuel} 채집하려면 {toolName}{iGa} 필요합니다!";
+                string purpose = fillsWater ? "담으려면" : "채집하려면";
+                string lack = fillsWater ? "" : "채집에 필요한 도구가 없습니다! ";
+                SearchText.text = $"{lack}{needName}{eulLuel} {purpose} {toolName}{iGa} 필요합니다!";
                 BtnAudio.Play();
                 return;
             }
@@ -333,11 +327,19 @@ public class FieldSearch : MonoBehaviour
             }
             // 도구의 공격력(채집력) 적용
             damage = usedTool.toolattack;
+            toolDurabilityLeft = InventoryManager.Instance.LastToolDurability;
         }
+
+        // 채집 숙련도: 이 도구 종류에 맞는 숙련도가 있으면 레벨의 보너스만큼 한 번에 채집하는 양이 늘어난다
+        ProficiencyDef gatherProf = GameTables.Proficiency.GetGather(currentRequiredTool);
+        if (gatherProf != null)
+            damage = Mathf.Max(damage, Mathf.RoundToInt(damage * BattleCalc.Mult(Proficiency.Bonus(gatherProf))));
 
         // 3. 자원 차감 및 인벤토리 추가
         int wanted = Mathf.Min(sourceHP, damage);
-        int gainedAmount = InventoryManager.Instance.AddItem(targetResource, wanted);
+        // 결과 아이템이 내구도를 가지면(물을 담은 물통) 쓴 도구의 남은 내구도를 이어받는다. 도구는 그대로 남고 결과 아이템이 새로 생긴다.
+        int carry = (usedTool != null && targetResource.durabilitymax > 0) ? toolDurabilityLeft : -1;
+        int gainedAmount = InventoryManager.Instance.AddItem(targetResource, wanted, carry);
         bool bagLimited = gainedAmount < wanted; // 가방 때문에 일부만 얻음
         sourceHP -= gainedAmount;
         GameManager.SP -= gatherCost;
@@ -374,6 +376,10 @@ public class FieldSearch : MonoBehaviour
             if (extraGot.Count > 0) SearchText.text += "\n추가 획득: " + string.Join(", ", extraGot);
             if (extraBagFull) SearchText.text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
         }
+
+        // 채집 숙련도 경험치
+        if (gainedAmount > 0 && gatherProf != null && Proficiency.AddExp(gatherProf, gatherProf.expPerUse, out int profLevel))
+            SearchText.text += $"\n{gatherProf.label} 숙련도가 올랐다! Lv.{profLevel}";
 
         if (isBroken && usedTool != null)
         {
