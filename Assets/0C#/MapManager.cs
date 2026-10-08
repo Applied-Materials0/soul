@@ -49,13 +49,14 @@ public class MapManager : MonoBehaviour
         }
 
         int dx = 0, dy = 0;
-        if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
-        else if (Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
-        else if (Input.GetKeyDown(KeyCode.UpArrow)) dy = 1;
-        else if (Input.GetKeyDown(KeyCode.DownArrow)) dy = -1;
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) dx = -1;
+        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) dx = 1;
+        else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) dy = 1;
+        else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) dy = -1;
         if (dx != 0 || dy != 0) MoveSelection(dx, dy);
 
-        if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && selectedRegion != null)
+        bool enter = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Space);
+        if (enter && selectedRegion != null)
         {
             // 마우스로 눌렀던 버튼이 선택 상태로 남아 있으면 Enter가 그 버튼도 누르므로 선택을 비운다
             if (UnityEngine.EventSystems.EventSystem.current != null)

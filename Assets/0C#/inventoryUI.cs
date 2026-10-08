@@ -171,6 +171,91 @@ public class InventoryManager : MonoBehaviour
         bar.SetAsLastSibling();
     }
 
+    // =========================================================
+    //  가방 키보드 조작: W/A/S/D(또는 방향키)로 슬롯 이동, Space = 사용/장착/수리, Q = 버리기(두 번 눌러야 버림)
+    // =========================================================
+    private ItemStack kbSelected;
+
+    private void HandleBagKeys()
+    {
+        // 수리 창이 떠 있으면 그것만 조작: Space/Enter = 수리, Q = 취소
+        Transform rp = inventoryUI.transform.Find("RepairPopup");
+        if (rp != null)
+        {
+            RepairPopup popup = rp.GetComponent<RepairPopup>();
+            if (popup != null)
+            {
+                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) popup.Confirm();
+                else if (Input.GetKeyDown(KeyCode.Q)) popup.Close();
+            }
+            return;
+        }
+
+        // 제작 레시피 창이 열려 있으면 슬롯 이동 키는 쓰지 않는다
+        if (recipePanel != null && recipePanel.IsOpen) return;
+
+        int dx = 0, dy = 0;
+        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) dx = -1;
+        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) dx = 1;
+        else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) dy = 1;
+        else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) dy = -1;
+        if (dx != 0 || dy != 0) MoveKeyboardSelection(dx, dy);
+
+        ItemInfoPanel panel = ItemInfoPanel.Instance;
+        if (panel == null) return;
+        if (Input.GetKeyDown(KeyCode.Space)) panel.PrimaryAction();
+        if (Input.GetKeyDown(KeyCode.Q)) panel.DiscardKey();
+    }
+
+    // 마우스로 슬롯을 눌렀을 때도 키보드 선택이 거기서 이어지게 한다
+    public void MarkKeyboardSelection(ItemStack stack)
+    {
+        SetKeyboardHighlight(kbSelected, false);
+        kbSelected = stack;
+        SetKeyboardHighlight(kbSelected, true);
+    }
+
+    private void SetKeyboardHighlight(ItemStack stack, bool on)
+    {
+        if (stack != null && dynamicSlots.TryGetValue(stack, out ItemSlot slot) && slot != null) slot.SetSelected(on);
+    }
+
+    private void MoveKeyboardSelection(int dx, int dy)
+    {
+        List<ItemStack> shown = new List<ItemStack>();
+        foreach (ItemStack s in itemList)
+            if (dynamicSlots.TryGetValue(s, out ItemSlot sl) && sl != null && sl.gameObject.activeInHierarchy) shown.Add(s);
+        if (shown.Count == 0) return;
+
+        // 처음이거나 선택한 것이 사라졌으면 첫 슬롯부터
+        if (kbSelected == null || !shown.Contains(kbSelected)) { SelectByKeyboard(shown[0]); return; }
+
+        // 누른 방향으로 가장 가까운 슬롯 (방향에서 벗어난 만큼 불리하게 계산)
+        Vector3 from = dynamicSlots[kbSelected].transform.position;
+        ItemStack best = null;
+        float bestScore = float.MaxValue;
+        foreach (ItemStack s in shown)
+        {
+            if (s == kbSelected) continue;
+            Vector3 d = dynamicSlots[s].transform.position - from;
+            float along = d.x * dx + d.y * dy;
+            if (along <= 0.001f) continue;
+            float perp = Mathf.Abs(dx != 0 ? d.y : d.x);
+            float score = along + perp * 2f;
+            if (score < bestScore) { bestScore = score; best = s; }
+        }
+        if (best != null) SelectByKeyboard(best);
+    }
+
+    // 슬롯을 고르면 정보창이 열린다 (마우스로 누른 것과 같음)
+    private void SelectByKeyboard(ItemStack stack)
+    {
+        MarkKeyboardSelection(stack);
+        CloseStat();
+        ItemInfoPanel panel = ItemInfoPanel.Instance;
+        if (panel != null) panel.ShowItem(stack.itemData, stack);
+    }
+
     // 가방이 열려 있는 동안 값이 바뀌면(획득, 소모, 장비로 한도 변경 등) 게이지와 숫자를 갱신한다
     void Update()
     {
@@ -179,6 +264,7 @@ public class InventoryManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.C)) ToggleRecipePanel();
             if (Input.GetKeyDown(KeyCode.X)) OnClickSort();
             if (Input.GetKeyDown(KeyCode.Z)) OpenStat();
+            HandleBagKeys();
         }
 
         if (bagGaugeFill == null || inventoryUI == null || !inventoryUI.activeInHierarchy) return;
@@ -280,6 +366,7 @@ public class InventoryManager : MonoBehaviour
         sortLabel = sort.GetComponentInChildren<TextMeshProUGUI>();
         MakeBarButton("EquipButton", "장비창", anchor, pivot, pos - new Vector2((size.x + 10f) * 2f, 0f), size, new Color(0.5f, 0.4f, 0.2f), ToggleEquipPanel);
         MakeBarButton("BuffButton", "버프창", anchor, pivot, pos - new Vector2((size.x + 10f) * 3f, 0f), size, new Color(0.45f, 0.25f, 0.55f), ToggleBuffPanel);
+        MakeBarButton("ProficiencyButton", "숙련도창", anchor, pivot, pos - new Vector2((size.x + 10f) * 4f, 0f), size, new Color(0.2f, 0.5f, 0.45f), ToggleProficiencyPanel);
     }
 
     private GameObject MakeBarButton(string name, string label, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, Color color, UnityEngine.Events.UnityAction onClick)
@@ -500,6 +587,7 @@ public class InventoryManager : MonoBehaviour
     private void CloseInventoryInternal(bool playSound)
     {
         HideBagMessageNow();
+        MarkKeyboardSelection(null);
         if (inventoryUI != null)
         {
             Transform rp = inventoryUI.transform.Find("RepairPopup");
@@ -580,6 +668,7 @@ public class InventoryManager : MonoBehaviour
         slot.UpdateCountUI(stack.amount);
         dynamicSlots[stack] = slot;
         slot.SetEquippedMark(IsEquipped(stack));
+        if (stack == kbSelected) slot.SetSelected(true);
         return slot;
     }
 
@@ -887,6 +976,8 @@ public class InventoryManager : MonoBehaviour
     private int appliedSpBonus, appliedManaBonus;   // 지금 GameManager에 더해 둔 장비 SP/마나 보너스
     private TextMeshProUGUI equipBody, buffBody;     // 장비창 / 버프창 본문 글자 (BagUI 프리팹의 EquipPanel, BuffPanel)
     private GameObject equipPanel, buffPanel;
+    private GameObject profPanel;                    // BagUI 프리팹의 ProficiencyPanel
+    private TextMeshProUGUI profBody;
 
     public static bool CanEquip(Item item) { return item != null && item.equipSlot != EquipSlot.None; }
 
@@ -1109,8 +1200,11 @@ public class InventoryManager : MonoBehaviour
         Transform b = inventoryUI.transform.Find("BuffPanel");
         if (e != null) { equipPanel = e.gameObject; Transform body = e.Find("Body"); equipBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
         if (b != null) { buffPanel = b.gameObject; Transform body = b.Find("Body"); buffBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
+        Transform p = inventoryUI.transform.Find("ProficiencyPanel");
+        if (p != null) { profPanel = p.gameObject; Transform body = p.Find("Body"); profBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
         if (equipPanel != null) equipPanel.SetActive(false);
         if (buffPanel != null) buffPanel.SetActive(false);
+        if (profPanel != null) profPanel.SetActive(false);
     }
 
     // 정보창/스탯창과 같은 자리를 쓰므로, 하나가 열리면 나머지는 닫는다
@@ -1118,6 +1212,7 @@ public class InventoryManager : MonoBehaviour
     {
         if (equipPanel != null) equipPanel.SetActive(false);
         if (buffPanel != null) buffPanel.SetActive(false);
+        if (profPanel != null) profPanel.SetActive(false);
     }
 
     public void ToggleEquipPanel()
@@ -1146,6 +1241,48 @@ public class InventoryManager : MonoBehaviour
         buffPanel.SetActive(true);
         buffPanel.transform.SetAsLastSibling();
         RefreshEquipPanels();
+    }
+
+    public void ToggleProficiencyPanel()
+    {
+        if (profPanel == null) return;
+        SoundManager.Instance?.PlaySlotClickSound();
+        bool on = !profPanel.activeSelf;
+        CloseSidePanels();
+        if (!on) return;
+        HideInfoPanel();
+        if (StatUI != null) StatUI.SetActive(false);
+        profPanel.SetActive(true);
+        profPanel.transform.SetAsLastSibling();
+        RefreshEquipPanels();
+    }
+
+    // 숙련도 목록: 이름, 레벨, 경험치, 그 레벨의 보너스
+    public string ProficiencyText()
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        int need = LevelSystem.ExpToNext(GameManager.Level);
+        sb.AppendLine($"<b>플레이어 Lv.{GameManager.Level}</b>   EXP {GameManager.Exp}" + (need > 0 ? $" / {need}" : " (MAX)"));
+        sb.AppendLine();
+
+        foreach (ProficiencyDef def in GameTables.Proficiency.defs)
+        {
+            if (def == null) continue;
+            int lv = Proficiency.Level(def);
+            int next = lv >= 1 && lv <= def.levels.Count ? def.levels[lv - 1].expToNext : 0;
+            string exp = next > 0 ? $"{Proficiency.Exp(def)} / {next}" : $"{Proficiency.Exp(def)} (MAX)";
+            sb.AppendLine($"<b>{def.label}</b>  Lv.{lv}   EXP {exp}");
+
+            ProficiencyLevel l = Proficiency.Current(def);
+            if (l == null) continue;
+            List<string> bonus = new List<string>();
+            if (l.bonusPercent != 0f) bonus.Add(def.kind == ProficiencyKind.Recovery ? $"독 내성 {l.bonusPercent:0.#}%" : $"수확 +{l.bonusPercent:0.#}%");
+            if (l.extraMax > 0) bonus.Add($"수량 +{Mathf.Min(l.extraMin, l.extraMax)}~{Mathf.Max(l.extraMin, l.extraMax)}");
+            if (l.expBonusPercent != 0f) bonus.Add($"레벨 경험치 +{l.expBonusPercent:0.#}%");
+            if (l.spReducePercent != 0f) bonus.Add($"SP -{l.spReducePercent:0.#}%");
+            if (bonus.Count > 0) sb.AppendLine("   <size=75%>" + string.Join(" / ", bonus) + "</size>");
+        }
+        return sb.ToString();
     }
 
     private static readonly EquipSlot[] SlotOrder =
@@ -1187,6 +1324,9 @@ public class InventoryManager : MonoBehaviour
 
         if (buffBody != null && buffPanel != null && buffPanel.activeSelf)
             buffBody.text = BuffText();
+
+        if (profBody != null && profPanel != null && profPanel.activeSelf)
+            profBody.text = ProficiencyText();
     }
 
     // 버프/디버프 내역: 적용 중인 특성과 독 내성
@@ -1279,11 +1419,12 @@ public class InventoryManager : MonoBehaviour
         if (!NeedsRepair(s)) return false;
         Item it = s.itemData;
 
-        if (it.repairItemId > 0 && it.repairAmount > 0)
+        List<Ingredient> materials = it.RepairMaterials();
+        foreach (Ingredient ing in materials)
         {
-            if (GetItemCount(it.repairItemId) < it.repairAmount) { message = "수리 재료가 부족합니다."; return false; }
-            RemoveItem(it.repairItemId, it.repairAmount);
+            if (GetItemCount(ing.itemId) < ing.amount) { message = "수리 재료가 부족합니다."; return false; }
         }
+        foreach (Ingredient ing in materials) RemoveItem(ing.itemId, ing.amount);
 
         s.durability = RepairedDurability(it);
         RecalcEquipment();

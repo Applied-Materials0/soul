@@ -335,7 +335,7 @@ public class BattleSystem : MonoBehaviour
             int dmg = Mathf.Max(1, Mathf.RoundToInt(statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed));
             statusElapsed++;
             statusTurnsLeft--;
-            yield return Say($"{statusTrait.label} 때문에 {name}에게 {dmg}의 피해!"); // 문구가 보인 뒤에
+            yield return Say($"{name}{Josa(name, "이", "가")} {statusTrait.label}에 의한 데미지를 입었다!"); // 문구가 보인 뒤에
             monsterHp = Mathf.Max(0, monsterHp - dmg);                                // 체력이 깎인다
             hud.SetHp(monsterHp, monster.hpMax);
             if (statusTurnsLeft <= 0) statusTrait = null;
@@ -505,6 +505,9 @@ public class BattleSystem : MonoBehaviour
         string penalty = InventoryManager.Instance != null ? InventoryManager.Instance.ApplyFaintPenalty() : "";
         RefreshPlayerUI();
         ItemGainToast.ShowMessage(string.IsNullOrEmpty(penalty) ? "병원에서 치료를 받았다." : "병원에서 치료를 받았다. " + penalty + ".");
+
+        // 알림 글자가 완전히 사라진 뒤에 화면이 어두워지며 마을로 간다
+        yield return new WaitForSeconds(ItemGainToast.MessageDuration);
 
         EndBattle();
         busy = false;

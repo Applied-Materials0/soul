@@ -79,8 +79,6 @@ public class DataTableWindow : EditorWindow
 
     private static readonly Col[] ItemRepair = ItemLead.Concat(new[]
     {
-        C("수리 재료 ID", "repairItemId", 90, "수리에 필요한 재료 아이템 ID (0이면 재료 없이 수리)"),
-        C("재료 수량", "repairAmount", 75, "수리 한 번에 드는 재료 수량"),
         C("차는 내구도", "repairRestore", 85, "수리하면 차는 내구도 (0이면 가득 참)"),
         C("경험치/내구도", "wearExp", 85, "내구도를 1 쓸 때마다 쌓이는 장비 경험치 (등급 표의 경험치로 등급이 오름)"),
     }).ToArray();
@@ -127,6 +125,7 @@ public class DataTableWindow : EditorWindow
     // ===== 상태 =====
     private Mode mode;
     private int itemTab, monsterTab;
+    private Vector2 ruleScroll; // 규칙 표 화면의 세로 스크롤
     private List<SerializedObject> rows = new List<SerializedObject>();
     private Dictionary<int, string> itemNames = new Dictionary<int, string>();
     private SerializedObject resourceTable; // [자원] 탭이 보여 주는 ResourceSpawnTable 에셋
@@ -336,6 +335,10 @@ public class DataTableWindow : EditorWindow
         EditorGUILayout.LabelField($"에셋: {AssetDatabase.GetAssetPath(ruleTable.targetObject)}", EditorStyles.miniLabel);
 
         bool changed = false;
+
+        // 숙련도/특성처럼 표가 길어도 아래로 스크롤되도록 전체를 스크롤 영역에 넣는다 (레벨 표는 자체 스크롤이 있음)
+        bool outerScroll = mode != Mode.Level;
+        if (outerScroll) ruleScroll = EditorGUILayout.BeginScrollView(ruleScroll);
         switch (mode)
         {
             case Mode.Level: changed = RuleTableDrawers.DrawLevelTable(ruleTable, ref scroll); break;
@@ -347,6 +350,8 @@ public class DataTableWindow : EditorWindow
             case Mode.Trait: changed = RuleTableDrawers.DrawTraitTable(ruleTable); break;
             case Mode.Grade: changed = RuleTableDrawers.DrawGradeTable(ruleTable); break;
         }
+
+        if (outerScroll) EditorGUILayout.EndScrollView();
 
         if (changed)
         {
@@ -451,6 +456,7 @@ public class DataTableWindow : EditorWindow
     private string ExtraHeader()
     {
         if (mode == Mode.Item && itemTab == 3) return "재료 (아이템 ID x 수량)   |   필요 도구 (종류, T=티어, 내구도 소모)";
+        if (mode == Mode.Item && itemTab == 5) return "수리 재료 (아이템 ID x 수량)";
         if (mode == Mode.Monster && monsterTab == 2) return "드랍 (아이템 ID x 최소~최대 @확률%)";
         if (mode == Mode.Monster && monsterTab == 3) return "출현 (지역 ID / 비중)";
         if (mode == Mode.Monster && monsterTab == 4) return "도려내서 얻는 것 (아이템 ID x 최소~최대 @확률%)";
@@ -616,9 +622,10 @@ public class DataTableWindow : EditorWindow
     {
         if (mode == Mode.Item && itemTab == 3)
         {
-            DrawIngredients(ref c, so);
+            DrawIngredients(ref c, so, "recipe.ingredients");
             DrawRecipeTools(ref c, so);
         }
+        else if (mode == Mode.Item && itemTab == 5) DrawIngredients(ref c, so, "repairIngredients");
         else if (mode == Mode.Monster && monsterTab == 2) DrawDrops(ref c, so, "drops");
         else if (mode == Mode.Monster && monsterTab == 3) DrawSpawns(ref c, so);
         else if (mode == Mode.Monster && monsterTab == 4) DrawDrops(ref c, so, "carveDrops");
@@ -632,6 +639,11 @@ public class DataTableWindow : EditorWindow
             SerializedProperty ing = so.FindProperty("recipe.ingredients");
             SerializedProperty tools = so.FindProperty("recipe.tools");
             return (ing != null ? ing.arraySize : 0) * 210f + 40f + 40f + (tools != null ? tools.arraySize : 0) * 180f + 40f;
+        }
+        if (mode == Mode.Item && itemTab == 5)
+        {
+            SerializedProperty rep = so.FindProperty("repairIngredients");
+            return (rep != null ? rep.arraySize : 0) * 210f + 60f;
         }
         if (mode == Mode.Monster && (monsterTab == 2 || monsterTab == 4))
         {
@@ -652,9 +664,9 @@ public class DataTableWindow : EditorWindow
     }
 
     // 아이템 레시피: 재료를 [아이템ID (이름) x 수량 -] 로 나열하고 [+]로 추가
-    private void DrawIngredients(ref Cursor c, SerializedObject so)
+    private void DrawIngredients(ref Cursor c, SerializedObject so, string path)
     {
-        SerializedProperty list = so.FindProperty("recipe.ingredients");
+        SerializedProperty list = so.FindProperty(path);
         if (list == null) return;
 
         int removeAt = -1;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -47,7 +48,7 @@ public class RepairPopup : MonoBehaviour
         title.text = "수리";
 
         popup.bodyText = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Body", panel, new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(740f, 300f)),
+            CraftQuantityPopup.NewRect("Body", panel, new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(740f, 340f)),
             34, TextAlignmentOptions.TopLeft, font);
         popup.bodyText.color = Color.black;
         ((RectTransform)popup.bodyText.transform).pivot = new Vector2(0.5f, 1f);
@@ -70,23 +71,24 @@ public class RepairPopup : MonoBehaviour
         string text = $"{it.itemName}\n내구도  {stack.durability} -> {InventoryManager.RepairedDurability(it)} / {it.durabilitymax}\n\n필요한 재료\n";
         bool enough = true;
 
-        if (it.repairItemId > 0 && it.repairAmount > 0)
+        List<Ingredient> materials = it.RepairMaterials();
+        foreach (Ingredient ing in materials)
         {
-            Item mat = inv.GetItemData(it.repairItemId);
-            int have = inv.GetItemCount(it.repairItemId);
-            enough = have >= it.repairAmount;
-            string name = mat != null ? mat.itemName : $"ID {it.repairItemId}";
-            string color = enough ? "#1B7F2A" : "#C00000";
-            text += $"  {name} x{it.repairAmount}   <color={color}>(보유 {have})</color>";
+            Item mat = inv.GetItemData(ing.itemId);
+            int have = inv.GetItemCount(ing.itemId);
+            bool ok = have >= ing.amount;
+            if (!ok) enough = false;
+            string name = mat != null ? mat.itemName : $"ID {ing.itemId}";
+            string color = ok ? "#1B7F2A" : "#C00000";
+            text += $"  {name} x{ing.amount}   <color={color}>(보유 {have})</color>\n";
         }
-        else
-        {
-            text += "  없음";
-        }
+        if (materials.Count == 0) text += "  없음";
 
         bodyText.text = text;
         repairButton.interactable = enough;
     }
+
+    public void Confirm() { if (repairButton != null && repairButton.interactable) OnRepair(); }
 
     private void OnRepair()
     {

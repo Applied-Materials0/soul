@@ -43,6 +43,13 @@ MonoBehaviour:
   spmax: 0
   weightmax: 0
   slotmax: 0
+  equipSlot: 0
+  traitId: 0
+  repairIngredients: []
+  repairItemId: 0
+  repairAmount: 0
+  repairRestore: 0
+  wearExp: 1
   useHp: 0
   useSp: 0
   useMana: 0
@@ -51,11 +58,9 @@ MonoBehaviour:
   recipe:
     ingredients:
     - itemId: 0
-      amount: 3
-    - itemId: 2
-      amount: 3
+      amount: 1
     - itemId: 13
-      amount: 5
+      amount: 1
     tools: []
     resultItemId: 9
-    resultAmount: 1
+    resultAmount: 2

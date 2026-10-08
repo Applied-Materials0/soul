@@ -72,6 +72,7 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, 
 
         // 스탯 창이 켜져 있으면 닫고 정보창을 보여 줌
         InventoryManager.Instance?.CloseStat();
+        InventoryManager.Instance?.MarkKeyboardSelection(Stack); // 키보드 이동은 눌러 둔 슬롯에서 이어짐
 
         // 정보 패널 열기 (효과음은 패널이 재생)
         ItemInfoPanel panel = ItemInfoPanel.Instance;
@@ -158,7 +159,10 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, 
             rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = new Vector2(0f, 30f);
             equippedMark = go.AddComponent<TextMeshProUGUI>();
-            if (countText != null) equippedMark.font = countText.font;
+            // 숫자용 글꼴에는 한글이 없어 네모로 깨지므로, 인벤토리의 한글 글꼴을 쓴다
+            TMP_FontAsset koreanFont = InventoryManager.Instance != null ? InventoryManager.Instance.UIFont : null;
+            if (koreanFont != null) equippedMark.font = koreanFont;
+            else if (countText != null) equippedMark.font = countText.font;
             equippedMark.fontSize = 22;
             equippedMark.alignment = TextAlignmentOptions.Left;
             equippedMark.color = new Color(0.1f, 0.55f, 0.15f);
@@ -167,6 +171,16 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, 
             equippedMark.text = "장착";
         }
         equippedMark.gameObject.SetActive(on);
+    }
+
+    // 키보드로 고른 슬롯은 조금 커져서 보인다
+    private Vector3 baseScale = Vector3.one;
+    private bool scaleSaved;
+
+    public void SetSelected(bool on)
+    {
+        if (!scaleSaved) { baseScale = transform.localScale; scaleSaved = true; }
+        transform.localScale = on ? baseScale * 1.1f : baseScale;
     }
 
     /// <summary>

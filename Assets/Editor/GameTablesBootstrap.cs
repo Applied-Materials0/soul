@@ -28,6 +28,7 @@ public static class GameTablesBootstrap
         Ensure<GradeTable>("GradeTable");
         EnsureProficiencies();
         MigrateTraitDefaults();
+        MigrateRepairMaterials();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
         SoundTable sounds = Ensure<SoundTable>("SoundTable", out bool created);
@@ -88,6 +89,24 @@ public static class GameTablesBootstrap
     {
         foreach (ProficiencyDef d in table.defs) if (d != null && d.id == id) return true;
         return false;
+    }
+
+    // 수리 재료가 하나뿐이던 때의 값(repairItemId/repairAmount)을 재료 목록으로 옮긴다
+    private static void MigrateRepairMaterials()
+    {
+        bool any = false;
+        foreach (string guid in AssetDatabase.FindAssets("t:Item"))
+        {
+            Item item = AssetDatabase.LoadAssetAtPath<Item>(AssetDatabase.GUIDToAssetPath(guid));
+            if (item == null || item.repairItemId <= 0 || item.repairAmount <= 0) continue;
+            if (item.repairIngredients.Count == 0)
+                item.repairIngredients.Add(new Ingredient { itemId = item.repairItemId, amount = item.repairAmount });
+            item.repairItemId = 0;
+            item.repairAmount = 0;
+            EditorUtility.SetDirty(item);
+            any = true;
+        }
+        if (any) AssetDatabase.SaveAssets();
     }
 
     // 지속 피해(상태이상) 항목이 생기기 전에 만든 독 특성에 기본값을 채운다 (아직 아무것도 안 적었을 때만)

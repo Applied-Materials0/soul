@@ -138,6 +138,9 @@ public class ItemGainToast : MonoBehaviour
         StartCoroutine(Fade(go, group, 2.2f));
     }
 
+    // 글자 알림이 나타나서 완전히 사라질 때까지 걸리는 시간 (기절 후 화면 전환 시점을 맞추는 데 씀)
+    public static float MessageDuration { get { return FadeInTime + MessageHoldTime + FadeOutTime; } }
+
     private const float MessageHoldTime = 2.5f; // 글자 알림은 읽을 시간을 더 준다
 
     // 아이템 이미지 없이 글자만 화면 중앙에 잠깐 보여 준다 (아이템 사용 결과, 기절 페널티 안내 등)

@@ -63,7 +63,14 @@ public class FieldSearch : MonoBehaviour
         if (battle != null && battle.Active) { battle.FaintByItem(); return; }
 
         string text = InventoryManager.Instance != null ? InventoryManager.Instance.RecoverFromFaint() : "병원에서 치료를 받았다.";
+        StartCoroutine(FaintOutRoutine(text));
+    }
+
+    // 알림 글자가 완전히 사라진 뒤에 화면이 어두워지며 마을로 간다
+    private System.Collections.IEnumerator FaintOutRoutine(string text)
+    {
         ItemGainToast.ShowMessage(text);
+        yield return new WaitForSeconds(ItemGainToast.MessageDuration);
         ReturnToTown();
     }
 

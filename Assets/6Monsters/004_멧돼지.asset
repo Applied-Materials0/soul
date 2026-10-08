@@ -45,4 +45,4 @@ MonoBehaviour:
   drops: []
   spawns:
   - regionId: 1
-    weight: 10
+    weight: 99

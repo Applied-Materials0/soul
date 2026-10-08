@@ -93,8 +93,9 @@ public class Item : ScriptableObject
     public int traitId;           // 특성 ID (특성 표 참고. 0이면 없음. 예: 독)
 
     [Header("수리 / 등급 (장비/도구의 내구도가 0이 되면 정보창의 [수리]로 고침)")]
-    public int repairItemId;      // 수리에 필요한 재료 아이템 ID (0이면 재료 없이 수리)
-    public int repairAmount;      // 수리에 필요한 재료 수량
+    public List<Ingredient> repairIngredients = new List<Ingredient>(); // 수리에 필요한 재료 (제작 레시피처럼 여러 개. 비어 있으면 재료 없이 수리)
+    [HideInInspector] public int repairItemId;   // (옛 값: 재료 하나짜리. 에디터가 repairIngredients로 옮겨 줌)
+    [HideInInspector] public int repairAmount;
     public int repairRestore;     // 수리하면 차는 내구도 (0 이하면 가득 참)
     public int wearExp = 1;       // 내구도를 1 소모할 때마다 쌓이는 장비 경험치 (등급 표의 경험치로 등급이 오름)
 
@@ -108,6 +109,17 @@ public class Item : ScriptableObject
     [Header("표시 / 제작")]
     public Sprite icon;        // 아이템 이미지
     public Recipe recipe;      // 제작법 (재료가 비어 있으면 제작 불가)
+
+    // 수리에 드는 재료 목록 (옛 단일 재료 값도 인정)
+    public List<Ingredient> RepairMaterials()
+    {
+        List<Ingredient> list = new List<Ingredient>();
+        foreach (Ingredient ing in repairIngredients)
+            if (ing != null && ing.itemId > 0 && ing.amount > 0) list.Add(ing);
+        if (list.Count == 0 && repairItemId > 0 && repairAmount > 0)
+            list.Add(new Ingredient { itemId = repairItemId, amount = repairAmount });
+        return list;
+    }
 
     // 제작법은 "이 아이템을 만드는 방법"이므로 결과 아이템 id는 항상 자기 자신으로 맞춘다
     private void OnValidate()

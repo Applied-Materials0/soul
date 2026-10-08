@@ -46,6 +46,17 @@ MonoBehaviour:
   slotmax: 0
   equipSlot: 1
   traitId: 0
+  repairIngredients:
+  - itemId: 0
+    amount: 1
+  - itemId: 2
+    amount: 1
+  - itemId: 13
+    amount: 1
+  repairItemId: 0
+  repairAmount: 0
+  repairRestore: 50
+  wearExp: 1
   useHp: 0
   useSp: 0
   useMana: 0

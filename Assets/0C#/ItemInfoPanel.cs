@@ -263,6 +263,22 @@ public class ItemInfoPanel : MonoBehaviour
         RepairPopup.Open(currentStack, () => { if (currentItem != null) Display(currentItem, currentStack); });
     }
 
+    // 키보드 Space: 이 아이템의 주된 동작 (사용 -> 장착/해제 -> 수리 순으로 가능한 것)
+    public void PrimaryAction()
+    {
+        if (!gameObject.activeSelf || currentStack == null) return;
+        if (useButton != null && useButton.activeSelf) OnClickUse();
+        else if (equipButton != null && equipButton.activeSelf) OnClickEquip();
+        else if (repairButton != null && repairButton.activeSelf) OnClickRepair();
+    }
+
+    // 키보드 Q: 버리기. 처음 누르면 "정말 버림?"이 되고, 한 번 더 누르면 버린다
+    public void DiscardKey()
+    {
+        if (!gameObject.activeSelf || currentStack == null || discardButton == null || !discardButton.activeSelf) return;
+        OnClickDiscard();
+    }
+
     // 정보창 아래쪽의 [장착] / [해제] 버튼
     private GameObject equipButton;
     private TextMeshProUGUI equipLabel;
