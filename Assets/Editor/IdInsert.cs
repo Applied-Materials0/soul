@@ -34,6 +34,7 @@ public static class IdInsert
         foreach (Item item in items)
         {
             if (item.useResultItemId >= insertId) { Undo.RecordObject(item, "Insert Item"); item.useResultItemId++; EditorUtility.SetDirty(item); }
+            if (item.repairItemId >= insertId) { Undo.RecordObject(item, "Insert Item"); item.repairItemId++; EditorUtility.SetDirty(item); }
             if (item.recipe == null) continue;
             Undo.RecordObject(item, "Insert Item");
             foreach (Ingredient ing in item.recipe.ingredients)

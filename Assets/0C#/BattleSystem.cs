@@ -46,6 +46,9 @@ public class BattleSystem : MonoBehaviour
         busy = true;
         playerDefending = false;
         monsterDefending = false;
+        statusTrait = null;
+        statusTurnsLeft = 0;
+        statusElapsed = 0;
         suppressed = false;
         lineShownAt = Time.time; // FieldSearch가 방금 띄운 "OO이(가) 나타났다!"가 읽힐 시간을 센다
 
@@ -123,6 +126,37 @@ public class BattleSystem : MonoBehaviour
         StartCoroutine(FaintRoutine());
     }
 
+    // ===== 적에게 붙은 상태이상 (독 등. 특성 표에서 정함) =====
+    private TraitDef statusTrait;   // 붙어 있는 상태이상의 특성
+    private int statusTurnsLeft;    // 남은 턴
+    private int statusElapsed;      // 지금까지 지난 턴 (지속 피해가 이만큼 커짐)
+
+    private IEnumerator TryInflictStatus(string name)
+    {
+        if (InventoryManager.Instance == null) yield break;
+        if (monsterHp <= 0) yield break; // 이미 쓰러뜨렸으면 독이 퍼졌다는 문구도 없다
+        foreach (InventoryManager.TraitSource ts in InventoryManager.Instance.ActiveTraits())
+        {
+            TraitDef t = ts.trait;
+            if (t.inflictChance <= 0f || t.dotDamage <= 0f) continue;
+            if (!BattleCalc.Roll(t.inflictChance)) continue;
+
+            int duration = t.dotTurns > 0 ? t.dotTurns : 999;
+            if (statusTrait != null && statusTrait.id == t.id && statusTurnsLeft > 0)
+            {
+                // 이미 걸려 있다: 문구 없이 지속 시간만 다시 채운다. 지난 턴은 이어져서 피해가 계속 커진다 (누적)
+                statusTurnsLeft = Mathf.Max(statusTurnsLeft, duration);
+                break;
+            }
+
+            statusTrait = t;
+            statusTurnsLeft = duration;
+            statusElapsed = 0;
+            yield return Say($"{name}에게 {t.label}{Josa(t.label, "이", "가")} 퍼졌다!");
+            break;
+        }
+    }
+
     private IEnumerator AttackRoutine()
     {
         busy = true;
@@ -136,7 +170,7 @@ public class BattleSystem : MonoBehaviour
         }
 
         PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
-        if (InventoryManager.Instance != null) InventoryManager.Instance.WearEquipment(true); // 공격하면 무기가 닳는다
+        string wearInfo = InventoryManager.Instance != null ? InventoryManager.Instance.WearEquipment(true) : ""; // 공격하면 무기가 닳는다
 
         bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
         BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, targetDefending);
@@ -161,7 +195,11 @@ public class BattleSystem : MonoBehaviour
             // 몬스터가 방어했는데 피해가 들어갔으면 방어 실패
             string head = targetDefending ? $"{name}의 방어가 실패했다... " : "";
             string crit = r.crit ? "치명타! " : "";
-            yield return Say($"{head}{crit}{name}에게 {r.damage}의 피해를 주었다!");
+            string fixedNote = r.fixedDamage > 0 ? $" (고정 {r.fixedDamage} 포함)" : "";
+            yield return Say($"{head}{crit}{name}에게 {r.damage}의 피해를 주었다!{fixedNote}{wearInfo}");
+
+            // 독 같은 특성이 있으면 확률적으로 적에게 상태이상을 건다
+            yield return TryInflictStatus(name);
 
             if (r.heal > 0)
             {
@@ -170,6 +208,10 @@ public class BattleSystem : MonoBehaviour
                 yield return Say($"체력을 {r.heal} 흡수했다.");
             }
         }
+
+        // 공격했으니 전투 숙련도와 플레이어 레벨 경험치를 얻는다
+        string combatReward = Proficiency.Reward(ProficiencyKind.Combat);
+        if (combatReward.Length > 0) yield return Say(combatReward);
 
         if (monsterHp <= 0)
         {
@@ -196,6 +238,8 @@ public class BattleSystem : MonoBehaviour
         playerDefending = true;
         PlaySound(SoundEvent.Defend); // 방어 효과음 (효과음 표)
         yield return Say("방어 태세를 취했다.");
+        string defendReward = Proficiency.Reward(ProficiencyKind.Combat);
+        if (defendReward.Length > 0) yield return Say(defendReward);
         yield return MonsterTurn();
         busy = false;
     }
@@ -284,6 +328,23 @@ public class BattleSystem : MonoBehaviour
         suppressed = false;
 
         string name = monster.monsterName;
+
+        // 상태이상(독 등)의 지속 피해: 턴이 지날수록 커진다
+        if (statusTrait != null && statusTurnsLeft > 0)
+        {
+            int dmg = Mathf.Max(1, Mathf.RoundToInt(statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed));
+            statusElapsed++;
+            statusTurnsLeft--;
+            yield return Say($"{statusTrait.label} 때문에 {name}에게 {dmg}의 피해!"); // 문구가 보인 뒤에
+            monsterHp = Mathf.Max(0, monsterHp - dmg);                                // 체력이 깎인다
+            hud.SetHp(monsterHp, monster.hpMax);
+            if (statusTurnsLeft <= 0) statusTrait = null;
+            if (monsterHp <= 0)
+            {
+                yield return VictoryRoutine();
+                yield break;
+            }
+        }
 
         // 체력이 일정 비율 이하로 떨어지면 도망치는 몬스터 (예: 토끼). 도망치면 보상 없이 전투가 끝난다
         float fleeRatio = monsterHp / (float)Mathf.Max(1, monster.hpMax);
@@ -500,6 +561,8 @@ public class BattleSystem : MonoBehaviour
     private bool PaySP(SPAction action)
     {
         int cost = GameTables.SPCosts.Get(action);
+        if (action == SPAction.Attack || action == SPAction.Defend)
+            cost = Proficiency.ReducedSp(ProficiencyKind.Combat, cost); // 전투 숙련도가 SP를 줄여 줌
         if (GameManager.SP < cost) return false;
         GameManager.SP -= cost;
         RefreshPlayerUI();

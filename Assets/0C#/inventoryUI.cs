@@ -500,6 +500,11 @@ public class InventoryManager : MonoBehaviour
     private void CloseInventoryInternal(bool playSound)
     {
         HideBagMessageNow();
+        if (inventoryUI != null)
+        {
+            Transform rp = inventoryUI.transform.Find("RepairPopup");
+            if (rp != null) Destroy(rp.gameObject);
+        }
         if (playSound && inventoryUI.activeSelf && BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
         if (recipePanel != null) recipePanel.Close(true);
@@ -515,6 +520,7 @@ public class InventoryManager : MonoBehaviour
     // 스탯 버튼: 스탯창을 켜면 정보창(ItemInfoPanel)은 숨기고, 한 번 더 누르면 스탯창을 끔
     public void OpenStat()
     {
+        CloseSidePanels(); // 장비창/버프창과 같은 자리
         if (BtnAudio != null) BtnAudio.Play();
         bool willStatBeActive = !StatUI.activeSelf;
         StatUI.SetActive(willStatBeActive);
@@ -635,6 +641,7 @@ public class InventoryManager : MonoBehaviour
         if (IsUnbreakable(targetStack)) { LastToolDurability = UnbreakableDurability; return usedTool; } // 닳지 않는 도구는 내구도를 깎지 않는다
         targetStack.durability -= 1;
         LastToolDurability = Mathf.Max(0, targetStack.durability);
+        GainWearExp(targetStack, 1);
         if (targetStack.durability <= 0)
         {
             targetStack.durability = 0;
@@ -819,9 +826,8 @@ public class InventoryManager : MonoBehaviour
 
         // 완성품이 들어갈 자리와 무게가 있는지는 재료를 뺀 뒤에야 알 수 있다.
         // 그래서 현재 상태를 복사해 두었다가, 안 되면 그대로 되돌린다.
-        List<ItemStack> snapshot = itemList
-            .Select(s => new ItemStack(s.itemData, s.amount) { durability = s.durability })
-            .ToList();
+        // (복사본으로 바꾸면 장착 기록과 등급/경험치가 끊기므로, 원래 스택의 값만 기억해 둔다)
+        var saved = itemList.Select(s => new { stack = s, amount = s.amount, durability = s.durability }).ToList();
 
         // 1. 재료 소모
         foreach (var ing in recipe.ingredients)
@@ -834,7 +840,7 @@ public class InventoryManager : MonoBehaviour
         AddBlock block;
         if (GetAddableAmount(result, total, out block) < total)
         {
-            itemList = snapshot;
+            itemList = saved.Select(x => { x.stack.amount = x.amount; x.stack.durability = x.durability; return x.stack; }).ToList();
             RefreshInventoryUI();
             GameManager.Weight = CurrentWeight;
         RecalcEquipment();
@@ -855,6 +861,7 @@ public class InventoryManager : MonoBehaviour
                     if (IsUnbreakable(s)) break; // 닳지 않는 도구는 내구도를 깎지 않는다
                     int take = Mathf.Min(s.durability, remaining);
                     s.durability -= take;
+                    GainWearExp(s, take);
                     remaining -= take;
                     if (remaining <= 0) break;
                 }
@@ -863,26 +870,46 @@ public class InventoryManager : MonoBehaviour
 
         // 4. 완성품 추가
         AddItem(result, total);
+
+        // 제작했으니 제작 숙련도와 플레이어 레벨 경험치를 얻는다
+        string craftReward = Proficiency.Reward(ProficiencyKind.Crafting);
+        if (craftReward.Length > 0) ShowBagMessageOrToast(craftReward);
         return true;
     }
 
     // =========================================================
-    //  장비 장착 / 특성 / 버프
+    //  장비 장착 / 특성 / 버프 / 등급 / 수리
     //  장착한 아이템은 가방(itemList)에 그대로 있고, 어느 부위에 끼웠는지만 따로 기억한다.
     //  장착해야 능력치와 특성이 적용된다. 가방에 든 도구(낫, 도끼 등)는 장착하지 않아도 가장 높은 공격력 하나가 적용된다.
+    //  무기는 두 개까지, 나머지 부위(머리/몸/다리/장신구/방패)는 하나씩 장착할 수 있다.
     // =========================================================
-    private readonly Dictionary<EquipSlot, ItemStack> equipped = new Dictionary<EquipSlot, ItemStack>();
+    private readonly Dictionary<EquipSlot, List<ItemStack>> equipped = new Dictionary<EquipSlot, List<ItemStack>>();
     private int appliedSpBonus, appliedManaBonus;   // 지금 GameManager에 더해 둔 장비 SP/마나 보너스
     private TextMeshProUGUI equipBody, buffBody;     // 장비창 / 버프창 본문 글자 (BagUI 프리팹의 EquipPanel, BuffPanel)
     private GameObject equipPanel, buffPanel;
 
     public static bool CanEquip(Item item) { return item != null && item.equipSlot != EquipSlot.None; }
-    public bool IsEquipped(ItemStack s) { return s != null && equipped.ContainsValue(s); }
 
-    public ItemStack EquippedIn(EquipSlot slot)
+    // 부위별로 한 번에 낄 수 있는 개수 (무기만 2개)
+    public static int SlotCapacity(EquipSlot slot) { return slot == EquipSlot.Weapon ? 2 : 1; }
+
+    public bool IsEquipped(ItemStack s)
     {
-        equipped.TryGetValue(slot, out ItemStack s);
-        return s;
+        if (s == null) return false;
+        foreach (List<ItemStack> list in equipped.Values) if (list.Contains(s)) return true;
+        return false;
+    }
+
+    // 그 부위에 장착한 스택들 (없으면 빈 목록)
+    public List<ItemStack> EquippedIn(EquipSlot slot)
+    {
+        return equipped.TryGetValue(slot, out List<ItemStack> list) ? list : new List<ItemStack>();
+    }
+
+    private IEnumerable<ItemStack> AllEquipped()
+    {
+        foreach (List<ItemStack> list in equipped.Values)
+            foreach (ItemStack s in list) yield return s;
     }
 
     // 부서진(내구도 0인) 장비는 능력치가 적용되지 않는다
@@ -892,14 +919,19 @@ public class InventoryManager : MonoBehaviour
     {
         message = "";
         if (stack == null || !CanEquip(stack.itemData)) { message = "장착할 수 없는 아이템입니다."; return false; }
-        if (!IsWorking(stack)) { message = "파괴되어 장착할 수 없습니다."; return false; }
+        if (!IsWorking(stack)) { message = "파괴되어 장착할 수 없습니다. 먼저 수리하세요."; return false; }
+        if (IsEquipped(stack)) return false;
 
         EquipSlot slot = stack.itemData.equipSlot;
-        ItemStack old = EquippedIn(slot);
-        equipped[slot] = stack;
+        if (!equipped.TryGetValue(slot, out List<ItemStack> list)) { list = new List<ItemStack>(); equipped[slot] = list; }
+
+        // 자리가 없으면 가장 먼저 낀 것을 벗긴다
+        ItemStack old = null;
+        if (list.Count >= SlotCapacity(slot)) { old = list[0]; list.RemoveAt(0); }
+        list.Add(stack);
         RecalcEquipment();
 
-        message = old != null && old != stack
+        message = old != null
             ? $"{Josa.WithEul(stack.itemData.itemName)} 장착했다. ({old.itemData.itemName} 해제)"
             : $"{Josa.WithEul(stack.itemData.itemName)} 장착했다.";
         return true;
@@ -909,8 +941,7 @@ public class InventoryManager : MonoBehaviour
     {
         message = "";
         if (!IsEquipped(stack)) return false;
-        EquipSlot slot = stack.itemData.equipSlot;
-        equipped.Remove(slot);
+        RemoveEquippedRecord(stack);
         RecalcEquipment();
         message = $"{Josa.WithEul(stack.itemData.itemName)} 해제했다.";
         return true;
@@ -919,8 +950,55 @@ public class InventoryManager : MonoBehaviour
     // 스택이 가방에서 사라질 때 장착 기록도 지운다
     private void RemoveEquippedRecord(ItemStack stack)
     {
-        foreach (EquipSlot slot in new List<EquipSlot>(equipped.Keys))
-            if (equipped[slot] == stack) equipped.Remove(slot);
+        foreach (List<ItemStack> list in equipped.Values) list.Remove(stack);
+    }
+
+    // ---- 등급 ----
+    public static int GradeOf(ItemStack s) { return s != null ? Mathf.Max(1, s.grade) : 1; }
+
+    // 등급에 따른 능력치 배율 (등급 표의 능력치 보너스 %)
+    private static float GradeMult(ItemStack s)
+    {
+        GradeDef g = GameTables.Grades.Get(GradeOf(s));
+        return g != null ? 1f + g.statBonusPercent / 100f : 1f;
+    }
+
+    // 내구도를 lost만큼 쓴 만큼 장비 경험치를 쌓고, 경험치가 차면 등급이 오른다. 올랐으면 알림 문구를 돌려준다.
+    public string GainWearExp(ItemStack s, int lost)
+    {
+        if (s == null || lost <= 0 || s.itemData.wearExp <= 0) return "";
+        GradeTable table = GameTables.Grades;
+
+        s.grade = GradeOf(s);
+        s.exp += s.itemData.wearExp * lost;
+
+        string up = "";
+        while (s.grade < table.MaxTier)
+        {
+            GradeDef g = table.Get(s.grade);
+            if (g == null || g.expToNext <= 0 || s.exp < g.expToNext) break;
+            s.exp -= g.expToNext;
+            s.grade++;
+            up = $"{Josa.WithEun(s.itemData.itemName)} {table.NameOf(s.grade)} 등급이 되었다!";
+        }
+        if (up.Length > 0)
+        {
+            RecalcEquipment();
+            ShowBagMessageOrToast(up);
+        }
+        return up;
+    }
+
+    // 정보창에 쓰는 한 줄: "Rare (Tier 2)   EXP 12 / 300"
+    public string GradeLine(ItemStack s)
+    {
+        if (s == null) return "";
+        GradeTable table = GameTables.Grades;
+        int tier = GradeOf(s);
+        GradeDef g = table.Get(tier);
+        string name = $"{table.NameOf(tier)} (Tier {tier})";
+        if (g == null || g.expToNext <= 0 || tier >= table.MaxTier) return $"{name}   EXP {s.exp} (MAX)";
+        return $"{name}   EXP {s.exp} / {g.expToNext}";
     }
 
     // 독 같은 디버프에 대한 내성 [%] = 회복 숙련도 레벨의 보너스
@@ -936,6 +1014,27 @@ public class InventoryManager : MonoBehaviour
         return t.dfRate;
     }
 
+    // 지금 적용 중인 특성들: 장착한 (멀쩡한) 장비의 특성 + 기본 능력치 표의 고유 특성
+    public struct TraitSource
+    {
+        public TraitDef trait;
+        public string source;   // 어디서 온 특성인가 (장비 이름 / 고유)
+    }
+
+    public List<TraitSource> ActiveTraits()
+    {
+        List<TraitSource> result = new List<TraitSource>();
+        foreach (ItemStack s in AllEquipped())
+        {
+            if (!IsWorking(s)) continue;
+            TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
+            if (t != null) result.Add(new TraitSource { trait = t, source = s.itemData.itemName });
+        }
+        TraitDef innate = GameTables.Traits.Get(GameTables.PlayerBase.innateTraitId);
+        if (innate != null) result.Add(new TraitSource { trait = innate, source = "고유 특성" });
+        return result;
+    }
+
     // 장착한 장비와 가방의 도구를 모아 플레이어의 장비 능력치를 다시 계산한다 (가방/장착이 바뀔 때마다 부름)
     public void RecalcEquipment()
     {
@@ -943,24 +1042,31 @@ public class InventoryManager : MonoBehaviour
         float atRate = 0f, dfRate = 0f, hpRate = 0f, hpRateAt = 0f, breakDf = 0f, abs = 0f, avoid = 0f;
         float crit = 0f, critRate = 0f, goldRate = 0f, expRate = 0f;
 
-        foreach (ItemStack s in equipped.Values)
+        foreach (ItemStack s in AllEquipped())
         {
             if (!IsWorking(s)) continue;
             Item it = s.itemData;
-            at += it.at; df += it.df; hp += it.hp; fixAt += it.fixat; slotB += it.slotmax; weightB += it.weightmax;
+            float m = GradeMult(s); // 등급이 높을수록 기본 능력치가 늘어남
+            at += Mathf.RoundToInt(it.at * m); df += Mathf.RoundToInt(it.df * m); hp += Mathf.RoundToInt(it.hp * m);
+            fixAt += Mathf.RoundToInt(it.fixat * m);
+            slotB += it.slotmax; weightB += it.weightmax;
             sp += it.spmax; mana += it.manamax;
             atRate += it.atrate; dfRate += it.dfrate; hpRate += it.hprate; hpRateAt += it.hprateat;
             breakDf += it.breakdf; abs += it.abs; avoid += it.avoid; crit += it.critical; critRate += it.criticalrate;
             goldRate += it.goldrate; expRate += it.exprate;
+        }
 
-            TraitDef t = GameTables.Traits.Get(it.traitId);
-            if (t != null) { atRate += t.atRate; dfRate += EffectiveDfRate(t); }
+        foreach (TraitSource ts in ActiveTraits())
+        {
+            atRate += ts.trait.atRate;
+            dfRate += EffectiveDfRate(ts.trait);
         }
 
         // 가방의 도구 중 가장 높은 공격력 하나 (장착한 것은 위에서 이미 더함)
         int toolAt = 0;
         foreach (ItemStack s in itemList)
-            if (s.itemData.toolType != ToolType.None && !IsEquipped(s) && IsUsableTool(s)) toolAt = Mathf.Max(toolAt, s.itemData.at);
+            if (s.itemData.toolType != ToolType.None && !IsEquipped(s) && IsUsableTool(s))
+                toolAt = Mathf.Max(toolAt, Mathf.RoundToInt(s.itemData.at * GradeMult(s)));
 
         GameManager.EquipAt = at + toolAt;
         GameManager.EquipDf = df;
@@ -995,7 +1101,7 @@ public class InventoryManager : MonoBehaviour
         PlayerUI.RefreshAll();
     }
 
-    // ---- 장비창 / 버프창 ----
+    // ---- 장비창 / 버프창 (ItemInfoPanel, StatPanel과 같은 크기와 자리) ----
     private void SetupEquipPanels()
     {
         if (inventoryUI == null) return;
@@ -1007,13 +1113,25 @@ public class InventoryManager : MonoBehaviour
         if (buffPanel != null) buffPanel.SetActive(false);
     }
 
+    // 정보창/스탯창과 같은 자리를 쓰므로, 하나가 열리면 나머지는 닫는다
+    public void CloseSidePanels()
+    {
+        if (equipPanel != null) equipPanel.SetActive(false);
+        if (buffPanel != null) buffPanel.SetActive(false);
+    }
+
     public void ToggleEquipPanel()
     {
         if (equipPanel == null) return;
         SoundManager.Instance?.PlaySlotClickSound();
         bool on = !equipPanel.activeSelf;
-        equipPanel.SetActive(on);
-        if (on) { if (buffPanel != null) buffPanel.SetActive(false); equipPanel.transform.SetAsLastSibling(); RefreshEquipPanels(); }
+        CloseSidePanels();
+        if (!on) return;
+        HideInfoPanel();
+        if (StatUI != null) StatUI.SetActive(false);
+        equipPanel.SetActive(true);
+        equipPanel.transform.SetAsLastSibling();
+        RefreshEquipPanels();
     }
 
     public void ToggleBuffPanel()
@@ -1021,12 +1139,17 @@ public class InventoryManager : MonoBehaviour
         if (buffPanel == null) return;
         SoundManager.Instance?.PlaySlotClickSound();
         bool on = !buffPanel.activeSelf;
-        buffPanel.SetActive(on);
-        if (on) { if (equipPanel != null) equipPanel.SetActive(false); buffPanel.transform.SetAsLastSibling(); RefreshEquipPanels(); }
+        CloseSidePanels();
+        if (!on) return;
+        HideInfoPanel();
+        if (StatUI != null) StatUI.SetActive(false);
+        buffPanel.SetActive(true);
+        buffPanel.transform.SetAsLastSibling();
+        RefreshEquipPanels();
     }
 
     private static readonly EquipSlot[] SlotOrder =
-        { EquipSlot.Weapon, EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs, EquipSlot.Accessory };
+        { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs, EquipSlot.Accessory };
 
     public void RefreshEquipPanels()
     {
@@ -1035,18 +1158,30 @@ public class InventoryManager : MonoBehaviour
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             foreach (EquipSlot slot in SlotOrder)
             {
-                ItemStack s = EquippedIn(slot);
-                string name = EquipSlotInfo.Name(slot);
-                if (s == null) { sb.AppendLine($"{name} : -"); continue; }
+                List<ItemStack> list = EquippedIn(slot);
+                int cap = SlotCapacity(slot);
+                for (int i = 0; i < cap; i++)
+                {
+                    string label = cap > 1 ? $"{EquipSlotInfo.Name(slot)} {i + 1}" : EquipSlotInfo.Name(slot);
+                    if (i >= list.Count) { sb.AppendLine($"{label} : -"); continue; }
 
-                string dur = s.itemData.durabilitymax > 0 ? $"  ({s.durability}/{s.itemData.durabilitymax})" : "";
-                TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
-                string trait = t != null ? $"  [{t.label}]" : "";
-                sb.AppendLine($"{name} : {s.itemData.itemName}{dur}{trait}");
+                    ItemStack s = list[i];
+                    string dur = s.itemData.durabilitymax > 0
+                        ? (s.durability > 0 ? $"  ({s.durability}/{s.itemData.durabilitymax})" : "  <color=#C00000>(파괴됨)</color>")
+                        : "";
+                    TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
+                    string trait = t != null ? $"  [{t.label}]" : "";
+                    sb.AppendLine($"{label} : {s.itemData.itemName}{dur}{trait}");
+                    sb.AppendLine($"   <size=75%>{GameTables.Grades.NameOf(GradeOf(s))}</size>");
+                }
             }
             sb.AppendLine();
-            sb.AppendLine($"공격력 +{GameManager.EquipAt}   방어력 +{GameManager.EquipDf}   체력 +{GameManager.EquipHp}");
-            sb.AppendLine("(아이템을 눌러 [장착] / [해제])");
+            sb.AppendLine($"공격력 +{GameManager.EquipAt}");
+            sb.AppendLine($"방어력 +{GameManager.EquipDf}");
+            sb.AppendLine($"체력 +{GameManager.EquipHp}");
+            sb.AppendLine($"고정 공격력 +{GameManager.FixAt}");
+            sb.AppendLine();
+            sb.AppendLine("<size=75%>가방에서 아이템을 눌러 [장착] / [해제]</size>");
             equipBody.text = sb.ToString();
         }
 
@@ -1054,7 +1189,7 @@ public class InventoryManager : MonoBehaviour
             buffBody.text = BuffText();
     }
 
-    // 버프/디버프 내역: 장착한 장비의 특성과 독 내성
+    // 버프/디버프 내역: 적용 중인 특성과 독 내성
     public string BuffText()
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -1062,14 +1197,10 @@ public class InventoryManager : MonoBehaviour
         float resist = PoisonResist();
         int lines = 0;
 
-        foreach (EquipSlot slot in SlotOrder)
+        foreach (TraitSource ts in ActiveTraits())
         {
-            ItemStack s = EquippedIn(slot);
-            if (!IsWorking(s)) continue;
-            TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
-            if (t == null) continue;
-
-            sb.AppendLine($"<b>{t.label}</b> ({s.itemData.itemName})");
+            TraitDef t = ts.trait;
+            sb.AppendLine($"<b>{t.label}</b> ({ts.source})");
             if (t.atRate != 0f) { sb.AppendLine($"  {(t.atRate > 0 ? good : bad)}공격력 {t.atRate:+0.#;-0.#}%{end}"); lines++; }
             float df = EffectiveDfRate(t);
             if (t.dfRate != 0f)
@@ -1078,7 +1209,12 @@ public class InventoryManager : MonoBehaviour
                 sb.AppendLine($"  {(df > 0 ? good : bad)}방어력 {df:+0.#;-0.#}%{end}{note}");
                 lines++;
             }
-            if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"  <size=80%>{t.description}</size>");
+            if (t.inflictChance > 0f && t.dotDamage > 0f)
+            {
+                sb.AppendLine($"  공격 시 {t.inflictChance:0.#}% 확률로 {t.label} 부여 (매 턴 {t.dotDamage:0.#} +{t.dotGrowth:0.#}씩, {t.dotTurns}턴)");
+                lines++;
+            }
+            if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"  <size=75%>{t.description}</size>");
         }
         if (lines == 0) sb.AppendLine("적용 중인 버프/디버프가 없습니다.");
 
@@ -1091,37 +1227,68 @@ public class InventoryManager : MonoBehaviour
         return sb.ToString();
     }
 
-    // 장비 내구도를 1 깎는다. 공격하면 무기, 맞으면 방어구(머리/몸/다리 중 하나)가 닳는다. 0이 되면 파괴된다.
-    public void WearEquipment(bool attacked)
+    // 내구도를 1 깎는다. 공격하면 장착한 무기 전부, 맞으면 장착한 방어구(머리/몸/다리/방패) 전부가 닳는다.
+    // 0이 되면 파괴되어 능력치가 사라지고, 정보창의 [수리]로 고칠 때까지 쓸 수 없다. 닳을 때마다 장비 경험치가 쌓인다.
+    public string WearEquipment(bool attacked)
     {
-        ItemStack target = null;
-        if (attacked)
-        {
-            target = EquippedIn(EquipSlot.Weapon);
-        }
+        List<ItemStack> targets = new List<ItemStack>();
+        if (attacked) targets.AddRange(EquippedIn(EquipSlot.Weapon));
         else
         {
-            List<ItemStack> armor = new List<ItemStack>();
-            foreach (EquipSlot slot in new[] { EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs })
-            {
-                ItemStack s = EquippedIn(slot);
-                if (s != null) armor.Add(s);
-            }
-            if (armor.Count > 0) target = armor[Random.Range(0, armor.Count)];
+            targets.AddRange(EquippedIn(EquipSlot.Head));
+            targets.AddRange(EquippedIn(EquipSlot.Body));
+            targets.AddRange(EquippedIn(EquipSlot.Legs));
+            targets.AddRange(EquippedIn(EquipSlot.Shield));
         }
-        if (target == null || target.itemData.durabilitymax <= 0 || target.durability <= 0) return;
 
-        target.durability -= 1;
-        if (target.durability <= 0)
+        bool changed = false;
+        List<string> worn = new List<string>();
+        foreach (ItemStack s in targets.ToArray())
         {
-            Item broken = target.itemData;
-            RemoveFromStack(target, target.amount); // 파괴: 가방에서 사라지고 장착도 풀린다
-            ItemGainToast.ShowBroken(broken, "장비가 파괴되었다!");
+            if (s.itemData.durabilitymax <= 0 || s.durability <= 0) continue;
+            s.durability -= 1;
+            changed = true;
+            worn.Add($"{s.itemData.itemName} {s.durability}/{s.itemData.durabilitymax}");
+            GainWearExp(s, 1);
+            if (s.durability <= 0)
+            {
+                s.durability = 0;
+                ItemGainToast.ShowBroken(s.itemData, "장비가 파괴되었다!");
+            }
         }
-        else
+        if (changed) RecalcEquipment();
+        return worn.Count > 0 ? "\n<size=75%>내구도: " + string.Join(", ", worn) + "</size>" : "";
+    }
+
+    // ---- 수리 ----
+    public static bool NeedsRepair(ItemStack s)
+    {
+        return s != null && s.itemData.durabilitymax > 0 && s.durability <= 0;
+    }
+
+    // 수리 후 내구도
+    public static int RepairedDurability(Item it)
+    {
+        return it.repairRestore > 0 ? Mathf.Min(it.durabilitymax, it.repairRestore) : it.durabilitymax;
+    }
+
+    // 재료를 내고 내구도를 채운다. 재료가 모자라면 실패
+    public bool TryRepair(ItemStack s, out string message)
+    {
+        message = "";
+        if (!NeedsRepair(s)) return false;
+        Item it = s.itemData;
+
+        if (it.repairItemId > 0 && it.repairAmount > 0)
         {
-            RefreshEquipPanels();
+            if (GetItemCount(it.repairItemId) < it.repairAmount) { message = "수리 재료가 부족합니다."; return false; }
+            RemoveItem(it.repairItemId, it.repairAmount);
         }
+
+        s.durability = RepairedDurability(it);
+        RecalcEquipment();
+        message = $"{Josa.WithEul(it.itemName)} 수리했다. (내구도 {s.durability}/{it.durabilitymax})";
+        return true;
     }
 
     // 슬롯에 "장착" 표시를 다시 맞춘다
@@ -1202,15 +1369,15 @@ public class InventoryManager : MonoBehaviour
         if (mana != 0) effects.Add($"마나 {mana:+#;-#}");
         message = $"{item.itemName} 사용" + (effects.Count > 0 ? $": {string.Join(", ", effects)}" : "");
 
-        // 위험한 것을 먹으면 [회복] 숙련도가 오르고, 그만큼 독 내성이 쌓인다
-        if (harmful)
+        // 아이템을 쓰면 [회복] 숙련도와 플레이어 레벨 경험치를 함께 얻는다 (독 같은 위험한 것도 마찬가지).
+        // 회복 숙련도 레벨의 보너스(%)가 독 내성이다.
+        float resistBefore = PoisonResist();
+        string recoveryReward = Proficiency.Reward(ProficiencyKind.Recovery);
+        if (recoveryReward.Length > 0) message += "\n" + recoveryReward;
+        if (!Mathf.Approximately(resistBefore, PoisonResist()))
         {
-            ProficiencyDef rec = GameTables.Proficiency.Get(ProficiencyKind.Recovery);
-            if (rec != null && Proficiency.AddExp(rec, rec.expPerUse, out int recLevel))
-            {
-                message += $"\n{rec.label} 숙련도가 올랐다! Lv.{recLevel} (독 내성 {PoisonResist():0.#}%)";
-                RecalcEquipment(); // 내성이 바뀌면 장비 특성의 디버프도 달라짐
-            }
+            message += $" (독 내성 {PoisonResist():0.#}%)";
+            RecalcEquipment(); // 내성이 바뀌면 장비 특성의 디버프도 달라짐
         }
         if (GameManager.Hp <= 0)
         {
@@ -1245,6 +1412,8 @@ public class InventoryManager : MonoBehaviour
         stack.amount -= half;
         ItemStack part = new ItemStack(stack.itemData, half);
         part.durability = stack.durability;
+        part.grade = stack.grade;
+        part.exp = stack.exp;
         itemList.Insert(itemList.IndexOf(stack) + 1, part);
 
         RefreshInventoryUI(); // 순서대로 슬롯을 다시 만든다
@@ -1410,6 +1579,8 @@ public class ItemStack
     public Item itemData;  // ScriptableObject 기반 아이템 데이터 (읽기만 할 것, 수정 금지)
     public int amount;     // 소지 수량
     public int durability; // 현재 내구도 (도구 스택 전체가 공유)
+    public int grade = 1;  // 장비 등급 번호 (Tier). 등급 표 참고
+    public int exp;        // 현재 등급에서 쌓은 장비 경험치
 
     public ItemStack(Item data, int amount)
     {

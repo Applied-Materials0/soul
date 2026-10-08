@@ -77,6 +77,7 @@ public class FieldSearch : MonoBehaviour
     private ToolType currentRequiredTool;
     private int currentRequiredTier;
     private GatherSoundType currentSoundType;
+    private ProficiencyKind currentSkill = ProficiencyKind.Gather; // 지금 자원의 채집 숙련도 종류 (자원 표)
 
     // FieldSearch는 이 씬의 UI(텍스트, 버튼, 소리)를 직접 들고 있으므로 씬마다 새로 만들어져야 한다.
     // DontDestroyOnLoad로 살려 두면 두 번째 진입 때 새 FieldSearch가 파괴되고, 이미 사라진 UI를 가리키는
@@ -197,6 +198,7 @@ public class FieldSearch : MonoBehaviour
         int hp = Random.Range(lo, hi + 1);
 
         SetSearchTarget(spawn.foundText, spawn.gatherButtonText, 0, spawn.itemId, spawn.toolType, spawn.tier, hp, spawn.sound);
+        currentSkill = spawn.skill;
         currentExtraYields = spawn.extraYields; // 채집할 때 함께 얻는 아이템 (자원 표의 "추가 획득")
     }
 
@@ -302,7 +304,8 @@ public class FieldSearch : MonoBehaviour
     private void ProcessGathering()
     {
         // 1. SP(행동력) 체크 (SP 소모 표의 채집 소모량)
-        int gatherCost = GameTables.SPCosts.Get(SPAction.Gather);
+        ProficiencyDef gatherProf = Proficiency.ForGathering(currentSkill, currentRequiredTool); // 이 자원을 캘 때 오르는 숙련도
+        int gatherCost = Proficiency.ReducedSp(gatherProf, GameTables.SPCosts.Get(SPAction.Gather)); // 숙련도가 SP를 줄여 줌
         if (GameManager.SP < gatherCost)
         {
             BtnAudio.Play();
@@ -364,7 +367,6 @@ public class FieldSearch : MonoBehaviour
         }
 
         // 채집 숙련도: 이 도구 종류에 맞는 숙련도가 있으면 레벨의 보너스만큼 한 번에 채집하는 양이 늘어난다
-        ProficiencyDef gatherProf = GameTables.Proficiency.GetGather(currentRequiredTool);
         if (gatherProf != null)
             damage = Mathf.Max(damage, Mathf.RoundToInt(damage * BattleCalc.Mult(Proficiency.Bonus(gatherProf))));
 
@@ -421,8 +423,23 @@ public class FieldSearch : MonoBehaviour
         }
 
         // 채집 숙련도 경험치
-        if (gainedAmount > 0 && gatherProf != null && Proficiency.AddExp(gatherProf, gatherProf.expPerUse, out int profLevel))
-            SearchText.text += $"\n{gatherProf.label} 숙련도가 올랐다! Lv.{profLevel}";
+        // 숙련도 보너스: 같은 아이템을 최소~최대 중에서 더 얻는다 (자원 체력은 줄지 않음)
+        if (gainedAmount > 0 && !transforms && gatherProf != null)
+        {
+            int bonusWanted = Proficiency.ExtraAmount(gatherProf);
+            if (bonusWanted > 0)
+            {
+                int bonusGot = InventoryManager.Instance.AddItem(targetResource, bonusWanted);
+                if (bonusGot > 0) SearchText.text += $"\n{gatherProf.label} 숙련도 보너스! {targetResource.itemName} +{bonusGot}";
+            }
+        }
+
+        // 행동했으니 숙련도 경험치와 플레이어 레벨 경험치를 함께 얻는다
+        if (gainedAmount > 0 && gatherProf != null)
+        {
+            string rewardText = Proficiency.Reward(gatherProf);
+            if (rewardText.Length > 0) SearchText.text += "\n" + rewardText;
+        }
 
         if (isBroken && usedTool != null)
         {

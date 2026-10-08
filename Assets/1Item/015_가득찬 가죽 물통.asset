@@ -43,10 +43,16 @@ MonoBehaviour:
   spmax: 0
   weightmax: 0
   slotmax: 0
+  equipSlot: 0
+  traitId: 0
+  repairItemId: 0
+  repairAmount: 0
+  repairRestore: 0
+  wearExp: 1
   useHp: 0
   useSp: 10
   useMana: 0
-  useResultItemId: 0
+  useResultItemId: 14
   icon: {fileID: 1734450685577689515, guid: 33dba1ace25bec543a3a9b844854cc7a, type: 3}
   recipe:
     ingredients: []

@@ -40,8 +40,8 @@ MonoBehaviour:
     amountMin: 1
     amountMax: 1
     chance: 100
-  exp: 2
-  gold: 2
+  exp: 3
+  gold: 15
   drops: []
   spawns:
   - regionId: 1

@@ -62,6 +62,12 @@ public class ItemInfoPanel : MonoBehaviour
         currentItem = item;
         currentStack = stack;
         gameObject.SetActive(true);
+        if (InventoryManager.Instance != null) InventoryManager.Instance.CloseSidePanels(); // 장비창/버프창은 이 정보창과 같은 자리를 쓴다
+
+        // 이름 위 작은 글자: 장비/도구의 등급과 경험치
+        EnsureGradeLabel();
+        bool isGear = item.durabilitymax > 0 || InventoryManager.CanEquip(item);
+        gradeLabel.text = isGear && stack != null && InventoryManager.Instance != null ? InventoryManager.Instance.GradeLine(stack) : "";
 
         // 이름 세팅
         if (infoName != null) infoName.text = item.itemName;
@@ -89,7 +95,10 @@ public class ItemInfoPanel : MonoBehaviour
 
         // [장착] / [해제]: 장비 아이템만, 전투 중에는 바꿀 수 없다
         EnsureEquipButton();
-        bool canEquip = InventoryManager.CanEquip(item) && stack != null && !inBattle;
+        bool broken = InventoryManager.NeedsRepair(stack);
+        EnsureRepairButton();
+        repairButton.SetActive(broken && !inBattle);
+        bool canEquip = InventoryManager.CanEquip(item) && stack != null && !inBattle && !broken;
         equipButton.SetActive(canEquip);
         if (canEquip) equipLabel.text = InventoryManager.Instance.IsEquipped(stack) ? "해제" : "장착";
 
@@ -218,6 +227,40 @@ public class ItemInfoPanel : MonoBehaviour
             InventoryManager.Instance.CloseInventoryQuiet();
             field.BattleItemUsed(message);
         }
+    }
+
+    // 아이템 이름 위의 작은 글자: 등급과 경험치 (BagUI/ItemInfoPanel 프리팹의 InfoGrade 오브젝트. 없으면 만든다)
+    private TextMeshProUGUI gradeLabel;
+
+    private void EnsureGradeLabel()
+    {
+        if (gradeLabel != null) return;
+        Transform t = transform.Find("InfoGrade");
+        if (t != null) gradeLabel = t.GetComponent<TextMeshProUGUI>();
+        if (gradeLabel != null) return;
+
+        RectTransform rt = CraftQuantityPopup.NewRect("InfoGrade", transform, new Vector2(0f, 1f), new Vector2(200f, -20f), new Vector2(520f, 34f));
+        rt.pivot = new Vector2(0f, 0.5f);
+        gradeLabel = CraftQuantityPopup.AddText(rt, 26, TextAlignmentOptions.Left, infoName != null ? infoName.font : null);
+        gradeLabel.color = new Color(0.25f, 0.25f, 0.25f);
+    }
+
+    // [수리] 버튼 (장비/도구의 내구도가 0일 때, [장착] 버튼 자리에 나타남)
+    private GameObject repairButton;
+
+    private void EnsureRepairButton()
+    {
+        if (repairButton != null) return;
+        TMP_FontAsset font = infoName != null ? infoName.font : null;
+        repairButton = CraftQuantityPopup.CreateButton(transform, "RepairButton", "수리", font,
+            new Color(0.2f, 0.5f, 0.6f), new Vector2(0.5f, 0f), new Vector2(0f, 135f), new Vector2(260f, 80f), OnClickRepair);
+    }
+
+    private void OnClickRepair()
+    {
+        SoundManager.Instance?.PlaySlotClickSound();
+        if (currentStack == null) return;
+        RepairPopup.Open(currentStack, () => { if (currentItem != null) Display(currentItem, currentStack); });
     }
 
     // 정보창 아래쪽의 [장착] / [해제] 버튼

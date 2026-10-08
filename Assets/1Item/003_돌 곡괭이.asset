@@ -45,7 +45,7 @@ MonoBehaviour:
   weightmax: 0
   slotmax: 0
   equipSlot: 1
-  traitId: 0
+  traitId: 1
   useHp: 0
   useSp: 0
   useMana: 0

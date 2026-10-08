@@ -14,6 +14,10 @@ public class TraitDef
     public float atRate;           // 공격력 증감 [%] (+면 버프)
     public float dfRate;           // 방어력 증감 [%] (-면 디버프)
     public bool resistable;        // true면 독 내성만큼 방어력 증감(디버프)이 줄어듦
+    public float inflictChance;    // 이 특성을 가진 채 적을 공격해 피해를 줄 때, 적에게 상태이상(독 등)을 붙일 확률 [%]
+    public float dotDamage;        // 상태이상 첫 턴의 지속 피해
+    public float dotGrowth;        // 턴이 지날 때마다 늘어나는 지속 피해
+    [Min(0)] public int dotTurns;  // 상태이상이 지속되는 턴 수
 }
 
 [CreateAssetMenu(fileName = "TraitTable", menuName = "Soul/Trait Table")]
@@ -36,6 +40,7 @@ public class TraitTable : ScriptableObject
             new TraitDef
             {
                 id = 1, label = "독", atRate = 30f, dfRate = -30f, resistable = true,
+                inflictChance = 30f, dotDamage = 2f, dotGrowth = 1f, dotTurns = 5,
                 description = "독을 머금어 공격력이 오른다. 독 내성이 없으면 방어력이 줄어든다."
             },
         };

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e02a4baec087d4c4884a13bc53dcdc7f, type: 3}
+  m_Name: GradeTable
+  m_EditorClassIdentifier: Assembly-CSharp::GradeTable
+  grades:
+  - tier: 1
+    name: Common
+    expToNext: 100
+    statBonusPercent: 0
+  - tier: 2
+    name: Rare
+    expToNext: 300
+    statBonusPercent: 10
+  - tier: 3
+    name: Epic
+    expToNext: 600
+    statBonusPercent: 25
+  - tier: 4
+    name: Legends
+    expToNext: 1000
+    statBonusPercent: 50
+  - tier: 5
+    name: Eternal
+    expToNext: 0
+    statBonusPercent: 100

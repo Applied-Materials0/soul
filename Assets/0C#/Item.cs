@@ -9,7 +9,8 @@ public enum EquipSlot
     Head,       // 머리
     Body,       // 몸
     Legs,       // 다리
-    Accessory   // 장신구
+    Accessory,  // 장신구
+    Shield      // 방패
 }
 
 public static class EquipSlotInfo
@@ -23,6 +24,7 @@ public static class EquipSlotInfo
             case EquipSlot.Body: return "몸";
             case EquipSlot.Legs: return "다리";
             case EquipSlot.Accessory: return "장신구";
+            case EquipSlot.Shield: return "방패";
             default: return "-";
         }
     }
@@ -89,6 +91,12 @@ public class Item : ScriptableObject
     [Header("장착 (장비 장착창에 끼는 아이템. 장착해야 능력치와 특성이 적용됨)")]
     public EquipSlot equipSlot;   // 장착 부위 (None이면 장착 불가)
     public int traitId;           // 특성 ID (특성 표 참고. 0이면 없음. 예: 독)
+
+    [Header("수리 / 등급 (장비/도구의 내구도가 0이 되면 정보창의 [수리]로 고침)")]
+    public int repairItemId;      // 수리에 필요한 재료 아이템 ID (0이면 재료 없이 수리)
+    public int repairAmount;      // 수리에 필요한 재료 수량
+    public int repairRestore;     // 수리하면 차는 내구도 (0 이하면 가득 참)
+    public int wearExp = 1;       // 내구도를 1 소모할 때마다 쌓이는 장비 경험치 (등급 표의 경험치로 등급이 오름)
 
     [Header("사용 효과 (소모품: 하나라도 0이 아니면 인벤토리에서 [사용] 버튼이 생김)")]
     public int useHp;          // 사용 시 체력 회복

@@ -67,6 +67,14 @@ public class PlayerUI : MonoBehaviour
         return $"\n 무게: {inv.CurrentWeight:N0} / {inv.WeightLimit:N0}   슬롯: {inv.UsedSlots} / {inv.SlotLimit}";
     }
 
+    // 증감률이 0이 아니면 "(+30%)" 같은 꼬리표 (늘면 초록, 줄면 빨강)
+    private static string RateNote(float rate)
+    {
+        if (Mathf.Approximately(rate, 0f)) return "";
+        string color = rate > 0f ? "#1B7F2A" : "#C00000";
+        return $" <color={color}>({rate:+0.#;-0.#}%)</color>";
+    }
+
     // 이 PlayerUI에 연결된 텍스트를 그린다
     private void Redraw()
     {
@@ -76,6 +84,9 @@ public class PlayerUI : MonoBehaviour
         float hpmax = BattleCalc.PlayerMaxHp();
         int at = GameManager.At + GameManager.EquipAt;
         int df = GameManager.Df + GameManager.EquipDf;
+        // 공격력/방어력은 장비와 특성(독 등)의 증감률까지 반영한 실제 값으로 보여 준다
+        string atText = Mathf.RoundToInt(at * BattleCalc.Mult(GameManager.AtRate)).ToString("N0") + RateNote(GameManager.AtRate);
+        string dfText = Mathf.RoundToInt(df * BattleCalc.Mult(GameManager.DfRate)).ToString("N0") + RateNote(GameManager.DfRate);
         int fixat = GameManager.FixAt;
         float breakdf = GameManager.BreakDf;
         float hprateat = GameManager.HpRateAt;
@@ -93,7 +104,7 @@ public class PlayerUI : MonoBehaviour
         //1. statText가 연결되어 있을 때만 갱신 (비어있어도 에러 안 남!)
         if (statText != null)
         {
-            statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} \n HP: {hp:N0} / {hpmax:N0} </b>   \n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {at:N0}    DF: {df:N0} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
+            statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} \n HP: {hp:N0} / {hpmax:N0} </b>   \n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
         }
 
         // SP 텍스트(맵 화면)가 연결되어 있으면 함께 갱신

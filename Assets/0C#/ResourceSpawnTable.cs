@@ -28,6 +28,9 @@ public class ResourceSpawn
     [Header("Ã¤Áý ¼Ò¸®")]
     public GatherSoundType sound = GatherSoundType.Default;
 
+    [Header("Ã¤Áý ¼÷·Ãµµ (Gather = µµ±¸ Á¾·ù·Î ÀÚµ¿: µµ³¢ ¹ú¸ñ, °î±ªÀÌ Ã¤±¤, ³´ Ç® º£±â. µ¹Àº Quarrying)")]
+    public ProficiencyKind skill = ProficiencyKind.Gather;
+
     [Header("Ãß°¡·Î ¾ò´Â ¾ÆÀÌÅÛ (¿¹: ¹úÁý -> ²Ü + ¹Ð¶ø)")]
     public List<ResourceExtraYield> extraYields = new List<ResourceExtraYield>();
 }

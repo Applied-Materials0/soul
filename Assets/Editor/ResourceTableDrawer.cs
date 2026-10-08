@@ -41,6 +41,7 @@ public static class ResourceTableDrawer
         new Col("HP최소", "자원 체력(채집 횟수) 최솟값", "hpMin", 50),
         new Col("HP최대", "자원 체력(채집 횟수) 최댓값", "hpMax", 50),
         new Col("소리", "채집 소리", "sound", 80),
+        new Col("숙련도", "채집 숙련도. Gather = 도구 종류로 자동(도끼 벌목, 곡괭이 채광, 낫 풀 베기). 돌은 Quarrying", "skill", 90),
     };
 
     private const string ExtraHeader = "추가 획득 (아이템 ID, x 채집한 양의 배수, @확률%)";

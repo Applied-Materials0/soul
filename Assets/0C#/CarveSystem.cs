@@ -50,7 +50,7 @@ public class CarveSystem : MonoBehaviour
         if (!active || monster == null) return;
 
         // SP
-        int cost = GameTables.SPCosts.Get(SPAction.Carve);
+        int cost = Proficiency.ReducedSp(ProficiencyKind.Carving, GameTables.SPCosts.Get(SPAction.Carve)); // 숙련도가 SP를 줄여 줌
         if (GameManager.SP < cost)
         {
             field.BtnAudio.Play();
@@ -91,6 +91,7 @@ public class CarveSystem : MonoBehaviour
 
             int amount = Random.Range(d.amountMin, Mathf.Max(d.amountMin, d.amountMax) + 1);
             amount = Mathf.Max(1, Mathf.RoundToInt(amount * BattleCalc.Mult(bonus)));
+            amount += Proficiency.ExtraAmount(GameTables.Proficiency.Get(ProficiencyKind.Carving)); // 숙련도의 수량 추가(최소~최대)
 
             // 가방의 슬롯/무게 한도 안에서 넣을 수 있는 만큼만 얻는다
             int got = InventoryManager.Instance.AddItem(item, amount);
@@ -104,9 +105,8 @@ public class CarveSystem : MonoBehaviour
         if (bagFull) text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
 
         // 숙련도 경험치
-        ProficiencyDef def = GameTables.Proficiency.Get(ProficiencyKind.Carving);
-        if (def != null && Proficiency.AddExp(def, def.expPerUse, out int newLevel))
-            text += $"\n{def.label} 숙련도가 올랐다! Lv.{newLevel}";
+        string rewardText = Proficiency.Reward(ProficiencyKind.Carving); // 숙련도 + 레벨 경험치
+        if (rewardText.Length > 0) text += "\n" + rewardText;
 
         if (broken && knife != null) text += $"\n{Josa.WithIga(knife.itemName)} 파괴되었습니다!";
         if (broken && knife != null) ItemGainToast.ShowBroken(knife, "도구가 파괴되었다!");

@@ -33,6 +33,7 @@ public static class BattleCalc
     public struct AttackResult
     {
         public int damage;     // 준 피해 (고정 데미지 포함)
+        public int fixedDamage; // 그중 방어력과 상관없는 고정 피해
         public int heal;       // 흡혈로 회복한 체력
         public bool crit;      // 치명타 여부
         public bool dodged;    // 몬스터가 회피함
@@ -71,6 +72,7 @@ public static class BattleCalc
         int main = Mathf.Max(0, Mathf.FloorToInt(atk - def));
         int total = main + Mathf.Max(0, GameManager.FixAt);
 
+        r.fixedDamage = Mathf.Max(0, GameManager.FixAt);
         r.damage = total;
         r.noEffect = total <= 0;
         r.heal = total > 0 ? Mathf.FloorToInt(total * Mathf.Max(0f, GameManager.Abs) / 100f) : 0;

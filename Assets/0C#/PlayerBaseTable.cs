@@ -27,6 +27,9 @@ public class PlayerBaseTable : ScriptableObject
     [Min(0)] public int hospitalFee = 10;                  // 병원비(골드). 가진 골드보다 많으면 가진 만큼만 냄
     [Range(0f, 100f)] public float itemLossPercent = 10f;  // 잃는 아이템 비율 [%] (각 아이템 수량에서). 도구/장비(한 슬롯에 1개인 것, 도구 종류가 있는 것)는 잃지 않음
 
+    [Header("고유 특성 (장비 없이도 항상 가지는 특성. 특성 표의 ID, 0이면 없음)")]
+    public int innateTraitId = 0;
+
     [Header("위험 경고 (체력이 낮을 때 화면 가장자리가 붉어짐. 퍼센트는 클수록 먼저, 세기는 0~100)")]
     [Range(0f, 100f)] public float lowHpPercent1 = 50f;  // 1단계: 체력이 이 비율 [%] 이하
     [Range(0f, 100f)] public float lowHpAlpha1 = 15f;    // 1단계 붉은 세기

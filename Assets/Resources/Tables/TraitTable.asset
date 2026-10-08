@@ -20,3 +20,7 @@ MonoBehaviour:
     atRate: 30
     dfRate: -30
     resistable: 1
+    inflictChance: 100
+    dotDamage: 5
+    dotGrowth: 5
+    dotTurns: 5

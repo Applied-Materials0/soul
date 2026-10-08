@@ -2596,9 +2596,6 @@ MonoBehaviour:
   SearchBtn: {fileID: 1376342127}
   RunBtn: {fileID: 154529623}
   MapBtn: {fileID: 1644156911}
-  resourceWeight: 76
-  eventWeight: 4
-  monsterWeight: 20
   resourceTable: {fileID: 11400000, guid: 61fa4e4a782f5ca4a923ddc88cd32b80, type: 2}
   monsterDB: {fileID: 11400000, guid: 78425fe57c0ad66439a8ac73a319f3a7, type: 2}
 --- !u!4 &1194901967
@@ -4583,7 +4580,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 120, y: 205}
+  m_AnchoredPosition: {x: 120, y: 250}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1959857364
@@ -4606,9 +4603,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "LV: 999 / 99%\nHP: 999,999 / 999,999 \nSP: 999,999 / 999,999\nMana: 999,999
-    / 999,999\nAT: 999,999 DF: 999,999\nFixedAttack: 999,999 BreakDefence: 999,999\nHPRateAttack:
-    100% ABS: 100% avoid 100%\nCritical: 100% CriticalMax: 100%"
+  m_text: "LV: 999 / 99%\nHP: 999,999 / 999,999 \nSP: 999,999 / 999,999\n\uBB34\uAC8C:
+    999,999 / 999,999  \uC2AC\uB86F: 28\nMana: 999,999 / 999,999\nAT: 999,999 DF:
+    999,999\nFixedAttack: 999,999 BreakDefence: 999,999\nHPRateAttack: 100% ABS:
+    100% avoid 100%\nCritical: 100% CriticalMax: 100%"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 008d4858e3818574b87043dd9fdeed39, type: 2}
   m_sharedMaterial: {fileID: 223730262075681814, guid: 008d4858e3818574b87043dd9fdeed39, type: 2}

@@ -141,7 +141,11 @@ public static class RuleTableDrawers
     private static readonly Row[] ProficiencyRows =
     {
         new Row("다음 레벨까지 경험치", "expToNext", "이 숙련도 레벨에서 다음 레벨이 되기까지 필요한 숙련도 경험치. 마지막 레벨은 0"),
-        new Row("수확 보너스 (%)", "bonusPercent", "이 레벨일 때 얻는 수량이 늘어나는 비율 [%]"),
+        new Row("수확 보너스 (%)", "bonusPercent", "이 레벨일 때 얻는 수량이 늘어나는 비율 [%]. [회복] 숙련도에서는 독 내성 [%]"),
+        new Row("수량 추가 최소", "extraMin", "채집/도려내기 때 같은 아이템을 최소 이만큼 더 얻음"),
+        new Row("수량 추가 최대", "extraMax", "최대 이만큼 더 얻음 (최소~최대 중에서 뽑음)"),
+        new Row("레벨 경험치 보너스 (%)", "expBonusPercent", "이 숙련도 행동으로 얻는 플레이어 레벨 경험치가 늘어나는 비율 [%]"),
+        new Row("행동 SP 감소 (%)", "spReducePercent", "이 숙련도 행동(공격/방어/채집/도려내기)에 드는 SP가 줄어드는 비율 [%]"),
     };
 
     private static Vector2[] profScrolls = new Vector2[0];
@@ -152,7 +156,8 @@ public static class RuleTableDrawers
         EditorGUI.BeginChangeCheck();
 
         EditorGUILayout.HelpBox(
-            "숙련도 종류: [도려내기] = 도려낼 때 얻는 수량이 보너스만큼 늘어남, [채집] = 아래 '도구'로 채집할 때 한 번에 채집하는 양이 보너스만큼 늘어남 (도구가 None이면 맨손). " +
+            "행동을 하면 숙련도 경험치와 플레이어 레벨 경험치를 함께 얻습니다. 종류: 전투(공격/방어), 벌목(도끼), 채광(곡괭이), 채석(Quarrying: 자원 표의 숙련도 칸에서 지정), 풀 베기(낫), 제작, 회복(아이템 사용, 레벨 보너스가 독 내성), 도려내기. " +
+            "레벨 보너스: 수확 보너스(%), 수량 추가(최소~최대), 레벨 경험치 보너스(%), 행동 SP 감소(%). [Gather]는 예전 방식(아래 '도구'로 채집할 때)입니다. " +
             "같은 종류의 숙련도를 여러 개 만들 수 있고, 번호(ID)가 겹치지 않아야 진행도가 따로 쌓입니다.",
             MessageType.None);
 
@@ -180,6 +185,8 @@ public static class RuleTableDrawers
             }
             GUILayout.Label(new GUIContent("1회 경험치", "한 번 사용할 때 오르는 숙련도 경험치"), GUILayout.Width(70));
             TableField.Draw(def.FindPropertyRelative("expPerUse"), 50);
+            GUILayout.Label(new GUIContent("레벨 경험치/회", "한 번 행동할 때 얻는 플레이어 레벨 경험치 (아래 '레벨 경험치 보너스'가 곱해짐)"), GUILayout.Width(90));
+            TableField.Draw(def.FindPropertyRelative("playerExpPerUse"), 50);
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("숙련도 삭제", GUILayout.Width(80))) removeAt = d;
             EditorGUILayout.EndHorizontal();
@@ -219,6 +226,73 @@ public static class RuleTableDrawers
     }
 
     // =========================================================
+    //  등급 표: 한 줄 = 등급 하나 (위에서부터 Tier 1, 2, 3 ...)
+    // =========================================================
+    public static bool DrawGradeTable(SerializedObject so)
+    {
+        so.Update();
+        EditorGUI.BeginChangeCheck();
+
+        EditorGUILayout.HelpBox(
+            "장비/도구는 내구도를 1 쓸 때마다 경험치(아이템 표 [수리/등급] 탭의 '경험치/내구도')를 얻고, " +
+            "'다음 등급까지 경험치'가 차면 다음 등급으로 오릅니다 (남은 경험치는 이어짐). 마지막 등급의 경험치는 0으로 둡니다. " +
+            "'능력치 %'는 그 등급일 때 장비의 공격력/방어력/체력/고정 공격력이 늘어나는 비율입니다 (0이면 등급이 올라도 능력치는 그대로).",
+            MessageType.None);
+
+        SerializedProperty list = so.FindProperty("grades");
+
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("Tier", header, GUILayout.Width(40));
+        GUILayout.Label("등급 이름", header, GUILayout.Width(140));
+        GUILayout.Label("다음 등급까지 경험치", header, GUILayout.Width(130));
+        GUILayout.Label("능력치 %", header, GUILayout.Width(70));
+        EditorGUILayout.EndHorizontal();
+
+        int removeAt = -1;
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            SerializedProperty g = list.GetArrayElementAtIndex(i);
+            EditorGUILayout.BeginHorizontal();
+            TableField.Draw(g.FindPropertyRelative("tier"), 40);
+            TableField.Draw(g.FindPropertyRelative("name"), 140);
+            TableField.Draw(g.FindPropertyRelative("expToNext"), 130);
+            TableField.Draw(g.FindPropertyRelative("statBonusPercent"), 70);
+            if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
+            EditorGUILayout.EndHorizontal();
+        }
+        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUILayout.Button("+ 등급 추가", GUILayout.Height(24)))
+        {
+            int maxTier = 0;
+            for (int i = 0; i < list.arraySize; i++)
+                maxTier = Mathf.Max(maxTier, list.GetArrayElementAtIndex(i).FindPropertyRelative("tier").intValue);
+
+            list.InsertArrayElementAtIndex(list.arraySize);
+            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            added.FindPropertyRelative("tier").intValue = maxTier + 1;
+            added.FindPropertyRelative("name").stringValue = "New Grade";
+            added.FindPropertyRelative("expToNext").intValue = 0;
+            added.FindPropertyRelative("statBonusPercent").floatValue = 0f;
+        }
+
+        bool changed = EditorGUI.EndChangeCheck();
+        so.ApplyModifiedProperties();
+
+        EditorGUILayout.Space();
+        if (GUILayout.Button("기본값으로 되돌리기") &&
+            EditorUtility.DisplayDialog("기본값으로 되돌리기", "등급 표의 모든 값이 처음 기본값으로 바뀝니다. 계속할까요?", "되돌리기", "취소"))
+        {
+            Undo.RecordObject(so.targetObject, "Reset Grade Table");
+            ((GradeTable)so.targetObject).ResetToDefaults();
+            EditorUtility.SetDirty(so.targetObject);
+            changed = true;
+        }
+        return changed;
+    }
+
+    // =========================================================
     //  특성 표: 한 줄 = 특성 하나 (장비의 "특성ID"가 이 표를 가리킴)
     // =========================================================
     public static bool DrawTraitTable(SerializedObject so)
@@ -229,7 +303,8 @@ public static class RuleTableDrawers
         EditorGUILayout.HelpBox(
             "장비를 [장착]하면 그 장비에 적힌 특성ID의 효과가 적용됩니다 (장비 스탯 탭의 '특성ID'). " +
             "공격력/방어력 증감은 %이고, 방어력 증감이 마이너스(디버프)인 특성에 '내성 적용'을 켜면 [회복] 숙련도로 쌓은 독 내성만큼 디버프가 줄어듭니다. " +
-            "예) 독: 공격력 +30%, 방어력 -30%, 내성 적용 -> 내성이 없으면 방어력이 줄고, 내성이 100%면 방어력은 그대로.",
+            "예) 독: 공격력 +30%, 방어력 -30%, 내성 적용 -> 내성이 없으면 방어력이 줄고, 내성이 100%면 방어력은 그대로. " +
+            "'부여 확률'이 0보다 크면 이 특성을 가진 채 적을 공격해 피해를 줄 때 그 확률로 적에게 지속 피해를 건다 (첫 턴 '지속피해', 턴마다 '턴당 증가'만큼 커지고 '턴 수'만큼 지속).",
             MessageType.None);
 
         SerializedProperty list = so.FindProperty("traits");
@@ -241,6 +316,10 @@ public static class RuleTableDrawers
         GUILayout.Label("공격력 %", header, GUILayout.Width(70));
         GUILayout.Label("방어력 %", header, GUILayout.Width(70));
         GUILayout.Label("내성 적용", header, GUILayout.Width(60));
+        GUILayout.Label("부여 확률 %", header, GUILayout.Width(70));
+        GUILayout.Label("지속피해", header, GUILayout.Width(60));
+        GUILayout.Label("턴당 증가", header, GUILayout.Width(60));
+        GUILayout.Label("턴 수", header, GUILayout.Width(45));
         GUILayout.Label("설명", header, GUILayout.Width(380));
         EditorGUILayout.EndHorizontal();
 
@@ -254,6 +333,10 @@ public static class RuleTableDrawers
             TableField.Draw(t.FindPropertyRelative("atRate"), 70);
             TableField.Draw(t.FindPropertyRelative("dfRate"), 70);
             TableField.Draw(t.FindPropertyRelative("resistable"), 60);
+            TableField.Draw(t.FindPropertyRelative("inflictChance"), 70);
+            TableField.Draw(t.FindPropertyRelative("dotDamage"), 60);
+            TableField.Draw(t.FindPropertyRelative("dotGrowth"), 60);
+            TableField.Draw(t.FindPropertyRelative("dotTurns"), 45);
             TableField.Draw(t.FindPropertyRelative("description"), 380);
             if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
             EditorGUILayout.EndHorizontal();
@@ -451,6 +534,7 @@ public static class RuleTableDrawers
         new BaseRow("방어 보너스 (%)", "defendBonus", "[방어]할 때 방어력이 늘어나는 비율. 기본 50, 장비로 더 늘 수 있음"),
         new BaseRow("병원비 (골드)", "hospitalFee", "기절하면 내는 병원비. 골드가 모자라면 가진 만큼만 냄", 0),
         new BaseRow("기절 시 아이템 손실 (%)", "itemLossPercent", "기절하면 잃는 아이템 비율 (도구 제외)", 0),
+        new BaseRow("고유 특성 ID", "innateTraitId", "장비 없이도 가지는 특성 (특성 표의 ID, 0 = 없음). 예: 1 = 독", 0),
         new BaseRow("위험 1단계 체력 (%)", "lowHpPercent1", "체력이 이 비율 이하면 화면 가장자리가 붉어지기 시작"),
         new BaseRow("위험 1단계 세기", "lowHpAlpha1", "붉은 정도 (0~100)"),
         new BaseRow("위험 2단계 체력 (%)", "lowHpPercent2", "더 위험한 단계의 체력 비율"),
