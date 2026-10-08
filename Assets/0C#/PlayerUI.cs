@@ -73,9 +73,9 @@ public class PlayerUI : MonoBehaviour
         int level = GameManager.Level;
         int exp = GameManager.Exp;
         int hp = GameManager.Hp;
-        float hpmax = GameManager.HpMax;
-        int at = GameManager.At;
-        int df = GameManager.Df;
+        float hpmax = BattleCalc.PlayerMaxHp();
+        int at = GameManager.At + GameManager.EquipAt;
+        int df = GameManager.Df + GameManager.EquipDf;
         int fixat = GameManager.FixAt;
         float breakdf = GameManager.BreakDf;
         float hprateat = GameManager.HpRateAt;

@@ -82,10 +82,16 @@ public class ItemInfoPanel : MonoBehaviour
             infoIcon.gameObject.SetActive(false);
         }
 
-        // 사용 효과(체력/SP/마나 회복)가 있는 소모품이면 [사용] 버튼을 보여 준다. 전투 중에는 쓸 수 없다.
+        // 사용 효과(체력/SP/마나 회복)가 있는 소모품이면 [사용] 버튼을 보여 준다. 전투 중에도 쓸 수 있다 (한 턴을 씀).
         EnsureUseButton();
         bool inBattle = FieldSearch.Instance != null && FieldSearch.Instance.InBattle;
-        useButton.SetActive(InventoryManager.CanUse(item) && stack != null && !inBattle);
+        useButton.SetActive(InventoryManager.CanUse(item) && stack != null);
+
+        // [장착] / [해제]: 장비 아이템만, 전투 중에는 바꿀 수 없다
+        EnsureEquipButton();
+        bool canEquip = InventoryManager.CanEquip(item) && stack != null && !inBattle;
+        equipButton.SetActive(canEquip);
+        if (canEquip) equipLabel.text = InventoryManager.Instance.IsEquipped(stack) ? "해제" : "장착";
 
         // [버리기] [나누기]: 전투 중에는 쓸 수 없다
         EnsureBagButtons();
@@ -176,15 +182,68 @@ public class ItemInfoPanel : MonoBehaviour
         SoundManager.Instance?.PlaySlotClickSound();
         if (currentStack == null || InventoryManager.Instance == null) return;
 
+        // 전투 중에는 내 차례일 때만 쓸 수 있고, 쓰면 이번 턴을 쓴 것으로 친다
+        FieldSearch field = FieldSearch.Instance;
+        bool inBattle = field != null && field.InBattle;
+        if (inBattle && !field.CanActInBattle)
+        {
+            ItemGainToast.ShowMessage("지금은 아이템을 쓸 수 없다.");
+            return;
+        }
+
         string message;
         bool used = InventoryManager.Instance.UseItem(currentStack, out message);
-        ItemGainToast.ShowMessage(message); // 결과(또는 못 쓰는 이유)를 화면 중앙에 알림
+        ItemGainToast.ShowMessage(message); // 결과(또는 못 쓰는 이유)를 알림
 
         if (!used) return;
+
+        // 체력이 0이 되어 쓰러졌다 (독 같은 위험한 아이템)
+        if (InventoryManager.Instance.LastUseFainted)
+        {
+            HidePanel();
+            InventoryManager.Instance.CloseInventoryQuiet();
+            if (field != null) field.FaintFromItem();
+            else ItemGainToast.ShowMessage(InventoryManager.Instance.RecoverFromFaint());
+            return;
+        }
 
         // 마지막 1개를 써서 슬롯이 사라졌으면 정보창을 닫고, 남았으면 수량을 갱신
         if (InventoryManager.Instance.itemList.Contains(currentStack)) Display(currentItem, currentStack);
         else HidePanel();
+
+        // 전투 중이면 가방을 닫고 몬스터의 차례로 넘어간다
+        if (inBattle)
+        {
+            HidePanel();
+            InventoryManager.Instance.CloseInventoryQuiet();
+            field.BattleItemUsed(message);
+        }
+    }
+
+    // 정보창 아래쪽의 [장착] / [해제] 버튼
+    private GameObject equipButton;
+    private TextMeshProUGUI equipLabel;
+
+    private void EnsureEquipButton()
+    {
+        if (equipButton != null) return;
+        TMP_FontAsset font = infoName != null ? infoName.font : null;
+        equipButton = CraftQuantityPopup.CreateButton(transform, "EquipButton", "장착", font,
+            new Color(0.6f, 0.45f, 0.15f), new Vector2(0.5f, 0f), new Vector2(0f, 135f), new Vector2(260f, 80f), OnClickEquip);
+        equipLabel = equipButton.GetComponentInChildren<TextMeshProUGUI>();
+    }
+
+    private void OnClickEquip()
+    {
+        SoundManager.Instance?.PlaySlotClickSound();
+        if (currentStack == null || InventoryManager.Instance == null) return;
+
+        string message;
+        if (InventoryManager.Instance.IsEquipped(currentStack)) InventoryManager.Instance.Unequip(currentStack, out message);
+        else InventoryManager.Instance.Equip(currentStack, out message);
+
+        InventoryManager.Instance.ShowBagMessageOrToast(message);
+        Display(currentItem, currentStack); // 버튼 글자와 능력치 표시를 갱신
     }
 
     public void CloseInfoPanel()
@@ -214,6 +273,8 @@ public class ItemInfoPanel : MonoBehaviour
             string unit = owned > 1 ? $" (개당 {item.weight} kg)" : "";
             sb.AppendLine($" 중   량 : {item.weight * Mathf.Max(owned, 1)} kg{unit}");
         }
+        if (item.durabilitymax <= 0 && stack != null && stack.durability > 0)
+            sb.AppendLine($" 내구도 : {stack.durability}"); // 도구에서 이어받은 내구도 (최대 내구도가 표에 없는 아이템)
         if (item.durabilitymax > 0)
         {
             // 도구는 슬롯마다 내구도가 따로이므로 클릭한 슬롯(스택)의 현재 내구도를 표시
@@ -224,6 +285,16 @@ public class ItemInfoPanel : MonoBehaviour
         if (item.useHp > 0) sb.AppendLine($" 체력 회복 : +{item.useHp}");
         if (item.useSp > 0) sb.AppendLine($" SP 회복 : +{item.useSp}");
         if (item.useMana > 0) sb.AppendLine($" 마나 회복 : +{item.useMana}");
+        if (item.equipSlot != EquipSlot.None) sb.AppendLine($" 장착 부위 : {EquipSlotInfo.Name(item.equipSlot)}");
+        TraitDef trait = GameTables.Traits.Get(item.traitId);
+        if (trait != null)
+        {
+            string eff = "";
+            if (trait.atRate != 0f) eff += $" 공격력 {trait.atRate:+0.#;-0.#}%";
+            if (trait.dfRate != 0f) eff += $" 방어력 {trait.dfRate:+0.#;-0.#}%";
+            string effText = eff.Length > 0 ? " (" + eff.Trim() + ")" : "";
+            sb.AppendLine($" 특성 : {trait.label}{effText}");
+        }
         if (item.at > 0) sb.AppendLine($" 공 격 력 : {item.at}");
         if (item.df > 0) sb.AppendLine($" 방 어 력 : {item.df}");
         if (item.hp > 0) sb.AppendLine($" 체    력 : {item.hp}");

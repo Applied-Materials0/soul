@@ -21,19 +21,8 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 5
+    hpMax: 2
     sound: 0
-    extraYields: []
-  - label: "\uB364\uBD88"
-    weight: 9
-    foundText: "\uB364\uBD88\uC744 \uBC1C\uACAC\uD588\uB2E4."
-    gatherButtonText: "\uCC44\uC9D1"
-    itemId: 13
-    toolType: 4
-    tier: 0
-    hpMin: 1
-    hpMax: 10
-    sound: 1
     extraYields: []
   - label: "\uCC38\uB098\uBB34"
     weight: 17
@@ -42,8 +31,8 @@ MonoBehaviour:
     itemId: 0
     toolType: 1
     tier: 1
-    hpMin: 3
-    hpMax: 9
+    hpMin: 5
+    hpMax: 15
     sound: 2
     extraYields: []
   - label: "\uAD6C\uB9AC \uC870\uAC01"
@@ -76,7 +65,7 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 5
+    hpMax: 2
     sound: 0
     extraYields: []
   - label: "\uC7A1\uC11D"
@@ -84,10 +73,10 @@ MonoBehaviour:
     foundText: "\uC7A1\uC11D\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC11D"
     itemId: 2
-    toolType: 2
+    toolType: 3
     tier: 1
-    hpMin: 3
-    hpMax: 9
+    hpMin: 5
+    hpMax: 20
     sound: 3
     extraYields: []
   - label: "\uD480"
@@ -98,7 +87,18 @@ MonoBehaviour:
     toolType: 0
     tier: 0
     hpMin: 1
-    hpMax: 3
+    hpMax: 2
+    sound: 1
+    extraYields: []
+  - label: "\uB364\uBD88"
+    weight: 9
+    foundText: "\uB364\uBD88\uC744 \uBC1C\uACAC\uD588\uB2E4."
+    gatherButtonText: "\uCC44\uC9D1"
+    itemId: 13
+    toolType: 4
+    tier: 0
+    hpMin: 3
+    hpMax: 20
     sound: 1
     extraYields: []
   - label: "\uB538\uAE30"
@@ -182,7 +182,7 @@ MonoBehaviour:
     sound: 0
     extraYields: []
   - label: "\uC5F0\uBABB"
-    weight: 500
+    weight: 5
     foundText: "\uC5F0\uBABB\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uB2F4\uAE30"
     itemId: 15
@@ -192,13 +192,13 @@ MonoBehaviour:
     hpMax: 100
     sound: 4
     extraYields: []
-  probabilityPreview: "\uBE44\uC911 \uD569\uACC4: 595\r\n\uB098\uBB47\uAC00\uC9C0:
-    1.7%  (\uBE44\uC911 10)\r\n\uB364\uBD88: 1.5%  (\uBE44\uC911 9)\r\n\uCC38\uB098\uBB34:
-    2.9%  (\uBE44\uC911 17)\r\n\uAD6C\uB9AC \uC870\uAC01: 0.5%  (\uBE44\uC911 3)\r\n\uAD6C\uB9AC
-    \uAD11\uC11D: 0.2%  (\uBE44\uC911 1)\r\n\uC7A1\uC11D \uC870\uAC01: 1.7%  (\uBE44\uC911
-    10)\r\n\uC7A1\uC11D: 2.5%  (\uBE44\uC911 15)\r\n\uD480: 1.7%  (\uBE44\uC911 10)\r\n\uB538\uAE30:
-    0.8%  (\uBE44\uC911 5)\r\n\uC625\uC218\uC218: 0.3%  (\uBE44\uC911 2)\r\n\uBC8C\uC9D1:
-    0.5%  (\uBE44\uC911 3)\r\n\uB2EC\uAC40: 0.2%  (\uBE44\uC911 1)\r\n\uC8FC\uD669
-    \uBC84\uC12F: 0.8%  (\uBE44\uC911 5)\r\n\uD478\uB978 \uBC84\uC12F: 0.5%  (\uBE44\uC911
-    3)\r\n\uBD89\uC740 \uBC84\uC12F: 0.2%  (\uBE44\uC911 1)\r\n\uC5F0\uBABB: 84% 
-    (\uBE44\uC911 500)\r\n"
+  probabilityPreview: "\uBE44\uC911 \uD569\uACC4: 100\r\n\uB098\uBB47\uAC00\uC9C0:
+    10%  (\uBE44\uC911 10)\r\n\uCC38\uB098\uBB34: 17%  (\uBE44\uC911 17)\r\n\uAD6C\uB9AC
+    \uC870\uAC01: 3%  (\uBE44\uC911 3)\r\n\uAD6C\uB9AC \uAD11\uC11D: 1%  (\uBE44\uC911
+    1)\r\n\uC7A1\uC11D \uC870\uAC01: 10%  (\uBE44\uC911 10)\r\n\uC7A1\uC11D: 15% 
+    (\uBE44\uC911 15)\r\n\uD480: 10%  (\uBE44\uC911 10)\r\n\uB364\uBD88: 9%  (\uBE44\uC911
+    9)\r\n\uB538\uAE30: 5%  (\uBE44\uC911 5)\r\n\uC625\uC218\uC218: 2%  (\uBE44\uC911
+    2)\r\n\uBC8C\uC9D1: 3%  (\uBE44\uC911 3)\r\n\uB2EC\uAC40: 1%  (\uBE44\uC911 1)\r\n\uC8FC\uD669
+    \uBC84\uC12F: 5%  (\uBE44\uC911 5)\r\n\uD478\uB978 \uBC84\uC12F: 3%  (\uBE44\uC911
+    3)\r\n\uBD89\uC740 \uBC84\uC12F: 1%  (\uBE44\uC911 1)\r\n\uC5F0\uBABB: 5%  (\uBE44\uC911
+    5)\r\n"

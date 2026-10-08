@@ -1,6 +1,33 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+// 장착 부위. 장비 아이템은 이 중 한 곳에 장착한다 (None이면 장착 불가)
+public enum EquipSlot
+{
+    None,       // 장비 아님
+    Weapon,     // 무기 / 도구
+    Head,       // 머리
+    Body,       // 몸
+    Legs,       // 다리
+    Accessory   // 장신구
+}
+
+public static class EquipSlotInfo
+{
+    public static string Name(EquipSlot slot)
+    {
+        switch (slot)
+        {
+            case EquipSlot.Weapon: return "무기";
+            case EquipSlot.Head: return "머리";
+            case EquipSlot.Body: return "몸";
+            case EquipSlot.Legs: return "다리";
+            case EquipSlot.Accessory: return "장신구";
+            default: return "-";
+        }
+    }
+}
+
 public enum ToolType
 {
     None,       // 도구 아님/자원
@@ -58,6 +85,10 @@ public class Item : ScriptableObject
     public int spmax;          // 최대 스태미나 증가
     public int weightmax;      // 소지 무게 증가
     public int slotmax;        // 소지 슬롯 증가 (장비)
+
+    [Header("장착 (장비 장착창에 끼는 아이템. 장착해야 능력치와 특성이 적용됨)")]
+    public EquipSlot equipSlot;   // 장착 부위 (None이면 장착 불가)
+    public int traitId;           // 특성 ID (특성 표 참고. 0이면 없음. 예: 독)
 
     [Header("사용 효과 (소모품: 하나라도 0이 아니면 인벤토리에서 [사용] 버튼이 생김)")]
     public int useHp;          // 사용 시 체력 회복

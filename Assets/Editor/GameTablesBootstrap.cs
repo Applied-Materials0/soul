@@ -24,10 +24,26 @@ public static class GameTablesBootstrap
         Ensure<ProficiencyTable>("ProficiencyTable");
         Ensure<PlayerBaseTable>("PlayerBaseTable");
         Ensure<SearchTable>("SearchTable");
+        Ensure<TraitTable>("TraitTable");
+        EnsureRecoveryProficiency();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
         SoundTable sounds = Ensure<SoundTable>("SoundTable", out bool created);
         if (created) FillDefaultSounds(sounds);
+    }
+
+    // 옛 숙련도 표에 [회복] 숙련도 줄이 없으면 기본값으로 추가한다 (위험한 아이템을 먹으면 오르고 독 내성이 됨)
+    private static void EnsureRecoveryProficiency()
+    {
+        ProficiencyTable table = AssetDatabase.LoadAssetAtPath<ProficiencyTable>(Folder + "/ProficiencyTable.asset");
+        if (table == null) return;
+        foreach (ProficiencyDef d in table.defs)
+            if (d != null && d.kind == ProficiencyKind.Recovery) return;
+
+        table.defs.Add(ProficiencyTable.CreateRecoveryDef());
+        EditorUtility.SetDirty(table);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[GameTablesBootstrap] 숙련도 표에 [회복] 숙련도를 추가했습니다.");
     }
 
     private static T Ensure<T>(string assetName) where T : ScriptableObject

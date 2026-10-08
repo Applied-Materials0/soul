@@ -219,6 +219,79 @@ public static class RuleTableDrawers
     }
 
     // =========================================================
+    //  특성 표: 한 줄 = 특성 하나 (장비의 "특성ID"가 이 표를 가리킴)
+    // =========================================================
+    public static bool DrawTraitTable(SerializedObject so)
+    {
+        so.Update();
+        EditorGUI.BeginChangeCheck();
+
+        EditorGUILayout.HelpBox(
+            "장비를 [장착]하면 그 장비에 적힌 특성ID의 효과가 적용됩니다 (장비 스탯 탭의 '특성ID'). " +
+            "공격력/방어력 증감은 %이고, 방어력 증감이 마이너스(디버프)인 특성에 '내성 적용'을 켜면 [회복] 숙련도로 쌓은 독 내성만큼 디버프가 줄어듭니다. " +
+            "예) 독: 공격력 +30%, 방어력 -30%, 내성 적용 -> 내성이 없으면 방어력이 줄고, 내성이 100%면 방어력은 그대로.",
+            MessageType.None);
+
+        SerializedProperty list = so.FindProperty("traits");
+
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("ID", header, GUILayout.Width(40));
+        GUILayout.Label("이름", header, GUILayout.Width(100));
+        GUILayout.Label("공격력 %", header, GUILayout.Width(70));
+        GUILayout.Label("방어력 %", header, GUILayout.Width(70));
+        GUILayout.Label("내성 적용", header, GUILayout.Width(60));
+        GUILayout.Label("설명", header, GUILayout.Width(380));
+        EditorGUILayout.EndHorizontal();
+
+        int removeAt = -1;
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            SerializedProperty t = list.GetArrayElementAtIndex(i);
+            EditorGUILayout.BeginHorizontal();
+            TableField.Draw(t.FindPropertyRelative("id"), 40);
+            TableField.Draw(t.FindPropertyRelative("label"), 100);
+            TableField.Draw(t.FindPropertyRelative("atRate"), 70);
+            TableField.Draw(t.FindPropertyRelative("dfRate"), 70);
+            TableField.Draw(t.FindPropertyRelative("resistable"), 60);
+            TableField.Draw(t.FindPropertyRelative("description"), 380);
+            if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
+            EditorGUILayout.EndHorizontal();
+        }
+        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        if (GUILayout.Button("+ 특성 추가", GUILayout.Height(24)))
+        {
+            int maxId = 0;
+            for (int i = 0; i < list.arraySize; i++)
+                maxId = Mathf.Max(maxId, list.GetArrayElementAtIndex(i).FindPropertyRelative("id").intValue);
+
+            list.InsertArrayElementAtIndex(list.arraySize);
+            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            added.FindPropertyRelative("id").intValue = maxId + 1;
+            added.FindPropertyRelative("label").stringValue = "새 특성";
+            added.FindPropertyRelative("atRate").floatValue = 0f;
+            added.FindPropertyRelative("dfRate").floatValue = 0f;
+            added.FindPropertyRelative("resistable").boolValue = false;
+            added.FindPropertyRelative("description").stringValue = "";
+        }
+
+        bool changed = EditorGUI.EndChangeCheck();
+        so.ApplyModifiedProperties();
+
+        EditorGUILayout.Space();
+        if (GUILayout.Button("기본값으로 되돌리기") &&
+            EditorUtility.DisplayDialog("기본값으로 되돌리기", "특성 표의 모든 값이 처음 기본값으로 바뀝니다. 계속할까요?", "되돌리기", "취소"))
+        {
+            Undo.RecordObject(so.targetObject, "Reset Trait Table");
+            ((TraitTable)so.targetObject).ResetToDefaults();
+            EditorUtility.SetDirty(so.targetObject);
+            changed = true;
+        }
+        return changed;
+    }
+
+    // =========================================================
     //  탐색 결과 표: 한 줄 = 탐색했을 때 나올 수 있는 결과 하나
     // =========================================================
     public static bool DrawSearchTable(SerializedObject so)
@@ -378,6 +451,12 @@ public static class RuleTableDrawers
         new BaseRow("방어 보너스 (%)", "defendBonus", "[방어]할 때 방어력이 늘어나는 비율. 기본 50, 장비로 더 늘 수 있음"),
         new BaseRow("병원비 (골드)", "hospitalFee", "기절하면 내는 병원비. 골드가 모자라면 가진 만큼만 냄", 0),
         new BaseRow("기절 시 아이템 손실 (%)", "itemLossPercent", "기절하면 잃는 아이템 비율 (도구 제외)", 0),
+        new BaseRow("위험 1단계 체력 (%)", "lowHpPercent1", "체력이 이 비율 이하면 화면 가장자리가 붉어지기 시작"),
+        new BaseRow("위험 1단계 세기", "lowHpAlpha1", "붉은 정도 (0~100)"),
+        new BaseRow("위험 2단계 체력 (%)", "lowHpPercent2", "더 위험한 단계의 체력 비율"),
+        new BaseRow("위험 2단계 세기", "lowHpAlpha2", "붉은 정도 (0~100)"),
+        new BaseRow("위험 3단계 체력 (%)", "lowHpPercent3", "위독 단계의 체력 비율"),
+        new BaseRow("위험 3단계 세기", "lowHpAlpha3", "붉은 정도 (0~100)"),
     };
 
     public static bool DrawPlayerBaseTable(SerializedObject so)

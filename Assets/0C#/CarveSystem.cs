@@ -100,7 +100,7 @@ public class CarveSystem : MonoBehaviour
 
         remaining--;
 
-        string text = gained.Count > 0 ? $"{string.Join(", ", gained)}을(를) 도려냈다." : "아무것도 얻지 못했다...";
+        string text = gained.Count > 0 ? $"{Josa.WithEul(string.Join(", ", gained))} 도려냈다." : "아무것도 얻지 못했다...";
         if (bagFull) text += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
 
         // 숙련도 경험치
@@ -108,7 +108,8 @@ public class CarveSystem : MonoBehaviour
         if (def != null && Proficiency.AddExp(def, def.expPerUse, out int newLevel))
             text += $"\n{def.label} 숙련도가 올랐다! Lv.{newLevel}";
 
-        if (broken && knife != null) text += $"\n[{knife.itemName}]이(가) 파손되었습니다!";
+        if (broken && knife != null) text += $"\n{Josa.WithIga(knife.itemName)} 파괴되었습니다!";
+        if (broken && knife != null) ItemGainToast.ShowBroken(knife, "도구가 파괴되었다!");
 
         if (remaining <= 0)
         {

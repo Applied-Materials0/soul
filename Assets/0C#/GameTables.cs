@@ -10,6 +10,7 @@ public static class GameTables
     private static ProficiencyTable proficiency;
     private static PlayerBaseTable playerBase;
     private static SearchTable search;
+    private static TraitTable traits;
     private static SoundTable sounds;
 
     public static SPCostTable SPCosts { get { return Load(ref spCosts, "SPCostTable"); } }
@@ -17,6 +18,7 @@ public static class GameTables
     public static ProficiencyTable Proficiency { get { return Load(ref proficiency, "ProficiencyTable"); } }
     public static PlayerBaseTable PlayerBase { get { return Load(ref playerBase, "PlayerBaseTable"); } }
     public static SearchTable Search { get { return Load(ref search, "SearchTable"); } }
+    public static TraitTable Traits { get { return Load(ref traits, "TraitTable"); } }
     public static SoundTable Sounds { get { return Load(ref sounds, "SoundTable"); } }
 
     private static T Load<T>(ref T cache, string assetName) where T : ScriptableObject

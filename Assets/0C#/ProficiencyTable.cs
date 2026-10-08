@@ -6,7 +6,11 @@ using UnityEngine;
 public enum ProficiencyKind
 {
     Carving,  // 도려내기 (칼로 가죽/고기 얻기). 얻는 수량이 보너스만큼 늘어남
-    Gather,   // 채집 (아래 "도구" 종류로 채집할 때). 한 번에 채집하는 양이 보너스만큼 늘어남
+    Gather, // 채집 (아래 "도구" 종류로 채집할 때). 한 번에 채집하는 양이 보너스만큼 늘어남
+    Logging,
+    Mining,
+    Cutting,
+    Recovery, // 회복 (위험한 아이템을 먹을수록 오름). 레벨의 보너스(%)가 독 내성이 됨
 }
 
 [System.Serializable]
@@ -41,11 +45,30 @@ public class ProficiencyTable : ScriptableObject
         return null;
     }
 
+    private static ProficiencyDef fallbackRecovery;
+
     public ProficiencyDef Get(ProficiencyKind kind)
     {
         foreach (ProficiencyDef d in defs)
             if (d != null && d.kind == kind) return d;
+        // 옛 에셋에는 회복 숙련도 줄이 없으므로 기본값으로 대신 동작한다 (에디터를 열면 표에 자동으로 추가됨)
+        if (kind == ProficiencyKind.Recovery)
+        {
+            if (fallbackRecovery == null) fallbackRecovery = CreateRecoveryDef();
+            return fallbackRecovery;
+        }
         return null;
+    }
+
+    // 회복 숙련도: 레벨이 오를수록 독 내성(보너스 %)이 커진다. 100%면 독의 방어력 감소를 완전히 막음
+    public static ProficiencyDef CreateRecoveryDef()
+    {
+        ProficiencyDef def = new ProficiencyDef { id = 1000, kind = ProficiencyKind.Recovery, label = "회복", expPerUse = 10 };
+        int[] exp = { 20, 40, 80, 140, 220, 320, 440, 600, 800, 0 };
+        float[] bonus = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 100 };
+        for (int i = 0; i < exp.Length; i++)
+            def.levels.Add(new ProficiencyLevel { level = i + 1, expToNext = exp[i], bonusPercent = bonus[i] });
+        return def;
     }
 
     private static List<ProficiencyDef> CreateDefaultDefs()
@@ -55,7 +78,8 @@ public class ProficiencyTable : ScriptableObject
         float[] bonus = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 100 };
         for (int i = 0; i < exp.Length; i++)
             carving.levels.Add(new ProficiencyLevel { level = i + 1, expToNext = exp[i], bonusPercent = bonus[i] });
-        return new List<ProficiencyDef> { carving };
+        ProficiencyDef recovery = CreateRecoveryDef();
+        return new List<ProficiencyDef> { carving, recovery };
     }
 
     [ContextMenu("기본값으로 되돌리기")]

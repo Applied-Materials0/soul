@@ -57,6 +57,8 @@ public class GameManager : MonoBehaviour
     static public int SlotBonus;        //장비로 늘어난 슬롯 개수 (장비 시스템이 채움). 실제 한도 = SlotMax + SlotBonus
     static public int WeightBonus;      //장비로 늘어난 최대 무게 (장비 시스템이 채움). 실제 한도 = WeightMax + WeightBonus
     static public int EquipAt;         //도구 및 장비 공격력 합 (장비 시스템이 채움)
+    static public int EquipDf;         // 장비 방어력 합 (장비 시스템이 채움)
+    static public int EquipHp;         // 장비로 늘어난 최대 체력 (장비 시스템이 채움)
     static public float DefendBonus;    //[방어] 시 방어력 증가 [%], 기본 50 (장비로 추가될 수 있음)
     static public float BreakDf;        //관통률 [%] 방관
     static public float Abs;            //체력 흡수[%] 공격력 비율만큼 흡수 Absorption

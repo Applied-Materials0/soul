@@ -21,6 +21,18 @@ public class FieldActionButton : MonoBehaviour
         button.onClick.AddListener(OnButtonClick);
     }
 
+    // 키보드 단축키용: 이 종류의 버튼이 지금 화면에 켜져 있고 누를 수 있으면 누른다. 눌렀으면 true
+    public static bool Press(FieldButtonType type)
+    {
+        foreach (FieldActionButton b in FindObjectsByType<FieldActionButton>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (b.buttonType != type || b.button == null || !b.button.IsActive() || !b.button.interactable) continue;
+            b.button.onClick.Invoke();
+            return true;
+        }
+        return false;
+    }
+
     private void OnButtonClick()
     {
         if (FieldSearch.Instance == null) return;

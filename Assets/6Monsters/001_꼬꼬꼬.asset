@@ -18,7 +18,7 @@ MonoBehaviour:
   sprite: {fileID: 0}
   level: 1
   hpMax: 50
-  at: 5
+  at: 2
   df: 0
   speed: 1
   avoid: 0
@@ -45,4 +45,4 @@ MonoBehaviour:
   drops: []
   spawns:
   - regionId: 1
-    weight: 20
+    weight: 15

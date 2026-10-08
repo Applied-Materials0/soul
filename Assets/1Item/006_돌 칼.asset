@@ -26,7 +26,6 @@ MonoBehaviour:
   at: 3
   df: 0
   hp: 0
-  heal: 0
   hprateat: 0
   fixat: 0
   breakdf: 0
@@ -35,7 +34,6 @@ MonoBehaviour:
   criticalrate: 0
   critical: 0
   manamax: 0
-  manaheal: 0
   atrate: 0
   dfrate: 0
   hprate: 0
@@ -43,8 +41,14 @@ MonoBehaviour:
   goldrate: 0
   exprate: 0
   spmax: 0
-  spheal: 0
   weightmax: 0
+  slotmax: 0
+  equipSlot: 1
+  traitId: 0
+  useHp: 0
+  useSp: 0
+  useMana: 0
+  useResultItemId: 0
   icon: {fileID: -2053394916973472229, guid: ac22a89c098fc504f97524821018e349, type: 3}
   recipe:
     ingredients:
@@ -54,5 +58,6 @@ MonoBehaviour:
       amount: 3
     - itemId: 13
       amount: 5
+    tools: []
     resultItemId: 6
     resultAmount: 1

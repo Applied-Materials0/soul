@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -83,6 +84,11 @@ public class InventoryManager : MonoBehaviour
         // 상시 표시되는 제작 버튼 준비
         SetupCraftButton();
 
+        // 정렬 버튼 (제작 버튼 왼쪽)
+        SetupSortButton();
+        SetupEquipPanels();
+        RecalcEquipment();
+
         // 우측 하단에 무게와 슬롯 한도를 작게 보여 주는 글자 준비
         SetupBagStatusText();
     }
@@ -94,7 +100,6 @@ public class InventoryManager : MonoBehaviour
     private Image bagGaugeFillImage;
     private TextMeshProUGUI bagWeightText;   // 게이지 위의 "현재 / 최대" 숫자
     private TextMeshProUGUI bagSlotText;     // 게이지 위의 "슬롯 사용 / 최대"
-    private GameObject bagGaugeCanvas;
     private string bagStatusShown = "";
 
     // 무게 게이지 색: 80% 이상 주황색, 90% 이상 빨간색, 그 아래는 초록색
@@ -102,36 +107,48 @@ public class InventoryManager : MonoBehaviour
     private static readonly Color GaugeOrange = new Color(1.00f, 0.60f, 0.10f, 1f);
     private static readonly Color GaugeRed = new Color(0.85f, 0.15f, 0.15f, 1f);
 
-    // 우측 하단: 몬스터 체력 게이지처럼 흰색 바탕 위에 현재 무게 비율만큼 색이 차는 막대와 숫자
+    // 우측 하단: 흰색 바탕 위에 현재 무게 비율만큼 색이 차는 막대와 숫자.
+    // 위치/크기/색은 BagUI 프리팹 안의 BagWeightGauge(Fill, Text), BagSlotText, BagMessage 오브젝트를 직접 고치면 된다.
+    // (프리팹에 없으면 아래에서 같은 모양으로 임시로 만든다)
     private void SetupBagStatusText()
     {
         if (inventoryUI == null) return;
+        Transform root = inventoryUI.transform;
+
+        Transform gauge = root.Find("BagWeightGauge");
+        if (gauge != null)
+        {
+            bagGaugeFill = gauge.Find("Fill") as RectTransform;
+            bagGaugeFillImage = bagGaugeFill != null ? bagGaugeFill.GetComponent<Image>() : null;
+            Transform t = gauge.Find("Text");
+            bagWeightText = t != null ? t.GetComponent<TextMeshProUGUI>() : null;
+        }
+        Transform slot = root.Find("BagSlotText");
+        if (slot != null) bagSlotText = slot.GetComponent<TextMeshProUGUI>();
+        Transform msg = root.Find("BagMessage");
+        if (msg != null)
+        {
+            bagMessage = msg.gameObject;
+            bagMessageGroup = msg.GetComponent<CanvasGroup>();
+            bagMessageText = msg.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+
+        if (bagGaugeFill != null && bagGaugeFillImage != null && bagWeightText != null && bagSlotText != null) return;
+
+        // ---- 프리팹에 없을 때의 대체 생성 (가방 UI 안 맨 위에) ----
         TMP_FontAsset font = FindUIFont();
-        Vector2 corner = new Vector2(1f, 0f); // 우측 하단 모서리 기준
+        Vector2 corner = new Vector2(1f, 0f);
 
-        // 가방 UI 안의 배치나 겹침에 영향받지 않도록 전용 캔버스(화면 맨 위)에 만들고, 가방이 열린 동안만 켠다
-        GameObject canvasGo = new GameObject("BagGauge Canvas", typeof(Canvas), typeof(CanvasScaler));
-        Canvas gaugeCanvas = canvasGo.GetComponent<Canvas>();
-        gaugeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        gaugeCanvas.sortingOrder = 90;
-        canvasGo.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-        DontDestroyOnLoad(canvasGo); // 장면이 바뀌어도 유지 (가방 매니저와 같이 살아남음)
-        bagGaugeCanvas = canvasGo;
-        Transform host = canvasGo.transform;
-
-        // 슬롯 개수 (게이지 위에 작게)
-        RectTransform slotRt = CraftQuantityPopup.NewRect("BagSlotText", host, corner, new Vector2(-30f, 62f), new Vector2(360f, 30f));
+        RectTransform slotRt = CraftQuantityPopup.NewRect("BagSlotText", root, corner, new Vector2(-30f, 62f), new Vector2(360f, 30f));
         bagSlotText = CraftQuantityPopup.AddText(slotRt, 22, TextAlignmentOptions.Right, font);
-        bagSlotText.outlineWidth = 0.25f;
-        bagSlotText.outlineColor = new Color32(0, 0, 0, 255);
+        bagSlotText.color = Color.black;
+        bagSlotText.fontStyle = FontStyles.Bold;
 
-        // 게이지 바탕 = 흰색
-        RectTransform bar = CraftQuantityPopup.NewRect("BagWeightGauge", host, corner, new Vector2(-30f, 28f), new Vector2(360f, 30f));
+        RectTransform bar = CraftQuantityPopup.NewRect("BagWeightGauge", root, corner, new Vector2(-30f, 28f), new Vector2(360f, 30f));
         Image back = bar.gameObject.AddComponent<Image>();
         back.color = Color.white;
         back.raycastTarget = false;
 
-        // 채워진 부분 = 현재 무게 비율 (왼쪽부터)
         bagGaugeFill = CraftQuantityPopup.NewRect("Fill", bar, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         bagGaugeFill.anchorMin = Vector2.zero;
         bagGaugeFill.anchorMax = new Vector2(0f, 1f);
@@ -141,7 +158,6 @@ public class InventoryManager : MonoBehaviour
         bagGaugeFillImage.color = GaugeGreen;
         bagGaugeFillImage.raycastTarget = false;
 
-        // 숫자 (흰 바탕과 색 막대 위에서 읽히도록 검은 글자)
         RectTransform textRt = CraftQuantityPopup.NewRect("Text", bar, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         textRt.anchorMin = Vector2.zero;
         textRt.anchorMax = Vector2.one;
@@ -151,21 +167,21 @@ public class InventoryManager : MonoBehaviour
         bagWeightText.color = Color.black;
         bagWeightText.fontStyle = FontStyles.Bold;
 
-        canvasGo.SetActive(false);
-    }
-
-    void OnDestroy()
-    {
-        if (bagGaugeCanvas != null) Destroy(bagGaugeCanvas);
+        slotRt.SetAsLastSibling();
+        bar.SetAsLastSibling();
     }
 
     // 가방이 열려 있는 동안 값이 바뀌면(획득, 소모, 장비로 한도 변경 등) 게이지와 숫자를 갱신한다
     void Update()
     {
-        if (bagGaugeFill == null || inventoryUI == null) return;
-        bool open = inventoryUI.activeInHierarchy;
-        if (bagGaugeCanvas.activeSelf != open) bagGaugeCanvas.SetActive(open);
-        if (!open) return;
+        if (inventoryUI != null && inventoryUI.activeInHierarchy)
+        {
+            if (Input.GetKeyDown(KeyCode.C)) ToggleRecipePanel();
+            if (Input.GetKeyDown(KeyCode.X)) OnClickSort();
+            if (Input.GetKeyDown(KeyCode.Z)) OpenStat();
+        }
+
+        if (bagGaugeFill == null || inventoryUI == null || !inventoryUI.activeInHierarchy) return;
 
         int weight = CurrentWeight, weightLimit = WeightLimit, used = UsedSlots, slotLimit = SlotLimit;
 
@@ -179,7 +195,160 @@ public class InventoryManager : MonoBehaviour
         bagWeightText.text = $"무게 {weight:N0} / {weightLimit:N0}";
 
         string slots = $"슬롯 {used} / {slotLimit}";
-        bagSlotText.text = used >= slotLimit ? $"<color=#FF6666>{slots}</color>" : slots; // 슬롯이 가득 차면 빨간색
+        bagSlotText.text = used >= slotLimit ? $"<color=#CC0000>{slots}</color>" : slots; // 슬롯이 가득 차면 빨간색
+    }
+
+    // =========================================================
+    //  가방 안 알림: 가방이 열려 있으면 BagMessage 오브젝트에 보여 준다 (가방 UI가 다른 알림을 덮기 때문)
+    // =========================================================
+    private GameObject bagMessage;
+    private CanvasGroup bagMessageGroup;
+    private TextMeshProUGUI bagMessageText;
+    private Coroutine bagMessageRoutine;
+
+    // 가방이 열려 있고 BagMessage가 있으면 거기에 보여 주고 true. 아니면 false (다른 곳에 보여 줘야 함)
+    // 가방이 열려 있으면 가방 안 알림에, 아니면 화면 중앙 알림에 보여 준다
+    public void ShowBagMessageOrToast(string text)
+    {
+        if (!ShowBagMessage(text)) ItemGainToast.ShowMessage(text);
+    }
+
+    public bool ShowBagMessage(string text)
+    {
+        if (bagMessage == null || bagMessageText == null || !IsInventoryOpen) return false;
+
+        bagMessageText.text = text;
+        bagMessage.SetActive(true);
+        bagMessage.transform.SetAsLastSibling();
+        if (bagMessageGroup != null) bagMessageGroup.alpha = 1f;
+        if (bagMessageRoutine != null) StopCoroutine(bagMessageRoutine);
+        bagMessageRoutine = StartCoroutine(HideBagMessage());
+        return true;
+    }
+
+    private IEnumerator HideBagMessage()
+    {
+        float t = 0f;
+        while (t < 2.5f) { t += Time.unscaledDeltaTime; yield return null; }
+
+        t = 0f;
+        while (t < 1f)
+        {
+            t += Time.unscaledDeltaTime;
+            if (bagMessageGroup != null) bagMessageGroup.alpha = 1f - Mathf.Clamp01(t);
+            yield return null;
+        }
+        bagMessage.SetActive(false);
+        bagMessageRoutine = null;
+    }
+
+    // 가방을 닫으면 알림도 치운다
+    private void HideBagMessageNow()
+    {
+        if (bagMessageRoutine != null) { StopCoroutine(bagMessageRoutine); bagMessageRoutine = null; }
+        if (bagMessage != null) bagMessage.SetActive(false);
+    }
+
+    // =========================================================
+    //  정렬 버튼: 누를 때마다 [ID순] / [무게순]이 번갈아 적용된다
+    // =========================================================
+    private bool nextSortByWeight;
+    private TextMeshProUGUI sortLabel;
+
+    private void SetupSortButton()
+    {
+        if (inventoryUI == null) return;
+
+        RectTransform craft = craftRecipeButton != null
+            ? craftRecipeButton.GetComponent<RectTransform>()
+            : inventoryUI.transform.Find("CraftRecipeButton") as RectTransform;
+
+        Vector2 anchor = new Vector2(1f, 1f);
+        Vector2 pos = new Vector2(-420f, -100f);
+        Vector2 size = new Vector2(150f, 100f);
+        Vector2 pivot = Vector2.zero;
+        if (craft != null)
+        {
+            anchor = craft.anchorMax;
+            pivot = craft.pivot;
+            size = craft.sizeDelta;
+            pos = craft.anchoredPosition;
+        }
+
+        // 제작 버튼 왼쪽으로 [정렬] [장비] [버프] 순서로 나란히
+        GameObject sort = MakeBarButton("SortButton", "ID순 정렬", anchor, pivot, pos - new Vector2((size.x + 10f) * 1f, 0f), size, new Color(0.25f, 0.4f, 0.65f), OnClickSort);
+        sortLabel = sort.GetComponentInChildren<TextMeshProUGUI>();
+        MakeBarButton("EquipButton", "장비창", anchor, pivot, pos - new Vector2((size.x + 10f) * 2f, 0f), size, new Color(0.5f, 0.4f, 0.2f), ToggleEquipPanel);
+        MakeBarButton("BuffButton", "버프창", anchor, pivot, pos - new Vector2((size.x + 10f) * 3f, 0f), size, new Color(0.45f, 0.25f, 0.55f), ToggleBuffPanel);
+    }
+
+    private GameObject MakeBarButton(string name, string label, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, Color color, UnityEngine.Events.UnityAction onClick)
+    {
+        GameObject go = CraftQuantityPopup.CreateButton(inventoryUI.transform, name, label, FindUIFont(), color, anchor, pos, size, onClick);
+        RectTransform rt = (RectTransform)go.transform;
+        rt.anchorMin = anchor;
+        rt.anchorMax = anchor;
+        rt.pivot = pivot;
+        rt.anchoredPosition = pos;
+        TextMeshProUGUI t = go.GetComponentInChildren<TextMeshProUGUI>();
+        if (t != null) t.fontSize = 26;
+        return go;
+    }
+
+    private void OnClickSort()
+    {
+        SoundManager.Instance?.PlaySlotClickSound();
+        SortItems(nextSortByWeight);
+        nextSortByWeight = !nextSortByWeight;
+        if (sortLabel != null) sortLabel.text = nextSortByWeight ? "무게순 정렬" : "ID순 정렬";
+    }
+
+    // 슬롯 순서를 정렬한다. byWeight: 슬롯 전체 무게(개당 무게 x 수량)가 무거운 순, 아니면 ID 순.
+    // 정렬 뒤에 얻는 아이템은 여전히 맨 뒤(빈 곳)에 차례로 들어간다.
+    public void SortItems(bool byWeight)
+    {
+        List<ItemStack> sorted = byWeight
+            ? itemList.OrderByDescending(s => s.itemData.weight * s.amount).ThenBy(s => s.itemData.id).ToList()
+            : itemList.OrderBy(s => s.itemData.id).ThenByDescending(s => s.amount).ToList();
+        itemList.Clear();
+        itemList.AddRange(sorted);
+        RefreshInventoryUI();
+    }
+
+    // =========================================================
+    //  슬롯 끌어다 놓기: 같은 아이템이면 합치고, 다른 아이템이면 자리를 바꾼다
+    // =========================================================
+    public void DropOnto(ItemStack from, ItemStack to)
+    {
+        if (from == null || to == null || from == to) return;
+
+        bool mergeable = from.itemData.id == to.itemData.id
+            && from.itemData.durabilitymax <= 0 // 내구도가 따로인 도구/장비는 합치지 않음
+            && !IsEquipped(from) && !IsEquipped(to)
+            && to.amount < StackLimit(to.itemData);
+
+        if (mergeable)
+        {
+            int move = Mathf.Min(from.amount, StackLimit(to.itemData) - to.amount);
+            to.amount += move;
+            from.amount -= move;
+            if (from.amount <= 0)
+            {
+                itemList.Remove(from);
+            }
+            RefreshInventoryUI();
+            GameManager.Weight = CurrentWeight;
+        RecalcEquipment();
+            PlayerUI.RefreshAll();
+            return;
+        }
+
+        // 합칠 수 없으면 자리 바꾸기
+        int a = itemList.IndexOf(from), b = itemList.IndexOf(to);
+        if (a < 0 || b < 0) return;
+        itemList[a] = to;
+        itemList[b] = from;
+        RefreshInventoryUI();
     }
 
     // 가방 UI 상단의 [제작] 버튼: 스탯 버튼 바로 왼쪽에 같은 모양으로 만든다
@@ -311,6 +480,7 @@ public class InventoryManager : MonoBehaviour
 
         if (BtnAudio != null) BtnAudio.Play();
         inventoryUI.SetActive(true);
+        ItemGainToast.ClearAll(); // 필드에서 얻고 남아 있던 획득 표시는 가방을 열면 바로 치운다
         PlayerUI.RefreshAll(); // 스탯 창 텍스트를 지금 값으로
     }
 
@@ -329,6 +499,7 @@ public class InventoryManager : MonoBehaviour
     // 이미 닫혀 있으면 소리를 내지 않음
     private void CloseInventoryInternal(bool playSound)
     {
+        HideBagMessageNow();
         if (playSound && inventoryUI.activeSelf && BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
         if (recipePanel != null) recipePanel.Close(true);
@@ -402,6 +573,7 @@ public class InventoryManager : MonoBehaviour
         slot.SetupSlot(stack.itemData);
         slot.UpdateCountUI(stack.amount);
         dynamicSlots[stack] = slot;
+        slot.SetEquippedMark(IsEquipped(stack));
         return slot;
     }
 
@@ -421,11 +593,20 @@ public class InventoryManager : MonoBehaviour
     /// </summary>
     // 방금 ConsumeToolDurability로 쓴 도구의 남은 내구도 (닳지 않는 도구는 UnbreakableDurability)
     public int LastToolDurability { get; private set; }
+    private ItemStack lastToolStack;
+
+    // 방금 쓴 도구 1개를 없앤다 (도구가 결과 아이템으로 바뀔 때: 빈 물통 -> 물을 담은 물통)
+    public void RemoveLastUsedTool()
+    {
+        if (lastToolStack != null && itemList.Contains(lastToolStack)) RemoveFromStack(lastToolStack, 1);
+        lastToolStack = null;
+    }
 
     public Item ConsumeToolDurability(ToolType requiredType, int requiredTier, out ToolCheckResult checkResult, out bool isBroken)
     {
         isBroken = false;
         LastToolDurability = 0;
+        lastToolStack = null;
 
         var ownedTools = itemList
             .Where(stack => stack.itemData.toolType == requiredType && IsUsableTool(stack))
@@ -450,6 +631,7 @@ public class InventoryManager : MonoBehaviour
 
         checkResult = ToolCheckResult.Success;
         Item usedTool = targetStack.itemData;
+        lastToolStack = targetStack;
         if (IsUnbreakable(targetStack)) { LastToolDurability = UnbreakableDurability; return usedTool; } // 닳지 않는 도구는 내구도를 깎지 않는다
         targetStack.durability -= 1;
         LastToolDurability = Mathf.Max(0, targetStack.durability);
@@ -655,6 +837,7 @@ public class InventoryManager : MonoBehaviour
             itemList = snapshot;
             RefreshInventoryUI();
             GameManager.Weight = CurrentWeight;
+        RecalcEquipment();
             PlayerUI.RefreshAll();
             LastCraftFailReason = BlockMessage(block);
             return false;
@@ -684,6 +867,281 @@ public class InventoryManager : MonoBehaviour
     }
 
     // =========================================================
+    //  장비 장착 / 특성 / 버프
+    //  장착한 아이템은 가방(itemList)에 그대로 있고, 어느 부위에 끼웠는지만 따로 기억한다.
+    //  장착해야 능력치와 특성이 적용된다. 가방에 든 도구(낫, 도끼 등)는 장착하지 않아도 가장 높은 공격력 하나가 적용된다.
+    // =========================================================
+    private readonly Dictionary<EquipSlot, ItemStack> equipped = new Dictionary<EquipSlot, ItemStack>();
+    private int appliedSpBonus, appliedManaBonus;   // 지금 GameManager에 더해 둔 장비 SP/마나 보너스
+    private TextMeshProUGUI equipBody, buffBody;     // 장비창 / 버프창 본문 글자 (BagUI 프리팹의 EquipPanel, BuffPanel)
+    private GameObject equipPanel, buffPanel;
+
+    public static bool CanEquip(Item item) { return item != null && item.equipSlot != EquipSlot.None; }
+    public bool IsEquipped(ItemStack s) { return s != null && equipped.ContainsValue(s); }
+
+    public ItemStack EquippedIn(EquipSlot slot)
+    {
+        equipped.TryGetValue(slot, out ItemStack s);
+        return s;
+    }
+
+    // 부서진(내구도 0인) 장비는 능력치가 적용되지 않는다
+    private static bool IsWorking(ItemStack s) { return s != null && (s.itemData.durabilitymax <= 0 || s.durability > 0); }
+
+    public bool Equip(ItemStack stack, out string message)
+    {
+        message = "";
+        if (stack == null || !CanEquip(stack.itemData)) { message = "장착할 수 없는 아이템입니다."; return false; }
+        if (!IsWorking(stack)) { message = "파괴되어 장착할 수 없습니다."; return false; }
+
+        EquipSlot slot = stack.itemData.equipSlot;
+        ItemStack old = EquippedIn(slot);
+        equipped[slot] = stack;
+        RecalcEquipment();
+
+        message = old != null && old != stack
+            ? $"{Josa.WithEul(stack.itemData.itemName)} 장착했다. ({old.itemData.itemName} 해제)"
+            : $"{Josa.WithEul(stack.itemData.itemName)} 장착했다.";
+        return true;
+    }
+
+    public bool Unequip(ItemStack stack, out string message)
+    {
+        message = "";
+        if (!IsEquipped(stack)) return false;
+        EquipSlot slot = stack.itemData.equipSlot;
+        equipped.Remove(slot);
+        RecalcEquipment();
+        message = $"{Josa.WithEul(stack.itemData.itemName)} 해제했다.";
+        return true;
+    }
+
+    // 스택이 가방에서 사라질 때 장착 기록도 지운다
+    private void RemoveEquippedRecord(ItemStack stack)
+    {
+        foreach (EquipSlot slot in new List<EquipSlot>(equipped.Keys))
+            if (equipped[slot] == stack) equipped.Remove(slot);
+    }
+
+    // 독 같은 디버프에 대한 내성 [%] = 회복 숙련도 레벨의 보너스
+    public static float PoisonResist()
+    {
+        return Mathf.Clamp(Proficiency.Bonus(ProficiencyKind.Recovery), 0f, 100f);
+    }
+
+    // 특성의 방어력 증감 [%]. 내성이 있으면 디버프(마이너스)가 그만큼 줄어든다
+    private static float EffectiveDfRate(TraitDef t)
+    {
+        if (t.dfRate < 0f && t.resistable) return t.dfRate * (1f - PoisonResist() / 100f);
+        return t.dfRate;
+    }
+
+    // 장착한 장비와 가방의 도구를 모아 플레이어의 장비 능력치를 다시 계산한다 (가방/장착이 바뀔 때마다 부름)
+    public void RecalcEquipment()
+    {
+        int at = 0, df = 0, hp = 0, fixAt = 0, slotB = 0, weightB = 0, sp = 0, mana = 0;
+        float atRate = 0f, dfRate = 0f, hpRate = 0f, hpRateAt = 0f, breakDf = 0f, abs = 0f, avoid = 0f;
+        float crit = 0f, critRate = 0f, goldRate = 0f, expRate = 0f;
+
+        foreach (ItemStack s in equipped.Values)
+        {
+            if (!IsWorking(s)) continue;
+            Item it = s.itemData;
+            at += it.at; df += it.df; hp += it.hp; fixAt += it.fixat; slotB += it.slotmax; weightB += it.weightmax;
+            sp += it.spmax; mana += it.manamax;
+            atRate += it.atrate; dfRate += it.dfrate; hpRate += it.hprate; hpRateAt += it.hprateat;
+            breakDf += it.breakdf; abs += it.abs; avoid += it.avoid; crit += it.critical; critRate += it.criticalrate;
+            goldRate += it.goldrate; expRate += it.exprate;
+
+            TraitDef t = GameTables.Traits.Get(it.traitId);
+            if (t != null) { atRate += t.atRate; dfRate += EffectiveDfRate(t); }
+        }
+
+        // 가방의 도구 중 가장 높은 공격력 하나 (장착한 것은 위에서 이미 더함)
+        int toolAt = 0;
+        foreach (ItemStack s in itemList)
+            if (s.itemData.toolType != ToolType.None && !IsEquipped(s) && IsUsableTool(s)) toolAt = Mathf.Max(toolAt, s.itemData.at);
+
+        GameManager.EquipAt = at + toolAt;
+        GameManager.EquipDf = df;
+        GameManager.EquipHp = hp;
+        GameManager.FixAt = fixAt;
+        GameManager.SlotBonus = slotB;
+        GameManager.WeightBonus = weightB;
+        GameManager.AtRate = atRate;
+        GameManager.DfRate = dfRate;
+        GameManager.HpRate = hpRate;
+        GameManager.HpRateAt = hpRateAt;
+        GameManager.BreakDf = breakDf;
+        GameManager.Abs = abs;
+        GameManager.Avoid = avoid;
+        GameManager.Critical = crit;
+        GameManager.CriticalRate = critRate;
+        GameManager.GoldR = goldRate;
+        GameManager.ExpR = Mathf.RoundToInt(expRate);
+
+        // 최대 SP/마나는 기본값 위에 장비 보너스를 얹는다 (바뀐 만큼만 더하고 뺌)
+        GameManager.SPMax += sp - appliedSpBonus;
+        appliedSpBonus = sp;
+        GameManager.ManaMax += mana - appliedManaBonus;
+        appliedManaBonus = mana;
+        if (GameManager.SP > GameManager.SPMax) GameManager.SP = GameManager.SPMax;
+        if (GameManager.Mana > GameManager.ManaMax) GameManager.Mana = GameManager.ManaMax;
+        int maxHp = BattleCalc.PlayerMaxHp();
+        if (GameManager.Hp > maxHp) GameManager.Hp = maxHp;
+
+        RefreshEquipPanels();
+        RefreshAllSlotMarks();
+        PlayerUI.RefreshAll();
+    }
+
+    // ---- 장비창 / 버프창 ----
+    private void SetupEquipPanels()
+    {
+        if (inventoryUI == null) return;
+        Transform e = inventoryUI.transform.Find("EquipPanel");
+        Transform b = inventoryUI.transform.Find("BuffPanel");
+        if (e != null) { equipPanel = e.gameObject; Transform body = e.Find("Body"); equipBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
+        if (b != null) { buffPanel = b.gameObject; Transform body = b.Find("Body"); buffBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
+        if (equipPanel != null) equipPanel.SetActive(false);
+        if (buffPanel != null) buffPanel.SetActive(false);
+    }
+
+    public void ToggleEquipPanel()
+    {
+        if (equipPanel == null) return;
+        SoundManager.Instance?.PlaySlotClickSound();
+        bool on = !equipPanel.activeSelf;
+        equipPanel.SetActive(on);
+        if (on) { if (buffPanel != null) buffPanel.SetActive(false); equipPanel.transform.SetAsLastSibling(); RefreshEquipPanels(); }
+    }
+
+    public void ToggleBuffPanel()
+    {
+        if (buffPanel == null) return;
+        SoundManager.Instance?.PlaySlotClickSound();
+        bool on = !buffPanel.activeSelf;
+        buffPanel.SetActive(on);
+        if (on) { if (equipPanel != null) equipPanel.SetActive(false); buffPanel.transform.SetAsLastSibling(); RefreshEquipPanels(); }
+    }
+
+    private static readonly EquipSlot[] SlotOrder =
+        { EquipSlot.Weapon, EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs, EquipSlot.Accessory };
+
+    public void RefreshEquipPanels()
+    {
+        if (equipBody != null && equipPanel != null && equipPanel.activeSelf)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            foreach (EquipSlot slot in SlotOrder)
+            {
+                ItemStack s = EquippedIn(slot);
+                string name = EquipSlotInfo.Name(slot);
+                if (s == null) { sb.AppendLine($"{name} : -"); continue; }
+
+                string dur = s.itemData.durabilitymax > 0 ? $"  ({s.durability}/{s.itemData.durabilitymax})" : "";
+                TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
+                string trait = t != null ? $"  [{t.label}]" : "";
+                sb.AppendLine($"{name} : {s.itemData.itemName}{dur}{trait}");
+            }
+            sb.AppendLine();
+            sb.AppendLine($"공격력 +{GameManager.EquipAt}   방어력 +{GameManager.EquipDf}   체력 +{GameManager.EquipHp}");
+            sb.AppendLine("(아이템을 눌러 [장착] / [해제])");
+            equipBody.text = sb.ToString();
+        }
+
+        if (buffBody != null && buffPanel != null && buffPanel.activeSelf)
+            buffBody.text = BuffText();
+    }
+
+    // 버프/디버프 내역: 장착한 장비의 특성과 독 내성
+    public string BuffText()
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        const string good = "<color=#1B7F2A>", bad = "<color=#C00000>", end = "</color>";
+        float resist = PoisonResist();
+        int lines = 0;
+
+        foreach (EquipSlot slot in SlotOrder)
+        {
+            ItemStack s = EquippedIn(slot);
+            if (!IsWorking(s)) continue;
+            TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
+            if (t == null) continue;
+
+            sb.AppendLine($"<b>{t.label}</b> ({s.itemData.itemName})");
+            if (t.atRate != 0f) { sb.AppendLine($"  {(t.atRate > 0 ? good : bad)}공격력 {t.atRate:+0.#;-0.#}%{end}"); lines++; }
+            float df = EffectiveDfRate(t);
+            if (t.dfRate != 0f)
+            {
+                string note = t.resistable && t.dfRate < 0f ? $" (내성 {resist:0.#}%로 {t.dfRate:+0.#;-0.#}% -> {df:+0.#;-0.#}%)" : "";
+                sb.AppendLine($"  {(df > 0 ? good : bad)}방어력 {df:+0.#;-0.#}%{end}{note}");
+                lines++;
+            }
+            if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"  <size=80%>{t.description}</size>");
+        }
+        if (lines == 0) sb.AppendLine("적용 중인 버프/디버프가 없습니다.");
+
+        ProficiencyDef rec = GameTables.Proficiency.Get(ProficiencyKind.Recovery);
+        if (rec != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"{good}독 내성 {resist:0.#}%{end}  ({rec.label} 숙련도 Lv.{Proficiency.Level(rec)})");
+        }
+        return sb.ToString();
+    }
+
+    // 장비 내구도를 1 깎는다. 공격하면 무기, 맞으면 방어구(머리/몸/다리 중 하나)가 닳는다. 0이 되면 파괴된다.
+    public void WearEquipment(bool attacked)
+    {
+        ItemStack target = null;
+        if (attacked)
+        {
+            target = EquippedIn(EquipSlot.Weapon);
+        }
+        else
+        {
+            List<ItemStack> armor = new List<ItemStack>();
+            foreach (EquipSlot slot in new[] { EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs })
+            {
+                ItemStack s = EquippedIn(slot);
+                if (s != null) armor.Add(s);
+            }
+            if (armor.Count > 0) target = armor[Random.Range(0, armor.Count)];
+        }
+        if (target == null || target.itemData.durabilitymax <= 0 || target.durability <= 0) return;
+
+        target.durability -= 1;
+        if (target.durability <= 0)
+        {
+            Item broken = target.itemData;
+            RemoveFromStack(target, target.amount); // 파괴: 가방에서 사라지고 장착도 풀린다
+            ItemGainToast.ShowBroken(broken, "장비가 파괴되었다!");
+        }
+        else
+        {
+            RefreshEquipPanels();
+        }
+    }
+
+    // 슬롯에 "장착" 표시를 다시 맞춘다
+    private void RefreshAllSlotMarks()
+    {
+        foreach (KeyValuePair<ItemStack, ItemSlot> kv in dynamicSlots)
+            if (kv.Value != null) kv.Value.SetEquippedMark(IsEquipped(kv.Key));
+    }
+
+    // 마을처럼 필드가 없는 곳에서 기절했을 때: 체력을 채우고 페널티를 적용한다
+    public string RecoverFromFaint()
+    {
+        GameManager.Hp = BattleCalc.PlayerMaxHp();
+        GameManager.isfaint = false;
+        string penalty = ApplyFaintPenalty();
+        PlayerUI.RefreshAll();
+        return string.IsNullOrEmpty(penalty) ? "병원에서 치료를 받았다." : "병원에서 치료를 받았다. " + penalty + ".";
+    }
+
+    // =========================================================
     //  소모품 사용: 사용 효과(체력/SP/마나 회복)가 하나라도 있는 아이템은 인벤토리에서 [사용]할 수 있다
     // =========================================================
     public static bool CanUse(Item item)
@@ -693,9 +1151,13 @@ public class InventoryManager : MonoBehaviour
 
     // 스택에서 아이템 1개를 사용한다. 성공하면 true. message에는 결과(또는 못 쓰는 이유)가 담긴다.
     // 마이너스 값이 있는 아이템(독 등)도 먹을 수 있고, 체력은 1 밑으로 내려가지 않는다.
+    // 방금 사용으로 체력이 0이 되어 쓰러졌는가 (호출한 쪽이 기절 처리를 한다)
+    public bool LastUseFainted { get; private set; }
+
     public bool UseItem(ItemStack stack, out string message)
     {
         message = "";
+        LastUseFainted = false;
         if (stack == null || stack.itemData == null || !CanUse(stack.itemData)) return false;
         Item item = stack.itemData;
 
@@ -703,7 +1165,7 @@ public class InventoryManager : MonoBehaviour
         int spBefore = GameManager.SP;
         int manaBefore = GameManager.Mana;
 
-        GameManager.Hp = Mathf.Clamp(GameManager.Hp + item.useHp, Mathf.Min(1, GameManager.Hp), Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp));
+        GameManager.Hp = Mathf.Clamp(GameManager.Hp + item.useHp, 0, Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp)); // 체력을 깎는 아이템은 쓰러질 수도 있다
         GameManager.SP = Mathf.Clamp(GameManager.SP + item.useSp, 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
         GameManager.Mana = Mathf.Clamp(GameManager.Mana + item.useMana, 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
 
@@ -713,6 +1175,7 @@ public class InventoryManager : MonoBehaviour
 
         // 이미 전부 가득 차서 아무 효과가 없으면 소모하지 않는다 (마이너스 효과가 있는 아이템은 항상 먹을 수 있음)
         bool harmful = item.useHp < 0 || item.useSp < 0 || item.useMana < 0;
+        if (harmful) ScreenFlash.Shared.Play(new Color(0.85f, 0f, 0f), 0.45f, 0.8f); // 위험한 것을 먹으면 맞았을 때처럼 화면이 붉어짐
         if (!harmful && hp == 0 && sp == 0 && mana == 0)
         {
             message = "이미 가득 차서 사용할 필요가 없습니다.";
@@ -721,9 +1184,15 @@ public class InventoryManager : MonoBehaviour
 
         // 사용 후 남는 아이템(예: 가득찬 물통 -> 물통)은 내구도를 이어받는다. 내구도가 0이면 파손되어 남지 않는다.
         Item leftover = item.useResultItemId > 0 ? GetItemData(item.useResultItemId) : null;
+        // 이어받을 내구도가 있으면(물을 담을 때 물려받은 값) 그대로 넘기고, 0이면 파손, 아예 없으면 새 것
         int carry = -1;
-        if (leftover != null && item.durabilitymax > 0) carry = stack.durability;
-        if (leftover != null && leftover.durabilitymax > 0 && carry < 0) carry = leftover.durabilitymax;
+        bool broken = false;
+        if (leftover != null)
+        {
+            if (stack.durability > 0) carry = stack.durability;
+            else if (item.durabilitymax > 0) broken = true;
+            else if (leftover.durabilitymax > 0) carry = leftover.durabilitymax;
+        }
 
         RemoveFromStack(stack, 1); // 1개 소모 (0개가 되면 슬롯이 사라짐)
 
@@ -733,12 +1202,32 @@ public class InventoryManager : MonoBehaviour
         if (mana != 0) effects.Add($"마나 {mana:+#;-#}");
         message = $"{item.itemName} 사용" + (effects.Count > 0 ? $": {string.Join(", ", effects)}" : "");
 
+        // 위험한 것을 먹으면 [회복] 숙련도가 오르고, 그만큼 독 내성이 쌓인다
+        if (harmful)
+        {
+            ProficiencyDef rec = GameTables.Proficiency.Get(ProficiencyKind.Recovery);
+            if (rec != null && Proficiency.AddExp(rec, rec.expPerUse, out int recLevel))
+            {
+                message += $"\n{rec.label} 숙련도가 올랐다! Lv.{recLevel} (독 내성 {PoisonResist():0.#}%)";
+                RecalcEquipment(); // 내성이 바뀌면 장비 특성의 디버프도 달라짐
+            }
+        }
+        if (GameManager.Hp <= 0)
+        {
+            LastUseFainted = true;
+            message += "\n눈앞이 캄캄해졌다...";
+        }
+
         if (leftover != null)
         {
-            if (leftover.durabilitymax > 0 && carry <= 0)
-                message += $"\n[{leftover.itemName}]이(가) 파손되었다.";
+            if (broken)
+                message += $"\n{Josa.WithIga(leftover.itemName)} 파괴되었습니다!";
             else if (AddItem(leftover, 1, carry) < 1)
-                message += $"\n가방이 가득 차서 [{leftover.itemName}]을(를) 버렸다.";
+                message += $"\n가방이 가득 차서 {Josa.WithEul(leftover.itemName)} 버렸다.";
+        }
+        else if (item.useResultItemId > 0)
+        {
+            message += $"\n(사용 후 남는 아이템 ID {item.useResultItemId}를 도감에서 찾지 못했다)";
         }
 
         PlayerUI.RefreshAll();
@@ -760,8 +1249,9 @@ public class InventoryManager : MonoBehaviour
 
         RefreshInventoryUI(); // 순서대로 슬롯을 다시 만든다
         GameManager.Weight = CurrentWeight;
+        RecalcEquipment();
         PlayerUI.RefreshAll();
-        message = $"{stack.itemData.itemName}을(를) {stack.amount}개와 {half}개로 나눴다.";
+        message = $"{Josa.WithEul(stack.itemData.itemName)} {stack.amount}개와 {half}개로 나눴다.";
         return true;
     }
 
@@ -795,6 +1285,7 @@ public class InventoryManager : MonoBehaviour
             {
                 Item it = s.itemData;
                 if (it.toolType != ToolType.None || it.durabilitymax > 0) continue; // 도구/장비는 안전
+                if (IsEquipped(s)) continue;
 
                 float exact = s.amount * rate;
                 int lose = Mathf.FloorToInt(exact);
@@ -838,7 +1329,7 @@ public class InventoryManager : MonoBehaviour
         int limit = StackLimit(newItem);
 
         // durability를 지정한 내구도 아이템(예: 물을 담은 가죽 물통)은 내구도가 다르므로 기존 스택에 합치지 않는다
-        bool keepSeparate = durability >= 0 && newItem.durabilitymax > 0;
+        bool keepSeparate = durability >= 0;
 
         // 1. 자리가 남은 기존 스택 채우기
         foreach (ItemStack s in itemList)
@@ -858,13 +1349,14 @@ public class InventoryManager : MonoBehaviour
         {
             int add = Mathf.Min(limit, amount);
             ItemStack stack = new ItemStack(newItem, add);
-            if (keepSeparate) stack.durability = Mathf.Min(durability, newItem.durabilitymax);
+            if (keepSeparate) stack.durability = newItem.durabilitymax > 0 ? Mathf.Min(durability, newItem.durabilitymax) : durability;
             itemList.Add(stack);
             CreateSlot(stack);
             amount -= add;
         }
 
         GameManager.Weight = CurrentWeight;
+        RecalcEquipment();
         PlayerUI.RefreshAll();
         ItemGainToast.Show(newItem, added);
         return added;
@@ -900,6 +1392,7 @@ public class InventoryManager : MonoBehaviour
                 dynamicSlots.Remove(stack);
             }
             itemList.Remove(stack);
+            RemoveEquippedRecord(stack);
         }
         else
         {
@@ -907,6 +1400,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         GameManager.Weight = CurrentWeight;
+        RecalcEquipment();
         PlayerUI.RefreshAll();
     }
 }

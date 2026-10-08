@@ -23,10 +23,9 @@ MonoBehaviour:
   description: "\uC7A1\uC11D\uC744 \uAE4E\uC544 \uB9CC\uB4E0 \uD654\uC0B4.\\n \uCD94\uAC00
     \uACF5\uACA9\uB825: 1"
   specialEffect: 
-  at: 3
+  at: 1
   df: 0
   hp: 0
-  heal: 0
   hprateat: 0
   fixat: 0
   breakdf: 0
@@ -35,7 +34,6 @@ MonoBehaviour:
   criticalrate: 0
   critical: 0
   manamax: 0
-  manaheal: 0
   atrate: 0
   dfrate: 0
   hprate: 0
@@ -43,9 +41,12 @@ MonoBehaviour:
   goldrate: 0
   exprate: 0
   spmax: 0
-  spheal: 0
   weightmax: 0
   slotmax: 0
+  useHp: 0
+  useSp: 0
+  useMana: 0
+  useResultItemId: 0
   icon: {fileID: -8999544654852872013, guid: 15aa28f441cb1d54abc3a995f0d81e28, type: 3}
   recipe:
     ingredients:

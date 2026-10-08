@@ -48,6 +48,25 @@ public class FieldSearch : MonoBehaviour
     // 지금 몬스터와 전투 중인가 (전투 중에는 아이템 사용 등을 막는 데 쓰임)
     public bool InBattle { get { return battle != null && battle.Active; } }
 
+    // 전투 중 내 차례인가 (아이템 사용 등)
+    public bool CanActInBattle { get { return battle != null && battle.CanAct; } }
+
+    // 전투 중 아이템을 썼다: 한 턴을 쓰고 몬스터의 차례
+    public void BattleItemUsed(string message)
+    {
+        if (battle != null) battle.OnItemUsed(message);
+    }
+
+    // 아이템(독 등)을 먹고 쓰러졌다: 전투 중이면 전투의 기절 처리, 아니면 병원비를 내고 마을로
+    public void FaintFromItem()
+    {
+        if (battle != null && battle.Active) { battle.FaintByItem(); return; }
+
+        string text = InventoryManager.Instance != null ? InventoryManager.Instance.RecoverFromFaint() : "병원에서 치료를 받았다.";
+        ItemGainToast.ShowMessage(text);
+        ReturnToTown();
+    }
+
     // 내부 탐색/채집 상태 변수
     private int events;   // 탐색 이벤트 번호
     private int mob;      // 마주친 몬스터 번호
@@ -75,6 +94,20 @@ public class FieldSearch : MonoBehaviour
         carve = GetComponent<CarveSystem>();
         if (carve == null) carve = gameObject.AddComponent<CarveSystem>();
         carve.Init(this);
+    }
+
+    // 키보드 단축키: Space 탐색, E 채집, A 공격, S 스킬, D 방어, R 도망 (가방/지도가 열려 있으면 쓰지 않음)
+    private void Update()
+    {
+        if (InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen) return;
+        if (MapManager.Instance != null && MapManager.Instance.IsMapOpen) return;
+
+        if (Input.GetKeyDown(KeyCode.Space)) FieldActionButton.Press(FieldButtonType.Search);
+        else if (Input.GetKeyDown(KeyCode.E)) FieldActionButton.Press(FieldButtonType.Gather);
+        else if (Input.GetKeyDown(KeyCode.A)) FieldActionButton.Press(FieldButtonType.Attack);
+        else if (Input.GetKeyDown(KeyCode.S)) FieldActionButton.Press(FieldButtonType.Skill);
+        else if (Input.GetKeyDown(KeyCode.D)) FieldActionButton.Press(FieldButtonType.Defence);
+        else if (Input.GetKeyDown(KeyCode.R)) FieldActionButton.Press(FieldButtonType.Run);
     }
 
     private void OnDestroy()
@@ -337,9 +370,19 @@ public class FieldSearch : MonoBehaviour
 
         // 3. 자원 차감 및 인벤토리 추가
         int wanted = Mathf.Min(sourceHP, damage);
-        // 결과 아이템이 내구도를 가지면(물을 담은 물통) 쓴 도구의 남은 내구도를 이어받는다. 도구는 그대로 남고 결과 아이템이 새로 생긴다.
-        int carry = (usedTool != null && targetResource.durabilitymax > 0) ? toolDurabilityLeft : -1;
+        // 결과 아이템이 내구도를 가지면(물을 담은 물통) 쓴 도구의 남은 내구도를 이어받는다. 도구 1개가 결과 아이템 1개로 바뀐다 (복제되지 않음).
+        // (결과 아이템의 최대 내구도를 표에 안 적었어도 병으로 물을 담을 때는 항상 변환한다)
+        bool transforms = usedTool != null && (targetResource.durabilitymax > 0 || currentRequiredTool == ToolType.Bottle);
+        int carry = -1;
+        if (transforms)
+        {
+            carry = toolDurabilityLeft;
+            if (usedTool.durabilitymax > 0) carry = Mathf.Min(carry, usedTool.durabilitymax); // 닳지 않는 도구는 도구의 최대 내구도로 맞춤
+            else carry = Mathf.Min(carry, 100);
+        }
+        if (carry >= 0) wanted = 1; // 도구 1개가 결과 아이템 1개로 바뀐다
         int gainedAmount = InventoryManager.Instance.AddItem(targetResource, wanted, carry);
+        if (carry >= 0 && gainedAmount > 0) InventoryManager.Instance.RemoveLastUsedTool(); // 도구는 사라지고 결과 아이템이 내구도를 이어받는다
         bool bagLimited = gainedAmount < wanted; // 가방 때문에 일부만 얻음
         sourceHP -= gainedAmount;
         GameManager.SP -= gatherCost;
@@ -383,7 +426,8 @@ public class FieldSearch : MonoBehaviour
 
         if (isBroken && usedTool != null)
         {
-            SearchText.text += $"\n[{usedTool.itemName}]이(가) 파손되었습니다!";
+            SearchText.text += $"\n{Josa.WithIga(usedTool.itemName)} 파괴되었습니다!";
+            ItemGainToast.ShowBroken(usedTool, "도구가 파괴되었다!");
         }
     }
 

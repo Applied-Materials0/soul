@@ -91,6 +91,7 @@ public class MapInfoPanel : MonoBehaviour
     {
         // 이미 이동을 시작했거나 지금 있는 지역이면 무시 (SP가 두 번 닳는 것을 막는 안전장치)
         if (entering || currentData == null || currentData.id == GameManager.selectedRegionID) return;
+        if (!currentData.isUnlocked) return; // 잠긴 지역은 키보드 Enter로도 들어갈 수 없다
 
         if (!string.IsNullOrEmpty(currentData.sceneName))
         {

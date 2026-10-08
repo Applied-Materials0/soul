@@ -35,6 +35,80 @@ public class MapManager : MonoBehaviour
         }
     }
 
+    // =========================================================
+    //  키보드: 방향키로 구역을 고르고 Enter로 입장한다
+    // =========================================================
+    private MapRegionButton selectedRegion;
+
+    void Update()
+    {
+        if (!IsMapOpen)
+        {
+            if (selectedRegion != null) { selectedRegion.SetHighlight(false); selectedRegion = null; }
+            return;
+        }
+
+        int dx = 0, dy = 0;
+        if (Input.GetKeyDown(KeyCode.LeftArrow)) dx = -1;
+        else if (Input.GetKeyDown(KeyCode.RightArrow)) dx = 1;
+        else if (Input.GetKeyDown(KeyCode.UpArrow)) dy = 1;
+        else if (Input.GetKeyDown(KeyCode.DownArrow)) dy = -1;
+        if (dx != 0 || dy != 0) MoveSelection(dx, dy);
+
+        if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && selectedRegion != null)
+        {
+            // 마우스로 눌렀던 버튼이 선택 상태로 남아 있으면 Enter가 그 버튼도 누르므로 선택을 비운다
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+                UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+
+            MapInfoPanel info = selectedRegion.infoPanel;
+            if (info != null) info.OnEnterButtonClick();
+        }
+    }
+
+    private void MoveSelection(int dx, int dy)
+    {
+        MapRegionButton[] buttons = MapUI.GetComponentsInChildren<MapRegionButton>(false);
+        if (buttons.Length == 0) return;
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+
+        // 처음이거나 사라졌으면 지금 있는 지역(없으면 첫 번째)부터 시작
+        bool valid = false;
+        foreach (MapRegionButton b in buttons) if (b == selectedRegion) valid = true;
+        if (!valid)
+        {
+            MapRegionButton start = buttons[0];
+            foreach (MapRegionButton b in buttons)
+                if (b.regionData != null && b.regionData.id == GameManager.selectedRegionID) start = b;
+            SelectRegion(start);
+            return;
+        }
+
+        // 누른 방향으로 가장 가까운 구역 (방향에서 벗어난 만큼 불리하게 계산)
+        MapRegionButton best = null;
+        float bestScore = float.MaxValue;
+        foreach (MapRegionButton b in buttons)
+        {
+            if (b == selectedRegion) continue;
+            Vector3 d = b.transform.position - selectedRegion.transform.position;
+            float along = d.x * dx + d.y * dy;
+            if (along <= 0.001f) continue;
+            float perp = Mathf.Abs(dx != 0 ? d.y : d.x);
+            float score = along + perp * 2f;
+            if (score < bestScore) { bestScore = score; best = b; }
+        }
+        if (best != null) SelectRegion(best);
+    }
+
+    private void SelectRegion(MapRegionButton b)
+    {
+        if (selectedRegion != null) selectedRegion.SetHighlight(false);
+        selectedRegion = b;
+        selectedRegion.SetHighlight(true);
+        selectedRegion.Preview();
+    }
+
     public void ToggleMap()
     {
         // Toggle에서 직접 SetActive를 하지 않고 Open/Close로 넘겨줌
@@ -61,6 +135,8 @@ public class MapManager : MonoBehaviour
 
         // 3. 이전에 보던 구역 정보창은 닫고 시작 (이동한 뒤라 현재 위치가 바뀌었을 수 있음)
         CloseRegionInfo();
+
+        ItemGainToast.ClearAll(); // 필드에서 얻고 남아 있던 획득 표시는 지도를 열면 바로 치운다
 
         // 4. UI 활성화
         MapUI.SetActive(true);

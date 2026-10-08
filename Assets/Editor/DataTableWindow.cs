@@ -20,8 +20,8 @@ public class DataTableWindow : EditorWindow
         return new Col { title = title, path = path, width = width, tip = tip, text = text };
     }
 
-    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound, Search }
-    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음", "탐색 결과" };
+    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound, Search, Trait }
+    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음", "탐색 결과", "특성" };
 
     private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피", "사용 효과" };
     private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역", "도망/도려내기" };
@@ -51,6 +51,7 @@ public class DataTableWindow : EditorWindow
 
     private static readonly Col[] ItemStats = ItemLead.Concat(new[]
     {
+        C("장착 부위", "equipSlot", 80, "장비창에 끼는 부위 (None이면 장착 불가)"), C("특성ID", "traitId", 65, "특성 표의 ID (0 = 없음). 장착해야 적용됨. 예: 1 = 독"),
         C("공격력", "at", 60), C("방어력", "df", 60), C("체력", "hp", 60),
         C("체력 공격력", "hprateat", 70, "체력 비례 공격력"), C("고정 공격력", "fixat", 70),
         C("관통률", "breakdf", 60, "방어 무시"), C("흡수율", "abs", 60), C("회피율", "avoid", 60),
@@ -183,6 +184,9 @@ public class DataTableWindow : EditorWindow
             case Mode.Search:
                 ruleTable = LoadRuleTable("t:SearchTable");
                 break;
+            case Mode.Trait:
+                ruleTable = LoadRuleTable("t:TraitTable");
+                break;
             case Mode.Item:
                 rows = items.Select(i => new SerializedObject(i)).ToList();
                 break;
@@ -299,6 +303,7 @@ public class DataTableWindow : EditorWindow
             case Mode.SPCost:
             case Mode.Proficiency:
             case Mode.PlayerBase:
+            case Mode.Trait:
             case Mode.Search:
             case Mode.Sound: DrawRuleMode(); break;
             default: DrawRowsMode(); break;
@@ -327,6 +332,7 @@ public class DataTableWindow : EditorWindow
             case Mode.PlayerBase: changed = RuleTableDrawers.DrawPlayerBaseTable(ruleTable); break;
             case Mode.Sound: changed = RuleTableDrawers.DrawSoundTable(ruleTable); break;
             case Mode.Search: changed = RuleTableDrawers.DrawSearchTable(ruleTable); break;
+            case Mode.Trait: changed = RuleTableDrawers.DrawTraitTable(ruleTable); break;
         }
 
         if (changed)

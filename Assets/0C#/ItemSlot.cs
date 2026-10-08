@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
 
-public class ItemSlot : MonoBehaviour, IPointerClickHandler
+public class ItemSlot : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     [Header("슬롯 UI 요소")]
     public Image iconImage;           // 자기 자신 내부의 Icon Image
@@ -83,6 +83,90 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler
         {
             Debug.LogError("[ItemSlot] ItemInfoPanel을 찾을 수 없습니다! BagUI 안에 ItemInfoPanel이 있는지 확인하세요.");
         }
+    }
+
+    // =========================================================
+    //  끌어다 놓기: 다른 슬롯 위에 놓으면 같은 아이템은 합쳐지고, 다른 아이템은 자리가 바뀐다
+    // =========================================================
+    private GameObject dragGhost;
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (eventData.button != PointerEventData.InputButton.Left || myItemData == null || iconImage == null || iconImage.sprite == null) return;
+
+        // 마우스를 따라다니는 아이콘 (가방 UI의 맨 위 캔버스에 그림)
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+        ClearGhost();
+        dragGhost = new GameObject("DragGhost", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
+        dragGhost.transform.SetParent(canvas.rootCanvas.transform, false);
+        dragGhost.GetComponent<CanvasGroup>().blocksRaycasts = false;
+        Image img = dragGhost.GetComponent<Image>();
+        img.sprite = iconImage.sprite;
+        img.preserveAspect = true;
+        img.raycastTarget = false;
+        img.color = new Color(1f, 1f, 1f, 0.8f);
+        ((RectTransform)dragGhost.transform).sizeDelta = ((RectTransform)iconImage.transform).rect.size;
+        dragGhost.transform.SetAsLastSibling();
+        dragGhost.transform.position = eventData.position;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (dragGhost != null) dragGhost.transform.position = eventData.position;
+    }
+
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        ClearGhost();
+    }
+
+    // 놓은 뒤 슬롯들이 다시 만들어져 이 슬롯이 사라지거나, 가방이 꺼져도, 따라다니던 아이콘이 남지 않도록 치운다
+    private void ClearGhost()
+    {
+        if (dragGhost != null) Destroy(dragGhost);
+        dragGhost = null;
+    }
+
+    void OnDisable() { ClearGhost(); }
+    void OnDestroy() { ClearGhost(); }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        ItemSlot from = eventData.pointerDrag != null ? eventData.pointerDrag.GetComponent<ItemSlot>() : null;
+        if (from != null) from.ClearGhost(); // 놓는 순간 슬롯들이 다시 만들어지므로 먼저 아이콘을 치움
+        if (from == null || from == this || InventoryManager.Instance == null) return;
+        InventoryManager.Instance.DropOnto(from.Stack, Stack);
+    }
+
+    // =========================================================
+    //  장착 표시: 장착 중인 아이템은 슬롯 아래쪽에 "장착" 글자가 붙는다
+    // =========================================================
+    private TextMeshProUGUI equippedMark;
+
+    public void SetEquippedMark(bool on)
+    {
+        if (equippedMark == null)
+        {
+            if (!on) return;
+            GameObject go = new GameObject("EquippedMark", typeof(RectTransform));
+            RectTransform rt = (RectTransform)go.transform;
+            rt.SetParent(transform, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(0f, 30f);
+            equippedMark = go.AddComponent<TextMeshProUGUI>();
+            if (countText != null) equippedMark.font = countText.font;
+            equippedMark.fontSize = 22;
+            equippedMark.alignment = TextAlignmentOptions.Left;
+            equippedMark.color = new Color(0.1f, 0.55f, 0.15f);
+            equippedMark.fontStyle = FontStyles.Bold;
+            equippedMark.raycastTarget = false;
+            equippedMark.text = "장착";
+        }
+        equippedMark.gameObject.SetActive(on);
     }
 
     /// <summary>

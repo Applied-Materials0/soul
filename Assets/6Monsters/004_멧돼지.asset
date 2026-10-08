@@ -18,7 +18,7 @@ MonoBehaviour:
   sprite: {fileID: 0}
   level: 1
   hpMax: 100
-  at: 20
+  at: 5
   df: 5
   speed: 5
   avoid: 0

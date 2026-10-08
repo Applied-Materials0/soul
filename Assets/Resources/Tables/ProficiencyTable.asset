@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: ProficiencyTable
   m_EditorClassIdentifier: Assembly-CSharp::ProficiencyTable
   defs:
-  - kind: 0
+  - id: 0
+    kind: 0
+    tool: 0
     label: "\uB3C4\uB824\uB0B4\uAE30"
     expPerUse: 1
     levels:
@@ -43,6 +45,78 @@ MonoBehaviour:
       bonusPercent: 70
     - level: 9
       expToNext: 200
+      bonusPercent: 80
+    - level: 10
+      expToNext: 0
+      bonusPercent: 100
+  - id: 2
+    kind: 1
+    tool: 2
+    label: "\uCC44\uAD11"
+    expPerUse: 1
+    levels:
+    - level: 1
+      expToNext: 20
+      bonusPercent: 0
+    - level: 2
+      expToNext: 40
+      bonusPercent: 10
+    - level: 3
+      expToNext: 80
+      bonusPercent: 20
+    - level: 4
+      expToNext: 140
+      bonusPercent: 30
+    - level: 5
+      expToNext: 220
+      bonusPercent: 40
+    - level: 6
+      expToNext: 320
+      bonusPercent: 50
+    - level: 7
+      expToNext: 440
+      bonusPercent: 60
+    - level: 8
+      expToNext: 600
+      bonusPercent: 70
+    - level: 9
+      expToNext: 800
+      bonusPercent: 80
+    - level: 10
+      expToNext: 0
+      bonusPercent: 100
+  - id: 3
+    kind: 1
+    tool: 2
+    label: "\uC0C8 \uC219\uB828\uB3C4"
+    expPerUse: 1
+    levels:
+    - level: 1
+      expToNext: 20
+      bonusPercent: 0
+    - level: 2
+      expToNext: 40
+      bonusPercent: 10
+    - level: 3
+      expToNext: 80
+      bonusPercent: 20
+    - level: 4
+      expToNext: 140
+      bonusPercent: 30
+    - level: 5
+      expToNext: 220
+      bonusPercent: 40
+    - level: 6
+      expToNext: 320
+      bonusPercent: 50
+    - level: 7
+      expToNext: 440
+      bonusPercent: 60
+    - level: 8
+      expToNext: 600
+      bonusPercent: 70
+    - level: 9
+      expToNext: 800
       bonusPercent: 80
     - level: 10
       expToNext: 0

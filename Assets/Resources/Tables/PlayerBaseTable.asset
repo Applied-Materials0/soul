@@ -14,10 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBaseTable
   hpMax: 10
   at: 10
-  df: 10
+  df: 1
   spMax: 100
   mana: 10
   speed: 0
   slotMax: 28
   weightMax: 10000
   defendBonus: 50
+  hospitalFee: 10
+  itemLossPercent: 10
+  lowHpPercent1: 50
+  lowHpAlpha1: 25
+  lowHpPercent2: 25
+  lowHpAlpha2: 50
+  lowHpPercent3: 10
+  lowHpAlpha3: 100

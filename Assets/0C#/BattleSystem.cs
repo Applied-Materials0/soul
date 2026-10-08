@@ -27,6 +27,9 @@ public class BattleSystem : MonoBehaviour
 
     public bool Active { get { return active; } }
 
+    // 지금 내 차례인가 (문구/턴을 진행 중이면 false)
+    public bool CanAct { get { return active && !busy; } }
+
     public void Init(FieldSearch f)
     {
         field = f;
@@ -95,6 +98,31 @@ public class BattleSystem : MonoBehaviour
         StartCoroutine(RunRoutine());
     }
 
+    // 전투 중 아이템을 썼다: 이번 턴을 쓴 것으로 치고 몬스터의 차례가 된다
+    public void OnItemUsed(string message)
+    {
+        if (!active || busy) return;
+        StopNarration();
+        StartCoroutine(ItemTurnRoutine(message));
+    }
+
+    private IEnumerator ItemTurnRoutine(string message)
+    {
+        busy = true;
+        yield return Say(message);
+        yield return MonsterTurn();
+        busy = false;
+    }
+
+    // 전투 중 위험한 아이템을 먹고 체력이 0이 되었다
+    public void FaintByItem()
+    {
+        if (!active) return;
+        StopNarration();
+        busy = true;
+        StartCoroutine(FaintRoutine());
+    }
+
     private IEnumerator AttackRoutine()
     {
         busy = true;
@@ -108,6 +136,7 @@ public class BattleSystem : MonoBehaviour
         }
 
         PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
+        if (InventoryManager.Instance != null) InventoryManager.Instance.WearEquipment(true); // 공격하면 무기가 닳는다
 
         bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
         BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, targetDefending);
@@ -289,6 +318,7 @@ public class BattleSystem : MonoBehaviour
             bool perfectBlock = defended && !h.dodged && h.noEffect;
             bool gotHit = !h.dodged && !perfectBlock; // 타격 여부: 회피하지도, 완전히 막지도 못함
             if (gotHit && flash != null) flash.Play(HitFlashColor);
+            if (gotHit && InventoryManager.Instance != null) InventoryManager.Instance.WearEquipment(false); // 맞으면 방어구가 닳는다
 
             // 2) 결과 문구는 잠시 뒤에 나온다
             if (h.dodged)

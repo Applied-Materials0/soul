@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uAC00\uB4DD\uCC2C \uAC00\uC8FD \uBB3C\uD1B5"
   weight: 150
   countmax: 1
-  durabilitymax: 0
+  durabilitymax: 20
   toolType: 0
   tier: 1
   toolattack: 0

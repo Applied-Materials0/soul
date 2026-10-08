@@ -24,7 +24,7 @@ public static class BattleCalc
     // 플레이어의 최대 체력 = 최대 체력 x 체력 증감률
     public static int PlayerMaxHp()
     {
-        return Mathf.Max(1, Mathf.RoundToInt(GameManager.HpMax * Mult(GameManager.HpRate)));
+        return Mathf.Max(1, Mathf.RoundToInt((GameManager.HpMax + GameManager.EquipHp) * Mult(GameManager.HpRate)));
     }
 
     // =========================================================
@@ -101,7 +101,7 @@ public static class BattleCalc
             return h;
         }
 
-        float def = GameManager.Df * Mult(GameManager.DfRate);
+        float def = (GameManager.Df + GameManager.EquipDf) * Mult(GameManager.DfRate);
         if (playerDefending) def *= Mult(GameManager.DefendBonus);
 
         h.damage = Mathf.Max(0, Mathf.FloorToInt(m.at - def));
