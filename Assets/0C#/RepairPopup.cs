@@ -6,73 +6,74 @@ using UnityEngine.UI;
 
 // 장비/도구 수리 창. 정보창의 [수리]를 누르면 가방 UI 위에 뜨고, 필요한 재료와 수리 후 내구도를 보여 준다.
 // [수리]를 누르면 재료가 차감되고 내구도가 찬다. 재료는 [아이템] 표의 [수리/등급] 탭에서 정한다.
+// 모양은 BagUI 프리팹의 RepairPopup 오브젝트(평소에는 꺼져 있음)를 직접 옮기고 고치면 된다:
+//   RepairPopup(어두운 배경) - Panel - Title / Body(재료 목록 글자) / RepairButton / CancelButton
+// 키: A/D 커서를 [수리]/[취소]로 옮김, Space/Enter 누르기, ESC 닫기(수리 창만).
 public class RepairPopup : MonoBehaviour
 {
+    public TextMeshProUGUI bodyText;
+    public Button repairButton;
+    public Button cancelButton;
+    public Image repairImage;
+    public Image cancelImage;
+
     private ItemStack stack;
     private Action onDone;
-    private TextMeshProUGUI bodyText;
-    private Button repairButton;
-    private Image repairImage;
-    private Image cancelImage;
     private int cursor;            // 키보드 커서: 0 = [수리], 1 = [취소]
     private int openedFrame;
+    private bool wired;
+
+    public static bool IsOpen
+    {
+        get
+        {
+            RepairPopup p = Find();
+            return p != null && p.gameObject.activeSelf;
+        }
+    }
+
+    private static RepairPopup Find()
+    {
+        InventoryManager inv = InventoryManager.Instance;
+        if (inv == null || inv.inventoryUI == null) return null;
+        Transform t = inv.inventoryUI.transform.Find("RepairPopup"); // 꺼져 있어도 찾는다
+        return t != null ? t.GetComponent<RepairPopup>() : null;
+    }
 
     public static void Open(ItemStack stack, Action onDone)
     {
-        InventoryManager inv = InventoryManager.Instance;
-        if (inv == null || inv.inventoryUI == null || stack == null) return;
+        if (stack == null) return;
+        RepairPopup popup = Find();
+        if (popup == null)
+        {
+            Debug.LogError("[RepairPopup] BagUI에 RepairPopup 오브젝트가 없습니다.");
+            return;
+        }
 
-        TMP_FontAsset font = inv.UIFont;
-        Transform parent = inv.inventoryUI.transform;
-
-        // 뒤의 가방을 눌러지지 않게 막는 반투명 배경
-        RectTransform dim = CraftQuantityPopup.NewRect("RepairPopup", parent, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        dim.anchorMin = Vector2.zero;
-        dim.anchorMax = Vector2.one;
-        dim.offsetMin = Vector2.zero;
-        dim.offsetMax = Vector2.zero;
-        Image dimImage = dim.gameObject.AddComponent<Image>();
-        dimImage.color = new Color(0f, 0f, 0f, 0.5f);
-        dim.SetAsLastSibling();
-
-        RepairPopup popup = dim.gameObject.AddComponent<RepairPopup>();
         popup.stack = stack;
         popup.onDone = onDone;
-
-        // 가운데 창
-        RectTransform panel = CraftQuantityPopup.NewRect("Panel", dim, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(820f, 560f));
-        Image bg = panel.gameObject.AddComponent<Image>();
-        bg.color = new Color(0.96f, 0.96f, 0.96f, 1f);
-
-        TextMeshProUGUI title = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Title", panel, new Vector2(0.5f, 1f), new Vector2(0f, -50f), new Vector2(780f, 70f)),
-            48, TextAlignmentOptions.Center, font);
-        title.color = Color.black;
-        title.fontStyle = FontStyles.Bold;
-        title.text = "수리";
-
-        popup.bodyText = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Body", panel, new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(740f, 340f)),
-            34, TextAlignmentOptions.TopLeft, font);
-        popup.bodyText.color = Color.black;
-        ((RectTransform)popup.bodyText.transform).pivot = new Vector2(0.5f, 1f);
-
-        GameObject repair = CraftQuantityPopup.CreateButton(panel, "RepairButton", "수리", font,
-            new Color(0.2f, 0.55f, 0.3f), new Vector2(0.5f, 0f), new Vector2(-130f, 40f), new Vector2(220f, 80f), popup.OnRepair);
-        popup.repairButton = repair.GetComponent<Button>();
-        popup.repairImage = repair.GetComponent<Image>();
-        popup.cancelImage = CraftQuantityPopup.CreateButton(panel, "CancelButton", "취소", font,
-            new Color(0.5f, 0.5f, 0.5f), new Vector2(0.5f, 0f), new Vector2(130f, 40f), new Vector2(220f, 80f), popup.Close).GetComponent<Image>();
-
-        popup.openedFrame = Time.frameCount;
+        popup.cursor = 0;
+        popup.openedFrame = Time.frameCount; // 이 창을 연 Space가 곧바로 [수리]를 누르지 않게
+        popup.Wire();
+        popup.transform.SetAsLastSibling();
+        popup.gameObject.SetActive(true);
         popup.Refresh();
         popup.UpdateCursor();
+    }
+
+    // 버튼 동작은 처음 열 때 한 번만 연결한다
+    private void Wire()
+    {
+        if (wired) return;
+        wired = true;
+        if (repairButton != null) repairButton.onClick.AddListener(OnRepair);
+        if (cancelButton != null) cancelButton.onClick.AddListener(Close);
     }
 
     // A/D = 커서를 [수리]/[취소]로 옮김, Space/Enter = 커서가 있는 버튼 누르기. (ESC는 GlobalUI가 CloseIfOpen으로 이 창만 닫음)
     void Update()
     {
-        if (openedFrame == Time.frameCount) return; // 이 창을 연 Space가 곧바로 [수리]를 누르지 않게
+        if (openedFrame == Time.frameCount) return;
 
         if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) { cursor = 1; UpdateCursor(); }
         else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) { cursor = 0; UpdateCursor(); }
@@ -102,11 +103,9 @@ public class RepairPopup : MonoBehaviour
     // ESC용: 수리 창이 떠 있으면 이 창만 닫고 true
     public static bool CloseIfOpen()
     {
-        InventoryManager inv = InventoryManager.Instance;
-        if (inv == null || inv.inventoryUI == null) return false;
-        Transform rp = inv.inventoryUI.transform.Find("RepairPopup");
-        if (rp == null) return false;
-        Destroy(rp.gameObject);
+        RepairPopup p = Find();
+        if (p == null || !p.gameObject.activeSelf) return false;
+        p.Close();
         return true;
     }
 
@@ -140,14 +139,15 @@ public class RepairPopup : MonoBehaviour
             text += $"\n\nSP 소모  <color={spColor}>{it.repairSpCost} (보유 {GameManager.SP})</color>";
         }
 
-        bodyText.text = text;
-        repairButton.interactable = enough;
+        if (bodyText != null) bodyText.text = text;
+        if (repairButton != null) repairButton.interactable = enough;
     }
 
     public void Confirm() { if (repairButton != null && repairButton.interactable) OnRepair(); }
 
     private void OnRepair()
     {
+        if (stack == null) return;
         SoundManager.Instance?.PlaySlotClickSound();
         InventoryManager inv = InventoryManager.Instance;
         string message;
@@ -156,12 +156,14 @@ public class RepairPopup : MonoBehaviour
         if (!ok) { Refresh(); return; }
         SoundManager.Instance?.PlayEvent(SoundEvent.Repair); // 수리 효과음 (효과음 표의 [수리], 기본: workshop)
 
-        if (onDone != null) onDone();
+        Action done = onDone;
         Close();
+        if (done != null) done();
     }
 
     public void Close()
     {
-        Destroy(gameObject);
+        onDone = null;
+        gameObject.SetActive(false);
     }
 }

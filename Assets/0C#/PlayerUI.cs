@@ -187,8 +187,8 @@ public class PlayerUI : MonoBehaviour
         int at = GameManager.At + GameManager.EquipAt;
         int df = GameManager.Df + GameManager.EquipDf;
         // 공격력/방어력은 장비와 특성(독 등)의 증감률까지 반영한 실제 값으로 보여 준다
-        string atText = Mathf.RoundToInt(at * BattleCalc.Mult(GameManager.AtRate)).ToString("N0") + RateNote(GameManager.AtRate);
-        string dfText = Mathf.RoundToInt(df * BattleCalc.Mult(GameManager.DfRate)).ToString("N0") + RateNote(GameManager.DfRate);
+        string atText = Mathf.RoundToInt(at * BattleCalc.Mult(BattleCalc.TotalAtRate())).ToString("N0") + RateNote(BattleCalc.TotalAtRate());
+        string dfText = Mathf.RoundToInt(df * BattleCalc.Mult(BattleCalc.TotalDfRate())).ToString("N0") + RateNote(BattleCalc.TotalDfRate());
         int fixat = GameManager.FixAt;
         float breakdf = GameManager.BreakDf;
         float hprateat = GameManager.HpRateAt;

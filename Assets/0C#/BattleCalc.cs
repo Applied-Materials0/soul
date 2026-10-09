@@ -19,6 +19,31 @@ public static class BattleCalc
         return t != null ? Mathf.Clamp01(1f - t.healReducePercent / 100f) : 1f;
     }
 
+    // 나에게 걸린 상태이상(예: 몬스터가 건 독)의 공격력/방어력 증감까지 합친 값.
+    // 장비에 붙은 특성은 이미 GameManager.AtRate/DfRate에 들어 있고(공격력은 장비 자체에, 방어력은 나의 총 방어력에),
+    // 여기서는 전투 중 내게 걸린 상태이상만 더한다 (방어력 감소는 독 내성만큼 줄어듦, 정화 특성이 있으면 받지 않음).
+    private static TraitDef PlayerStatusTrait()
+    {
+        if (GameManager.StatusTraitId <= 0 || GameManager.StatusTurnsLeft <= 0) return null;
+        return GameTables.Traits.Get(GameManager.StatusTraitId);
+    }
+
+    public static float TotalAtRate()
+    {
+        float r = GameManager.AtRate;
+        TraitDef t = PlayerStatusTrait();
+        if (t != null && InventoryManager.Instance != null && !(t.atRate < 0f && InventoryManager.Instance.AnyTrait(x => x.cleanse))) r += t.atRate;
+        return r;
+    }
+
+    public static float TotalDfRate()
+    {
+        float r = GameManager.DfRate;
+        TraitDef t = PlayerStatusTrait();
+        if (t != null && InventoryManager.Instance != null) r += InventoryManager.Instance.EffectiveDfRate(t);
+        return r;
+    }
+
     // 증감률(%)을 곱하는 값으로 바꾼다: 0 -> 1.0, 50 -> 1.5, -20 -> 0.8
     public static float Mult(float ratePercent)
     {
@@ -69,7 +94,7 @@ public static class BattleCalc
         r.crit = Roll(GameManager.CriticalRate + (skill != null ? skill.criticalRate : 0f));
         if (r.crit) atk *= Mult(GameManager.Critical);
 
-        atk *= Mult(GameManager.AtRate);
+        atk *= Mult(TotalAtRate());
         if (skill != null) atk *= Mathf.Max(0f, skill.powerPercent) / 100f; // 스킬 위력 %
 
         float def = m.df * (1f - Mathf.Clamp(GameManager.BreakDf + (skill != null ? skill.breakDf : 0f), 0f, 100f) / 100f);
@@ -120,7 +145,7 @@ public static class BattleCalc
             return h;
         }
 
-        float def = (GameManager.Df + GameManager.EquipDf) * Mult(GameManager.DfRate);
+        float def = (GameManager.Df + GameManager.EquipDf) * Mult(TotalDfRate());
         if (playerDefending) def *= Mult(GameManager.DefendBonus);
 
         h.damage = Mathf.Max(0, Mathf.FloorToInt(m.at - def));

@@ -24,7 +24,7 @@ MonoBehaviour:
   specialEffect: 
   at: 0
   df: 0
-  hp: 0
+  hp: 10
   hprateat: 0
   fixat: 0
   breakdf: 0
@@ -42,7 +42,8 @@ MonoBehaviour:
   spmax: 0
   weightmax: 0
   slotmax: 0
-  equipSlot: 0
+  equipSlot: 5
+  weaponType: 0
   traitId: 0
   repairIngredients: []
   repairItemId: 0
@@ -56,8 +57,10 @@ MonoBehaviour:
   useResultItemId: 0
   icon: {fileID: 0}
   recipe:
-    ingredients: []
+    ingredients:
+    - itemId: 0
+      amount: 10
     tools: []
     resultItemId: 50
     resultAmount: 1
-    spCost: 0
+    spCost: 5

@@ -12,6 +12,7 @@ public enum EquipSlot
     Accessory,  // Àå½Å±¸
     Shield,      // ¹æÆÐ
     Glove,  // Àå°©
+    Feet,   // ¹ß (ºÎÃ÷)
 }
 
 public static class EquipSlotInfo
@@ -27,6 +28,7 @@ public static class EquipSlotInfo
             case EquipSlot.Accessory: return "Àå½Å±¸";
             case EquipSlot.Shield: return "¹æÆÐ";
             case EquipSlot.Glove: return "Àå°©";
+            case EquipSlot.Feet: return "¹ß";
             default: return "-";
         }
     }

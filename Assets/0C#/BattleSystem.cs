@@ -301,7 +301,7 @@ public class BattleSystem : MonoBehaviour
         {
             // 피하거나 막혀서 피해가 안 들어감
             if (targetDefending)
-                yield return Say($"{stealNote}{name}의 방어에 성공했다!");
+                yield return Say($"{stealNote}{name}{Josa(name, "이", "가")} 방어했다!");
             else if (r.dodged)
                 yield return Say($"{stealNote}{name}{Josa(name, "이", "가")} 공격을 피했다!");
             else
@@ -440,7 +440,7 @@ public class BattleSystem : MonoBehaviour
 
             if (r.dodged || r.noEffect)
             {
-                if (defending) yield return Say($"{prefix}{name}의 방어에 성공했다!");
+                if (defending) yield return Say($"{prefix}{name}{Josa(name, "이", "가")} 방어했다!");
                 else if (r.dodged) yield return Say($"{prefix}{name}{Josa(name, "이", "가")} 공격을 피했다!");
                 else yield return Say($"{prefix}효과가 없는 것 같다...");
             }
@@ -575,11 +575,11 @@ public class BattleSystem : MonoBehaviour
     // 공격 문구 흐름:
     //  "{몬스터}의 공격!"(선공이면 "선제공격!") -> 맞았으면 바로 화면이 살짝 붉어짐 -> 잠시 뒤 결과
     //    - 회피: "피했다!"
-    //    - 방어 중이고 피해가 0: "완벽하게 방어했다!"
+    //    - 방어 중이고 피해가 0: "{몬스터}의 공격을 방어했다!"
     //    - 방어 중이고 일부만 막음: "{몬스터}의 공격을 받아내 N의 데미지를 받았다!"
     //    - 피해 0: "효과가 없는 것 같다..."
     //    - 그 외: "N의 데미지를 받았다!"
-    // 방어를 고르면: "{몬스터}의 방어!" (결과는 플레이어가 다음에 공격할 때 "방어에 성공했다!" 또는 "방어가 실패했다..."로 나옴)
+    // 방어를 고르면: "{몬스터}의 방어!" (결과는 플레이어가 다음에 공격할 때 "{몬스터}이/가 방어했다!" 또는 "방어가 실패했다..."로 나옴)
 
     // 문구 한 줄: delayBefore초 기다린 뒤에 보여 준다
     private struct Step
@@ -689,7 +689,7 @@ public class BattleSystem : MonoBehaviour
             }
             else if (perfectBlock)
             {
-                steps.Add(new Step("완벽하게 방어했다!", HitResultDelay));
+                steps.Add(new Step($"{name}의 공격을 방어했다!", HitResultDelay));
             }
             else if (h.noEffect)
             {

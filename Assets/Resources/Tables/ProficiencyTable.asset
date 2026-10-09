@@ -571,7 +571,7 @@ MonoBehaviour:
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 0
+      expBonus: 1
       spReduce: 0
     - level: 3
       expToNext: 40

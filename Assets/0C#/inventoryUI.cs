@@ -262,7 +262,7 @@ public class InventoryManager : MonoBehaviour
     private void HandleBagKeys()
     {
         // 수리 창이 떠 있으면 수리 창(RepairPopup)이 키를 쓴다 (A/D 커서, Space 누르기, ESC 닫기)
-        if (inventoryUI.transform.Find("RepairPopup") != null) return;
+        if (RepairPopup.IsOpen) return;
 
         // 탭 줄에 있으면: A/D로 장비 - 버프 - 숙련도 - 스탯 - 정렬 - 제작 사이를 옮기고, 옮기면 그 창이 뜬다
         if (tabFocus)
@@ -745,8 +745,7 @@ public class InventoryManager : MonoBehaviour
         UpdateTabCursor();
         if (inventoryUI != null)
         {
-            Transform rp = inventoryUI.transform.Find("RepairPopup");
-            if (rp != null) Destroy(rp.gameObject);
+            RepairPopup.CloseIfOpen();
         }
         if (playSound && inventoryUI.activeSelf && BtnAudio != null) BtnAudio.Play();
         HideInfoPanel(); // 가방을 닫으면 정보창과 제작창도 같이 닫음
@@ -1364,7 +1363,7 @@ public class InventoryManager : MonoBehaviour
     }
 
     // 특성의 방어력 증감 [%]. 정화 특성이 있으면 디버프(마이너스)는 받지 않고, 독 내성이 있으면 디버프가 그만큼 줄어든다
-    private float EffectiveDfRate(TraitDef t)
+    public float EffectiveDfRate(TraitDef t)
     {
         if (t.dfRate < 0f)
         {
@@ -1618,7 +1617,7 @@ public class InventoryManager : MonoBehaviour
     }
 
     private static readonly EquipSlot[] SlotOrder =
-        { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs, EquipSlot.Accessory };
+        { EquipSlot.Weapon, EquipSlot.Shield, EquipSlot.Head, EquipSlot.Body, EquipSlot.Legs, EquipSlot.Feet, EquipSlot.Accessory };
 
     public void RefreshEquipPanels()
     {
@@ -1760,6 +1759,7 @@ public class InventoryManager : MonoBehaviour
             targets.AddRange(EquippedIn(EquipSlot.Head));
             targets.AddRange(EquippedIn(EquipSlot.Body));
             targets.AddRange(EquippedIn(EquipSlot.Legs));
+            targets.AddRange(EquippedIn(EquipSlot.Feet));
             targets.AddRange(EquippedIn(EquipSlot.Shield));
         }
 
