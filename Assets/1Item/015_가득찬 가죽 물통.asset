@@ -45,9 +45,11 @@ MonoBehaviour:
   slotmax: 0
   equipSlot: 0
   traitId: 0
+  repairIngredients: []
   repairItemId: 0
   repairAmount: 0
   repairRestore: 0
+  repairSpCost: 0
   wearExp: 1
   useHp: 0
   useSp: 10
@@ -59,3 +61,4 @@ MonoBehaviour:
     tools: []
     resultItemId: 15
     resultAmount: 1
+    spCost: 5

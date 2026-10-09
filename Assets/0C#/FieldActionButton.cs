@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public enum FieldButtonType { Search, Gather, Run, Defence, Attack, Skill, Map, Bag }
@@ -35,6 +36,8 @@ public class FieldActionButton : MonoBehaviour
 
     private void OnButtonClick()
     {
+        // 눌린 버튼이 선택 상태로 남지 않게 한다 (남으면 Space/Enter가 이 버튼을 또 누름)
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
         if (FieldSearch.Instance == null) return;
 
         switch (buttonType)
@@ -65,4 +68,4 @@ public class FieldActionButton : MonoBehaviour
                 break;
         }
     }
-}
+}

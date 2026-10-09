@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
+  m_Name: "027_\uC8FC\uD669 \uBC84\uC12F"
+  m_EditorClassIdentifier: Assembly-CSharp::Item
+  id: 27
+  itemName: "\uC8FC\uD669 \uBC84\uC12F"
+  weight: 1
+  countmax: 100
+  durabilitymax: 0
+  toolType: 0
+  tier: 0
+  toolattack: 0
+  description: 
+  specialEffect: 
+  at: 0
+  df: 0
+  hp: 0
+  hprateat: 0
+  fixat: 0
+  breakdf: 0
+  abs: 0
+  avoid: 0
+  criticalrate: 0
+  critical: 0
+  manamax: 0
+  atrate: 0
+  dfrate: 0
+  hprate: 0
+  healrate: 0
+  goldrate: 0
+  exprate: 0
+  spmax: 0
+  weightmax: 0
+  slotmax: 0
+  equipSlot: 0
+  traitId: 0
+  repairIngredients: []
+  repairItemId: 0
+  repairAmount: 0
+  repairRestore: 0
+  repairSpCost: 0
+  wearExp: 1
+  useHp: 5
+  useSp: 1
+  useMana: 0
+  useResultItemId: 0
+  icon: {fileID: 8297028689716399037, guid: 99f4a6c5300e2ca419a33f4a80e44ecb, type: 3}
+  recipe:
+    ingredients: []
+    tools: []
+    resultItemId: 27
+    resultAmount: 0
+    spCost: 0

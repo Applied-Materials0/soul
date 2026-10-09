@@ -148,7 +148,7 @@ public class FieldSearch : MonoBehaviour
         if (carve != null) carve.End();
 
         // SP 소모량은 SP 소모 표(Soul > 데이터 표 > SP 소모)에서 정함
-        int searchCost = GameTables.SPCosts.Get(SPAction.Search);
+        int searchCost = Proficiency.ReducedSp(ProficiencyKind.Searching, GameTables.SPCosts.Get(SPAction.Search)); // 탐색 숙련도가 SP를 줄여 줌
         if (GameManager.SP < searchCost)
         {
             BtnAudio.Play();
@@ -157,6 +157,8 @@ public class FieldSearch : MonoBehaviour
         }
 
         GameManager.SP -= searchCost;
+        string searchReward = Proficiency.Reward(ProficiencyKind.Searching); // 탐색 숙련도 + 레벨 경험치 (올랐을 때만 문구가 있음)
+        if (searchReward.Length > 0) ItemGainToast.ShowMessage(searchReward);
         if (PlayerUI.Instance != null) PlayerUI.Instance.UpdateStatText();
 
         SearchAudio.Stop();
@@ -563,4 +565,4 @@ public class FieldSearch : MonoBehaviour
         }
         return firstChar;
     }
-}
+}

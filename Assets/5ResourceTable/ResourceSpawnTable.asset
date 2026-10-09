@@ -35,7 +35,7 @@ MonoBehaviour:
     hpMin: 5
     hpMax: 15
     sound: 2
-    skill: 1
+    skill: 2
     extraYields: []
   - label: "\uAD6C\uB9AC \uC870\uAC01"
     weight: 3
@@ -59,7 +59,7 @@ MonoBehaviour:
     hpMin: 5
     hpMax: 14
     sound: 3
-    skill: 1
+    skill: 3
     extraYields: []
   - label: "\uC7A1\uC11D \uC870\uAC01"
     weight: 10
@@ -83,13 +83,13 @@ MonoBehaviour:
     hpMin: 5
     hpMax: 20
     sound: 3
-    skill: 1
+    skill: 7
     extraYields: []
   - label: "\uD480"
     weight: 10
     foundText: "\uD480\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 13
+    itemId: 16
     toolType: 0
     tier: 0
     hpMin: 1
@@ -101,19 +101,19 @@ MonoBehaviour:
     weight: 9
     foundText: "\uB364\uBD88\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 13
+    itemId: 16
     toolType: 4
     tier: 0
     hpMin: 3
     hpMax: 20
     sound: 1
-    skill: 1
+    skill: 4
     extraYields: []
   - label: "\uB538\uAE30"
     weight: 5
     foundText: "\uB538\uAE30\uB97C \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 16
+    itemId: 17
     toolType: 0
     tier: 0
     hpMin: 1
@@ -125,7 +125,7 @@ MonoBehaviour:
     weight: 2
     foundText: "\uC625\uC218\uC218\uB97C \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 17
+    itemId: 18
     toolType: 0
     tier: 0
     hpMin: 1
@@ -137,7 +137,7 @@ MonoBehaviour:
     weight: 3
     foundText: "\uBC8C\uC9D1\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 18
+    itemId: 19
     toolType: 0
     tier: 0
     hpMin: 1
@@ -152,7 +152,7 @@ MonoBehaviour:
     weight: 1
     foundText: "\uB2EC\uAC40\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 19
+    itemId: 20
     toolType: 0
     tier: 0
     hpMin: 1
@@ -164,7 +164,7 @@ MonoBehaviour:
     weight: 5
     foundText: "\uC8FC\uD669 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 26
+    itemId: 27
     toolType: 0
     tier: 0
     hpMin: 1
@@ -176,7 +176,7 @@ MonoBehaviour:
     weight: 3
     foundText: "\uD478\uB978 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 27
+    itemId: 28
     toolType: 0
     tier: 0
     hpMin: 1
@@ -188,7 +188,7 @@ MonoBehaviour:
     weight: 1
     foundText: "\uBD89\uC740 \uBC84\uC12F\uC744 \uBC1C\uACAC\uD588\uB2E4."
     gatherButtonText: "\uCC44\uC9D1"
-    itemId: 28
+    itemId: 29
     toolType: 0
     tier: 0
     hpMin: 1

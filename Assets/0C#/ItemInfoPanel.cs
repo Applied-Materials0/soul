@@ -93,12 +93,12 @@ public class ItemInfoPanel : MonoBehaviour
         bool inBattle = FieldSearch.Instance != null && FieldSearch.Instance.InBattle;
         useButton.SetActive(InventoryManager.CanUse(item) && stack != null);
 
-        // [장착] / [해제]: 장비 아이템만, 전투 중에는 바꿀 수 없다
+        // [장착] / [해제]: 장비 아이템만. 전투 중에도 바꿀 수 있고, 바꾸면 이번 턴을 쓴 것으로 친다
         EnsureEquipButton();
         bool broken = InventoryManager.NeedsRepair(stack);
         EnsureRepairButton();
         repairButton.SetActive(broken && !inBattle);
-        bool canEquip = InventoryManager.CanEquip(item) && stack != null && !inBattle && !broken;
+        bool canEquip = InventoryManager.CanEquip(item) && stack != null && !broken;
         equipButton.SetActive(canEquip);
         if (canEquip) equipLabel.text = InventoryManager.Instance.IsEquipped(stack) ? "해제" : "장착";
 
@@ -297,12 +297,10 @@ public class ItemInfoPanel : MonoBehaviour
         SoundManager.Instance?.PlaySlotClickSound();
         if (currentStack == null || InventoryManager.Instance == null) return;
 
-        string message;
-        if (InventoryManager.Instance.IsEquipped(currentStack)) InventoryManager.Instance.Unequip(currentStack, out message);
-        else InventoryManager.Instance.Equip(currentStack, out message);
-
-        InventoryManager.Instance.ShowBagMessageOrToast(message);
-        Display(currentItem, currentStack); // 버튼 글자와 능력치 표시를 갱신
+        // 장착/해제는 가방 알림까지 InventoryManager가 처리한다 (전투 중이면 이번 턴을 쓰고 가방이 닫힘)
+        bool inBattle = FieldSearch.Instance != null && FieldSearch.Instance.InBattle;
+        InventoryManager.Instance.ToggleEquipFromUI(currentStack);
+        if (!inBattle) Display(currentItem, currentStack); // 버튼 글자와 능력치 표시를 갱신
     }
 
     public void CloseInfoPanel()
@@ -385,4 +383,4 @@ public class ItemInfoPanel : MonoBehaviour
         return sb.ToString();
     }
 
-}
+}

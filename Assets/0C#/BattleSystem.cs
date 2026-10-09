@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 // 필드에서 몬스터를 만났을 때의 턴제 전투 진행.
@@ -30,9 +31,41 @@ public class BattleSystem : MonoBehaviour
     // 지금 내 차례인가 (문구/턴을 진행 중이면 false)
     public bool CanAct { get { return active && !busy; } }
 
+    // ===== 턴 표시 (필드 화면 왼쪽 위, 하이어라키의 TurnText 오브젝트) =====
+    // 처음은 1턴이고, 플레이어와 몬스터가 서로 한 번씩 행동해야 다음 턴이 된다.
+    private int turn = 1;
+    private bool playerActed, monsterActed;
+    private TextMeshProUGUI turnText;
+
+    private void FindTurnText()
+    {
+        Transform parent = field != null && field.SearchText != null ? field.SearchText.transform.parent : null;
+        Transform t = parent != null ? parent.Find("TurnText") : null;
+        turnText = t != null ? t.GetComponent<TextMeshProUGUI>() : null;
+        if (turnText != null) turnText.gameObject.SetActive(false); // 전투 중에만 보인다
+    }
+
+    private void ShowTurn(bool show)
+    {
+        if (turnText == null) return;
+        turnText.gameObject.SetActive(show);
+        if (show) turnText.text = "턴: " + turn;
+    }
+
+    private void MarkActed(bool player)
+    {
+        if (player) playerActed = true; else monsterActed = true;
+        if (!playerActed || !monsterActed) return;
+        turn++;
+        playerActed = false;
+        monsterActed = false;
+        if (turnText != null) turnText.text = "턴: " + turn;
+    }
+
     public void Init(FieldSearch f)
     {
         field = f;
+        FindTurnText();
     }
 
     // =========================================================
@@ -51,6 +84,10 @@ public class BattleSystem : MonoBehaviour
         statusElapsed = 0;
         suppressed = false;
         lineShownAt = Time.time; // FieldSearch가 방금 띄운 "OO이(가) 나타났다!"가 읽힐 시간을 센다
+        turn = 1;
+        playerActed = false;
+        monsterActed = false;
+        ShowTurn(true);
 
         if (hud == null) hud = MonsterHUD.Create(field.SearchText.transform, field.SearchText.font);
         hud.Show(m.monsterName, monsterHp, m.hpMax);
@@ -84,6 +121,7 @@ public class BattleSystem : MonoBehaviour
     {
         if (!active || busy) return;
         StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
+        MarkActed(true);
         StartCoroutine(AttackRoutine());
     }
 
@@ -91,6 +129,7 @@ public class BattleSystem : MonoBehaviour
     {
         if (!active || busy) return;
         StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
+        MarkActed(true);
         StartCoroutine(DefendRoutine());
     }
 
@@ -98,6 +137,7 @@ public class BattleSystem : MonoBehaviour
     {
         if (!active || busy) return;
         StopNarration(); // 몬스터 턴의 남은 문구는 건너뛰고, 내 행동의 문구를 바로 보여 줌
+        MarkActed(true);
         StartCoroutine(RunRoutine());
     }
 
@@ -106,6 +146,7 @@ public class BattleSystem : MonoBehaviour
     {
         if (!active || busy) return;
         StopNarration();
+        MarkActed(true);
         StartCoroutine(ItemTurnRoutine(message));
     }
 
@@ -144,8 +185,7 @@ public class BattleSystem : MonoBehaviour
             int duration = t.dotTurns > 0 ? t.dotTurns : 999;
             if (statusTrait != null && statusTrait.id == t.id && statusTurnsLeft > 0)
             {
-                // 이미 걸려 있다: 문구 없이 지속 시간만 다시 채운다. 지난 턴은 이어져서 피해가 계속 커진다 (누적)
-                statusTurnsLeft = Mathf.Max(statusTurnsLeft, duration);
+                // 이미 걸려 있다: 지속 시간은 다시 채우지 않는다 (처음 걸린 때부터 정해진 턴만 지속)
                 break;
             }
 
@@ -285,7 +325,7 @@ public class BattleSystem : MonoBehaviour
     //  "{몬스터}의 공격!"(선공이면 "선제공격!") -> 맞았으면 바로 화면이 살짝 붉어짐 -> 잠시 뒤 결과
     //    - 회피: "피했다!"
     //    - 방어 중이고 피해가 0: "완벽하게 방어했다!"
-    //    - 방어 중이고 일부만 막음: "적의 공격을 받아냈다!" -> "N의 데미지를 받았다!"
+    //    - 방어 중이고 일부만 막음: "{몬스터}의 공격을 받아내 N의 데미지를 받았다!"
     //    - 피해 0: "효과가 없는 것 같다..."
     //    - 그 외: "N의 데미지를 받았다!"
     // 방어를 고르면: "{몬스터}의 방어!" (결과는 플레이어가 다음에 공격할 때 "방어에 성공했다!" 또는 "방어가 실패했다..."로 나옴)
@@ -402,8 +442,7 @@ public class BattleSystem : MonoBehaviour
                 RefreshPlayerUI();
                 if (defended)
                 {
-                    steps.Add(new Step("적의 공격을 받아냈다!", HitResultDelay));
-                    steps.Add(new Step($"{h.damage}의 데미지를 받았다!", LineDelay));
+                    steps.Add(new Step($"{name}의 공격을 받아내 {h.damage}의 데미지를 받았다!", HitResultDelay));
                 }
                 else
                 {
@@ -433,6 +472,7 @@ public class BattleSystem : MonoBehaviour
             steps.Add(new Step($"{name}{Josa(name, "이", "가")} 당신을 제압했다! 다음 턴에는 도망칠 수 없다.", LineDelay));
         }
 
+        MarkActed(false); // 몬스터도 행동했다
         // 판정은 끝났다. 문구는 백그라운드로 이어 보여 주고, 호출한 쪽은 바로 플레이어의 입력을 받는다
         narration = StartCoroutine(Narrate(steps));
     }
@@ -516,6 +556,7 @@ public class BattleSystem : MonoBehaviour
 
     private void EndBattle()
     {
+        ShowTurn(false);
         StopNarration(); // 이어지던 문구가 있으면 멈춤
         active = false;
         monster = null;

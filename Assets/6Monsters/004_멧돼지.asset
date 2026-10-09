@@ -18,8 +18,8 @@ MonoBehaviour:
   sprite: {fileID: 0}
   level: 1
   hpMax: 1000
-  at: 5
-  df: 5
+  at: 10
+  df: 0
   speed: 5
   avoid: 10
   criticalrate: 10
@@ -32,13 +32,13 @@ MonoBehaviour:
   carveCount: 5
   carveToolTier: 1
   carveDrops:
-  - itemId: 21
+  - itemId: 22
     amountMin: 1
-    amountMax: 5
-    chance: 70
+    amountMax: 2
+    chance: 100
   - itemId: 31
     amountMin: 1
-    amountMax: 10
+    amountMax: 2
     chance: 100
   exp: 100
   gold: 500

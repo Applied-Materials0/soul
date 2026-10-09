@@ -630,7 +630,7 @@ MonoBehaviour:
       expBonusPercent: 45
       spReducePercent: 27
   - id: 8
-    kind: 1
+    kind: 9
     tool: 0
     label: "\uD0D0\uC0C9"
     expPerUse: 1

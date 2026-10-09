@@ -12,6 +12,11 @@ public class ItemGainToast : MonoBehaviour
     private const float FadeOutTime = 1.0f;  // 흐려지며 사라지는 시간
     private const int MaxShown = 6;          // 한 번에 보이는 최대 개수 (넘치면 오래된 것부터 지움)
 
+    // 화면 중앙 알림 글자 크기 (바꾸려면 이 숫자들을 고치면 됨)
+    private const int ItemLabelFontSize = 38;   // 아이템 이름 +수량 (아이템 이미지 아래)
+    private const int MessageFontSize = 46;     // 글자만 나오는 알림 (사용 결과, 휴식 결과 등)
+    private const int BrokenFontSize = 42;      // 파괴 알림
+
     private static ItemGainToast instance;
     private RectTransform row;
 
@@ -60,7 +65,7 @@ public class ItemGainToast : MonoBehaviour
         GameObject go = new GameObject("Toast", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform rt = (RectTransform)go.transform;
         rt.SetParent(row, false);
-        rt.sizeDelta = new Vector2(190f, 200f);
+        rt.sizeDelta = new Vector2(280f, 220f);
         CanvasGroup group = go.GetComponent<CanvasGroup>();
         group.alpha = 0f;
         group.blocksRaycasts = false; // 클릭을 막지 않음
@@ -75,8 +80,8 @@ public class ItemGainToast : MonoBehaviour
         }
 
         TextMeshProUGUI label = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -146f), new Vector2(190f, 54f)),
-            26, TextAlignmentOptions.Center, font);
+            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -146f), new Vector2(280f, 74f)),
+            ItemLabelFontSize, TextAlignmentOptions.Center, font);
         label.text = $"{item.itemName} +{amount}";
         label.fontStyle = FontStyles.Bold;
         label.outlineWidth = 0.25f;
@@ -111,7 +116,7 @@ public class ItemGainToast : MonoBehaviour
         GameObject go = new GameObject("ToastBroken", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform rt = (RectTransform)go.transform;
         rt.SetParent(row, false);
-        rt.sizeDelta = new Vector2(420f, 240f);
+        rt.sizeDelta = new Vector2(560f, 270f);
         CanvasGroup group = go.GetComponent<CanvasGroup>();
         group.alpha = 0f;
         group.blocksRaycasts = false;
@@ -127,8 +132,8 @@ public class ItemGainToast : MonoBehaviour
         }
 
         TextMeshProUGUI label = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -154f), new Vector2(420f, 86f)),
-            30, TextAlignmentOptions.Center, font);
+            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -154f), new Vector2(560f, 110f)),
+            BrokenFontSize, TextAlignmentOptions.Center, font);
         label.text = $"{Josa.WithIga(item.itemName)} 파괴되었습니다!"; // 예: 돌도끼가 파괴되었습니다!
         label.color = new Color(1f, 0.35f, 0.3f);
         label.fontStyle = FontStyles.Bold;
@@ -162,14 +167,14 @@ public class ItemGainToast : MonoBehaviour
         GameObject go = new GameObject("ToastMessage", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform rt = (RectTransform)go.transform;
         rt.SetParent(row, false);
-        rt.sizeDelta = new Vector2(1000f, 80f);
+        rt.sizeDelta = new Vector2(1200f, 110f);
         CanvasGroup group = go.GetComponent<CanvasGroup>();
         group.alpha = 0f;
         group.blocksRaycasts = false;
 
         TextMeshProUGUI label = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Label", rt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000f, 80f)),
-            30, TextAlignmentOptions.Center, font);
+            CraftQuantityPopup.NewRect("Label", rt, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1200f, 110f)),
+            MessageFontSize, TextAlignmentOptions.Center, font);
         label.text = text;
         label.fontStyle = FontStyles.Bold;
         label.outlineWidth = 0.25f;

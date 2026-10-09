@@ -194,6 +194,19 @@ public class InventoryManager : MonoBehaviour
         // 제작 레시피 창이 열려 있으면 슬롯 이동 키는 쓰지 않는다
         if (recipePanel != null && recipePanel.IsOpen) return;
 
+        // 장비창이 열려 있으면 W/A/S/D로 장비 칸 사이를 옮기고(설명이 뜸), Space로 선택한 장비를 해제한다
+        if (equipPanel != null && equipPanel.activeSelf && equipSlots != null)
+        {
+            int ex = 0, ey = 0;
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) ex = -1;
+            else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) ex = 1;
+            else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) ey = 1;
+            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) ey = -1;
+            if (ex != 0 || ey != 0) equipSlots.Move(ex, ey);
+            if (Input.GetKeyDown(KeyCode.Space)) equipSlots.ActivateSelected();
+            return;
+        }
+
         int dx = 0, dy = 0;
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) dx = -1;
         else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) dx = 1;
@@ -393,13 +406,22 @@ public class InventoryManager : MonoBehaviour
         if (sortLabel != null) sortLabel.text = nextSortByWeight ? "무게순 정렬" : "ID순 정렬";
     }
 
-    // 슬롯 순서를 정렬한다. byWeight: 슬롯 전체 무게(개당 무게 x 수량)가 무거운 순, 아니면 ID 순.
+    // ID순 정렬의 묶음 (묶음 안에서 ID 순): 0 도구 및 장비, 1 소모 가능 아이템, 2 자원(제작법이 없는 것), 3 그 외(제작법이 있는 가공품 등)
+    private static int SortGroup(Item it)
+    {
+        if (it.toolType != ToolType.None || it.equipSlot != EquipSlot.None || it.durabilitymax > 0) return 0;
+        if (CanUse(it)) return 1;
+        bool hasRecipe = it.recipe != null && it.recipe.ingredients != null && it.recipe.ingredients.Count > 0;
+        return hasRecipe ? 3 : 2;
+    }
+
+    // 슬롯 순서를 정렬한다. byWeight: 슬롯 전체 무게(개당 무게 x 수량)가 무거운 순, 아니면 묶음별 ID 순.
     // 정렬 뒤에 얻는 아이템은 여전히 맨 뒤(빈 곳)에 차례로 들어간다.
     public void SortItems(bool byWeight)
     {
         List<ItemStack> sorted = byWeight
             ? itemList.OrderByDescending(s => s.itemData.weight * s.amount).ThenBy(s => s.itemData.id).ToList()
-            : itemList.OrderBy(s => s.itemData.id).ThenByDescending(s => s.amount).ToList();
+            : itemList.OrderBy(s => SortGroup(s.itemData)).ThenBy(s => s.itemData.id).ThenByDescending(s => s.amount).ToList();
         itemList.Clear();
         itemList.AddRange(sorted);
         RefreshInventoryUI();
@@ -1001,6 +1023,7 @@ public class InventoryManager : MonoBehaviour
     private int appliedSpBonus, appliedManaBonus;   // 지금 GameManager에 더해 둔 장비 SP/마나 보너스
     private TextMeshProUGUI equipBody, buffBody;     // 장비창 / 버프창 본문 글자 (BagUI 프리팹의 EquipPanel, BuffPanel)
     private GameObject equipPanel, buffPanel;
+    private EquipmentSlots equipSlots;               // 장비창의 사람 모양 장비 칸 (BagUI 프리팹의 EquipPanel/EquipSlots)
     private GameObject profPanel;                    // BagUI 프리팹의 ProficiencyPanel
     private TextMeshProUGUI profBody;
 
@@ -1014,6 +1037,84 @@ public class InventoryManager : MonoBehaviour
         if (s == null) return false;
         foreach (List<ItemStack> list in equipped.Values) if (list.Contains(s)) return true;
         return false;
+    }
+
+    // 장비가 바뀌거나 내구도/등급이 달라질 때마다 (장비창과 필드의 장비 표시가 따라서 갱신됨)
+    public static event System.Action EquipmentChanged;
+
+    // 그 부위의 index번째 장착품 (무기는 0, 1). 비어 있으면 null
+    public ItemStack EquippedAt(EquipSlot slot, int index)
+    {
+        List<ItemStack> list = EquippedIn(slot);
+        return index >= 0 && index < list.Count ? list[index] : null;
+    }
+
+    // 장비창/정보창에서 장착 <-> 해제를 바꾼다. 전투 중에는 내 차례일 때만 할 수 있고, 하면 이번 턴을 쓴 것으로 친다.
+    // 바꿨으면 true
+    public bool ToggleEquipFromUI(ItemStack stack)
+    {
+        if (stack == null) return false;
+        FieldSearch field = FieldSearch.Instance;
+        bool inBattle = field != null && field.InBattle;
+        if (inBattle && !field.CanActInBattle)
+        {
+            ItemGainToast.ShowMessage("지금은 장비를 바꿀 수 없다.");
+            return false;
+        }
+
+        string message;
+        bool ok = IsEquipped(stack) ? Unequip(stack, out message) : Equip(stack, out message);
+
+        if (ok && inBattle)
+        {
+            // 전투 중: 가방을 닫고 몬스터의 차례로 넘어간다 (문구는 전투 문구로 보여 줌)
+            if (ItemInfoPanel.Instance != null) ItemInfoPanel.Instance.HidePanel();
+            CloseInventoryQuiet();
+            field.BattleItemUsed(message);
+        }
+        else
+        {
+            ShowBagMessageOrToast(message);
+        }
+        return ok;
+    }
+
+    // 장비 칸에 마우스를 올리거나 커서를 둘 때 보여 주는 설명: 제목(이름, 등급, 경험치, 내구도)과 능력치 목록
+    public void BuildEquipTooltip(ItemStack s, out string title, out string body)
+    {
+        Item it = s.itemData;
+        GradeTable grades = GameTables.Grades;
+        int tier = GradeOf(s);
+        GradeDef g = grades.Get(tier);
+        float m = GradeMult(s);
+
+        string exp = (g == null || g.expToNext <= 0 || tier >= grades.MaxTier) ? $"{s.exp} (MAX)" : $"{s.exp} / {g.expToNext}";
+        title = $"<b>{it.itemName}</b>\n<size=80%>등급 {grades.NameOf(tier)} (Tier {tier})   Lv.{tier}\n경험치 {exp}";
+        if (it.durabilitymax > 0) title += $"   내구도 {s.durability}/{it.durabilitymax}";
+        title += "</size>";
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        int at = Mathf.RoundToInt(it.at * m), df = Mathf.RoundToInt(it.df * m), hp = Mathf.RoundToInt(it.hp * m), fix = Mathf.RoundToInt(it.fixat * m);
+        if (at != 0) sb.AppendLine($"공격력  {at:+0;-0}");
+        if (df != 0) sb.AppendLine($"방어력  {df:+0;-0}");
+        if (hp != 0) sb.AppendLine($"체력  {hp:+0;-0}");
+        if (it.manamax != 0) sb.AppendLine($"마나  {it.manamax:+0;-0}");
+        if (it.spmax != 0) sb.AppendLine($"SP  {it.spmax:+0;-0}");
+        if (fix != 0) sb.AppendLine($"고정 데미지  {fix:+0;-0}");
+        if (it.breakdf != 0f) sb.AppendLine($"방어 관통  {it.breakdf:+0.#;-0.#}%");
+        if (it.hprateat != 0f) sb.AppendLine($"체력 퍼뎀  {it.hprateat:+0.#;-0.#}%");
+        if (it.abs != 0f) sb.AppendLine($"체력 흡수  {it.abs:+0.#;-0.#}%");
+        if (it.avoid != 0f) sb.AppendLine($"회피율  {it.avoid:+0.#;-0.#}%");
+        if (it.criticalrate != 0f) sb.AppendLine($"치명타 확률  {it.criticalrate:+0.#;-0.#}%");
+        if (it.critical != 0f) sb.AppendLine($"치명타 데미지  {it.critical:+0.#;-0.#}%");
+        TraitDef t = GameTables.Traits.Get(it.traitId);
+        if (t != null)
+        {
+            sb.AppendLine($"특성  {t.label}");
+            if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"<size=80%>{t.description}</size>");
+        }
+        if (sb.Length == 0) sb.AppendLine("능력치 없음");
+        body = sb.ToString();
     }
 
     // 그 부위에 장착한 스택들 (없으면 빈 목록)
@@ -1224,6 +1325,11 @@ public class InventoryManager : MonoBehaviour
         Transform e = inventoryUI.transform.Find("EquipPanel");
         Transform b = inventoryUI.transform.Find("BuffPanel");
         if (e != null) { equipPanel = e.gameObject; Transform body = e.Find("Body"); equipBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
+        if (equipPanel != null)
+        {
+            equipSlots = equipPanel.GetComponentInChildren<EquipmentSlots>(true);
+            if (equipSlots != null && equipBody != null) { equipBody.gameObject.SetActive(false); equipBody = null; } // 사람 모양 칸이 있으면 예전 글자 목록은 쓰지 않는다
+        }
         if (b != null) { buffPanel = b.gameObject; Transform body = b.Find("Body"); buffBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
         Transform p = inventoryUI.transform.Find("ProficiencyPanel");
         if (p != null) { profPanel = p.gameObject; Transform body = p.Find("Body"); profBody = body != null ? body.GetComponent<TextMeshProUGUI>() : null; }
@@ -1315,6 +1421,7 @@ public class InventoryManager : MonoBehaviour
 
     public void RefreshEquipPanels()
     {
+        EquipmentChanged?.Invoke();
         if (equipBody != null && equipPanel != null && equipPanel.activeSelf)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();

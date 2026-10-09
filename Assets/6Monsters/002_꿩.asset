@@ -36,7 +36,7 @@ MonoBehaviour:
     amountMin: 1
     amountMax: 1
     chance: 100
-  - itemId: 34
+  - itemId: 35
     amountMin: 1
     amountMax: 1
     chance: 100

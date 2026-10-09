@@ -10,7 +10,8 @@ public enum EquipSlot
     Body,       // 몸
     Legs,       // 다리
     Accessory,  // 장신구
-    Shield      // 방패
+    Shield,      // 방패
+    Glove,  // 장갑
 }
 
 public static class EquipSlotInfo
@@ -25,6 +26,7 @@ public static class EquipSlotInfo
             case EquipSlot.Legs: return "다리";
             case EquipSlot.Accessory: return "장신구";
             case EquipSlot.Shield: return "방패";
+            case EquipSlot.Glove: return "장갑";
             default: return "-";
         }
     }
@@ -38,7 +40,7 @@ public enum ToolType
     Hammer,     // 망치
     Sickle,     // 낫: 풀, 작물
     Bottle,     // 병: 물
-    Knife,      // 칼: 도려내기 (가죽, 고기)
+    Knife,  // 칼: 도축 (가죽, 고기)
     Mortar      // 절구: 자원 분쇄
 }
 

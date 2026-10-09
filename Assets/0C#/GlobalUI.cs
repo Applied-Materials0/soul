@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GlobalUI : MonoBehaviour
 {
@@ -49,6 +51,17 @@ public class GlobalUI : MonoBehaviour
         }
     }
 
+    // 마우스로 누른 버튼이 계속 "선택된 버튼"으로 남으면, 나중에 Space/Enter(제출 키)가 그 버튼을 또 눌러 버린다
+    // (예: 필드에서 누른 [도망] 버튼이 가방에서 Space로 아이템을 쓸 때 같이 눌림). 그래서 선택을 계속 비워 둔다.
+    // 글자 입력칸(수량 입력)은 선택이 있어야 입력되므로 건드리지 않는다.
+    void LateUpdate()
+    {
+        EventSystem es = EventSystem.current;
+        if (es == null || es.currentSelectedGameObject == null) return;
+        if (es.currentSelectedGameObject.GetComponent<TMP_InputField>() != null) return;
+        es.SetSelectedGameObject(null);
+    }
+
     // ESC: 가장 위에 있는 창부터 한 겹씩 닫음 (제작 팝업 -> 레시피 창 -> 가방 -> 지도)
     // 인스펙터 연결(inventoryManager)이 비어 있어도 동작하도록 InventoryManager.Instance를 직접 사용함
     private void HandleEscapeKey()
@@ -74,4 +87,4 @@ public class GlobalUI : MonoBehaviour
         fieldSearch = newFieldSearch;
     }
 
-}
+}

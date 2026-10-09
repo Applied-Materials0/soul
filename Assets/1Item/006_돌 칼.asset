@@ -50,11 +50,12 @@ MonoBehaviour:
     amount: 1
   - itemId: 2
     amount: 1
-  - itemId: 13
+  - itemId: 16
     amount: 1
   repairItemId: 0
   repairAmount: 0
   repairRestore: 50
+  repairSpCost: 5
   wearExp: 1
   useHp: 0
   useSp: 0
@@ -67,8 +68,9 @@ MonoBehaviour:
       amount: 3
     - itemId: 2
       amount: 3
-    - itemId: 13
+    - itemId: 16
       amount: 5
     tools: []
     resultItemId: 6
     resultAmount: 1
+    spCost: 5

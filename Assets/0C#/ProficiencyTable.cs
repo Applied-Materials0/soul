@@ -12,11 +12,12 @@ public enum ProficiencyKind
     Gather,     // 1 채집 (예전 방식: 아래 "도구" 종류로 채집할 때. 자원 표의 숙련도 칸에서 [Gather]는 "도구 종류로 자동 선택"이라는 뜻)
     Logging,    // 2 벌목 (도끼)
     Mining,     // 3 채광 (곡괭이로 광석)
-    Mowing,     // 4 풀 베기 (낫)
+    Mowing,  // 4 베기 (낫)
     Recovery,   // 5 회복 (아이템 사용 시). 레벨의 [수확 보너스] 칸이 독 내성(%)이 됨
     Combat,     // 6 전투 (공격, 방어 시)
     Quarrying,  // 7 채석 (곡괭이로 돌)
     Crafting,   // 8 제작
+    Searching,  // 9 탐색
 }
 
 [System.Serializable]
@@ -52,7 +53,7 @@ public class ProficiencyTable : ScriptableObject
     public static readonly ProficiencyKind[] DefaultKinds =
     {
         ProficiencyKind.Carving, ProficiencyKind.Logging, ProficiencyKind.Mining, ProficiencyKind.Quarrying,
-        ProficiencyKind.Mowing, ProficiencyKind.Crafting, ProficiencyKind.Combat, ProficiencyKind.Recovery,
+        ProficiencyKind.Mowing, ProficiencyKind.Crafting, ProficiencyKind.Combat, ProficiencyKind.Recovery, ProficiencyKind.Searching,
     };
 
     // 채집 숙련도 중 해당 도구 종류에 맞는 것 (예전 방식의 [Gather] 숙련도)
@@ -92,6 +93,7 @@ public class ProficiencyTable : ScriptableObject
             case ProficiencyKind.Crafting: return "제작";
             case ProficiencyKind.Combat: return "전투";
             case ProficiencyKind.Recovery: return "회복";
+            case ProficiencyKind.Searching: return "탐색";
             default: return kind.ToString();
         }
     }
@@ -115,6 +117,7 @@ public class ProficiencyTable : ScriptableObject
 
         bool recovery = kind == ProficiencyKind.Recovery;
         bool combat = kind == ProficiencyKind.Combat;
+        bool searching = kind == ProficiencyKind.Searching;
         bool gatherLike = kind == ProficiencyKind.Logging || kind == ProficiencyKind.Mining
             || kind == ProficiencyKind.Quarrying || kind == ProficiencyKind.Mowing;
 
@@ -140,7 +143,7 @@ public class ProficiencyTable : ScriptableObject
                 l.extraMax = lv >= 7 ? 2 : (lv >= 4 ? 1 : 0);
             }
             l.expBonusPercent = i * 5f;
-            l.spReducePercent = (gatherLike || combat || kind == ProficiencyKind.Carving) ? i * 3f : 0f;
+            l.spReducePercent = (gatherLike || combat || searching || kind == ProficiencyKind.Carving) ? i * 3f : 0f;
             def.levels.Add(l);
         }
         return def;

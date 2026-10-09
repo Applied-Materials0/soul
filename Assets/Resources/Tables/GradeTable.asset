@@ -20,16 +20,16 @@ MonoBehaviour:
   - tier: 2
     name: Rare
     expToNext: 200
-    statBonusPercent: 10
+    statBonusPercent: 100
   - tier: 3
     name: Epic
     expToNext: 600
-    statBonusPercent: 25
+    statBonusPercent: 200
   - tier: 4
     name: Legends
     expToNext: 1000
-    statBonusPercent: 50
+    statBonusPercent: 300
   - tier: 5
     name: Eternal
     expToNext: 0
-    statBonusPercent: 100
+    statBonusPercent: 500
