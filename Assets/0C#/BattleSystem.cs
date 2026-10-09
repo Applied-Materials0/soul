@@ -208,9 +208,12 @@ public class BattleSystem : MonoBehaviour
             }
         }
 
-        // 공격했으니 전투 숙련도와 플레이어 레벨 경험치를 얻는다
-        string combatReward = Proficiency.Reward(ProficiencyKind.Combat);
-        if (combatReward.Length > 0) yield return Say(combatReward);
+        // 공격이 피해졌으면 경험치 없음. 아니면 전투 숙련도와 플레이어 레벨 경험치를 얻는다
+        if (!r.dodged)
+        {
+            string combatReward = Proficiency.Reward(ProficiencyKind.Combat);
+            if (combatReward.Length > 0) yield return Say(combatReward);
+        }
 
         if (monsterHp <= 0)
         {
@@ -334,7 +337,7 @@ public class BattleSystem : MonoBehaviour
             int dmg = Mathf.Max(1, Mathf.RoundToInt(statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed));
             statusElapsed++;
             statusTurnsLeft--;
-            yield return Say($"{name}{Josa(name, "이", "가")} {statusTrait.label}에 의한 데미지를 입었다!"); // 문구가 보인 뒤에
+            yield return Say($"{name}{Josa(name, "이", "가")} {statusTrait.label}{Josa(statusTrait.label, "으로", "로")} 인해 {dmg}의 데미지를 입었다!"); // 문구가 보인 뒤에
             monsterHp = Mathf.Max(0, monsterHp - dmg);                                // 체력이 깎인다
             hud.SetHp(monsterHp, monster.hpMax);
             if (statusTurnsLeft <= 0) statusTrait = null;

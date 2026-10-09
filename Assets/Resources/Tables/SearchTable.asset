@@ -17,11 +17,20 @@ MonoBehaviour:
     label: "\uC790\uC6D0 \uBC1C\uACAC"
     weight: 76
     text: 
+    morningPercent: 110
+    afternoonPercent: 100
+    nightPercent: 80
   - kind: 1
     label: "\uC544\uBB34\uAC83\uB3C4 \uC5C6\uC74C"
     weight: 4
     text: "\uC544\uBB34\uAC83\uB3C4 \uBC1C\uACAC\uD558\uC9C0 \uBABB\uD588\uB2E4..."
+    morningPercent: 100
+    afternoonPercent: 100
+    nightPercent: 200
   - kind: 2
     label: "\uBAAC\uC2A4\uD130 \uC870\uC6B0"
     weight: 20
     text: 
+    morningPercent: 60
+    afternoonPercent: 100
+    nightPercent: 160

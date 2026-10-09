@@ -18,6 +18,18 @@ public class SearchOutcome
     public string label;        // 표에 보이는 이름 (게임에는 영향 없음)
     [Min(0)] public int weight; // 비중
     public string text;         // 이벤트일 때 화면에 나오는 문구
+
+    // 시간대별 배율 [%]: 비중에 곱해진다 (100 = 그대로, 0 = 그 시간대에는 안 나옴). 밤에는 몬스터가 늘어나는 식으로 쓴다
+    [Min(0)] public float morningPercent = 100f;
+    [Min(0)] public float afternoonPercent = 100f;
+    [Min(0)] public float nightPercent = 100f;
+
+    // 지금 시간대의 배율을 곱한 비중
+    public float TimedWeight(DayPeriod period)
+    {
+        float pct = period == DayPeriod.Morning ? morningPercent : period == DayPeriod.Afternoon ? afternoonPercent : nightPercent;
+        return Mathf.Max(0, weight) * Mathf.Max(0f, pct) / 100f;
+    }
 }
 
 [CreateAssetMenu(fileName = "SearchTable", menuName = "Soul/Search Table")]
@@ -28,33 +40,34 @@ public class SearchTable : ScriptableObject
     // 비중대로 결과 하나를 뽑는다. 뽑을 수 있는 것이 없으면 null
     public SearchOutcome Pick()
     {
-        int total = 0;
+        DayPeriod period = GameTime.Period; // 시간대마다 몬스터/이벤트가 나올 확률이 다르다
+        float total = 0f;
         foreach (SearchOutcome e in entries)
-            if (e != null) total += Mathf.Max(0, e.weight);
-        if (total <= 0) return null;
+            if (e != null) total += e.TimedWeight(period);
+        if (total <= 0f) return null;
 
-        int roll = Random.Range(0, total);
+        float roll = Random.Range(0f, total);
         foreach (SearchOutcome e in entries)
         {
             if (e == null) continue;
-            roll -= Mathf.Max(0, e.weight);
-            if (roll < 0) return e;
+            roll -= e.TimedWeight(period);
+            if (roll < 0f) return e;
         }
         return null;
     }
 
-    private static SearchOutcome E(SearchOutcomeKind k, string label, int weight, string text)
+    private static SearchOutcome E(SearchOutcomeKind k, string label, int weight, string text, float morning = 100f, float afternoon = 100f, float night = 100f)
     {
-        return new SearchOutcome { kind = k, label = label, weight = weight, text = text };
+        return new SearchOutcome { kind = k, label = label, weight = weight, text = text, morningPercent = morning, afternoonPercent = afternoon, nightPercent = night };
     }
 
     private static List<SearchOutcome> CreateDefaultEntries()
     {
         return new List<SearchOutcome>
         {
-            E(SearchOutcomeKind.Resource, "자원 발견", 76, ""),
-            E(SearchOutcomeKind.Event, "아무것도 없음", 4, "아무것도 발견하지 못했다..."),
-            E(SearchOutcomeKind.Monster, "몬스터 조우", 20, ""),
+            E(SearchOutcomeKind.Resource, "자원 발견", 76, "", 110f, 100f, 80f),
+            E(SearchOutcomeKind.Event, "아무것도 없음", 4, "아무것도 발견하지 못했다...", 100f, 100f, 200f),
+            E(SearchOutcomeKind.Monster, "몬스터 조우", 20, "", 60f, 100f, 160f),
         };
     }
 

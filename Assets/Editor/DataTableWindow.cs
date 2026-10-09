@@ -67,6 +67,7 @@ public class DataTableWindow : EditorWindow
     private static readonly Col[] ItemRecipe = ItemLead.Concat(new[]
     {
         C("1회 생산", "recipe.resultAmount", 65, "제작 1회에 만들어지는 수량"),
+        C("제작 SP", "recipe.spCost", 65, "1회 제작에 드는 SP (제작 숙련도의 SP 감소가 적용됨. 0이면 안 듦)"),
     }).ToArray();
 
     private static readonly Col[] ItemUse = ItemLead.Concat(new[]
@@ -80,6 +81,7 @@ public class DataTableWindow : EditorWindow
     private static readonly Col[] ItemRepair = ItemLead.Concat(new[]
     {
         C("차는 내구도", "repairRestore", 85, "수리하면 차는 내구도 (0이면 가득 참)"),
+        C("수리 SP", "repairSpCost", 65, "수리할 때 드는 SP (0이면 안 듦)"),
         C("경험치/내구도", "wearExp", 85, "내구도를 1 쓸 때마다 쌓이는 장비 경험치 (등급 표의 경험치로 등급이 오름)"),
     }).ToArray();
 

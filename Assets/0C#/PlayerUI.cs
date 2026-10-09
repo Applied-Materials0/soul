@@ -28,6 +28,9 @@ public class PlayerUI : MonoBehaviour
         if (Instance == this) Instance = all.Count > 0 ? all[all.Count - 1] : null;
     }
 
+    // 갱신이 끝날 때마다 (필드의 숙련도 게이지 등이 따라서 갱신됨)
+    public static event System.Action Refreshed;
+
     // 모든 PlayerUI의 스탯 텍스트와 SP 텍스트를 지금 값으로 갱신
     public static void RefreshAll()
     {
@@ -36,6 +39,7 @@ public class PlayerUI : MonoBehaviour
             if (all[i] == null) { all.RemoveAt(i); continue; }
             all[i].Redraw();
         }
+        Refreshed?.Invoke();
     }
 
     void OnEnable()
@@ -140,6 +144,30 @@ public class PlayerUI : MonoBehaviour
         hpBarRoot.localPosition = new Vector3(b.min.x, b.max.y + 10f, 0f);
     }
 
+    // =========================================================
+    //  경험치 바: 레벨 줄 바로 아래. 빨간 막대 = 다음 레벨까지 필요한 경험치, 초록 = 그중 지금 쌓은 비율.
+    //  하이어라키의 "PlayerExpBar"(자식: Fill) 오브젝트를 쓴다 (스탯 텍스트와 같은 부모 아래). 위치/크기/색은 그 오브젝트에서 직접 고친다.
+    // =========================================================
+    private RectTransform expBarFill;
+    private bool expBarSearched;
+
+    private void UpdateExpBar(int exp)
+    {
+        if (!expBarSearched)
+        {
+            expBarSearched = true;
+            Transform parent = statText.transform.parent;
+            Transform bar = parent != null ? parent.Find("PlayerExpBar") : null;
+            Transform fill = bar != null ? bar.Find("Fill") : null;
+            expBarFill = fill as RectTransform;
+        }
+        if (expBarFill == null) return;
+
+        int next = GameManager.ExpNext;
+        float ratio = next > 0 ? Mathf.Clamp01(exp / (float)next) : 1f; // 최고 레벨이면 가득
+        expBarFill.anchorMax = new Vector2(ratio, 1f);
+    }
+
     // 증감률이 0이 아니면 "(+30%)" 같은 꼬리표 (늘면 초록, 줄면 빨강)
     private static string RateNote(float rate)
     {
@@ -177,10 +205,11 @@ public class PlayerUI : MonoBehaviour
         //1. statText가 연결되어 있을 때만 갱신 (비어있어도 에러 안 남!)
         if (statText != null)
         {
-            statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} </b>\n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
+            statText.text = $"<b><size=120%>LV: {level:N0}</size></b>\n \n \nSP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
         }
 
         if (statText != null) UpdateHpBar(hp, Mathf.RoundToInt(hpmax));
+        if (statText != null) UpdateExpBar(exp);
 
         // SP 텍스트(맵 화면)가 연결되어 있으면 함께 갱신
         if (SPText != null)
@@ -188,4 +217,4 @@ public class PlayerUI : MonoBehaviour
             SPText.text = $"SP: {sp:N0} / {spmax:N0}";
         }
     }
-}
+}

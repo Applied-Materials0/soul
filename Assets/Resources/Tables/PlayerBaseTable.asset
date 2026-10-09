@@ -15,7 +15,7 @@ MonoBehaviour:
   hpMax: 10
   at: 10
   df: 1
-  spMax: 100
+  spMax: 10000
   mana: 10
   speed: 0
   slotMax: 28
@@ -23,6 +23,9 @@ MonoBehaviour:
   defendBonus: 50
   hospitalFee: 10
   itemLossPercent: 10
+  restAfternoonSpPercent: 100
+  restNightSpPercent: 50
+  innateTraitId: 0
   lowHpPercent1: 50
   lowHpAlpha1: 25
   lowHpPercent2: 25

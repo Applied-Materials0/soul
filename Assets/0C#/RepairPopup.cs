@@ -84,6 +84,14 @@ public class RepairPopup : MonoBehaviour
         }
         if (materials.Count == 0) text += "  없음";
 
+        if (it.repairSpCost > 0)
+        {
+            bool spOk = GameManager.SP >= it.repairSpCost;
+            if (!spOk) enough = false;
+            string spColor = spOk ? "#1B7F2A" : "#C00000";
+            text += $"\n\nSP 소모  <color={spColor}>{it.repairSpCost} (보유 {GameManager.SP})</color>";
+        }
+
         bodyText.text = text;
         repairButton.interactable = enough;
     }
@@ -98,6 +106,7 @@ public class RepairPopup : MonoBehaviour
         bool ok = inv.TryRepair(stack, out message);
         inv.ShowBagMessageOrToast(message);
         if (!ok) { Refresh(); return; }
+        SoundManager.Instance?.PlayEvent(SoundEvent.Repair); // 수리 효과음 (효과음 표의 [수리], 기본: workshop)
 
         if (onDone != null) onDone();
         Close();

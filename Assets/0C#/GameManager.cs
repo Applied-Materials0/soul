@@ -26,10 +26,10 @@ public class GameManager : MonoBehaviour
             SlotMax = b.slotMax;
             WeightMax = b.weightMax;
             DefendBonus = b.defendBonus;
-        }
 
-        // 루프타운에 들어올 때마다 행동력(SP)만 최대치로 회복
-        SP = SPMax;
+            SP = SPMax; // 시작할 때만 가득. 이후 SP는 마을의 [휴식]으로 회복한다 (GameTime)
+            GameTime.StartNewGame();
+        }
     }
     //플레이어 누적 능력치 변수
     static public int Gold;             //돈

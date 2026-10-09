@@ -1,37 +1,38 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// 기절 연출: 화면이 완전히 어두워지고 -> 마을로 이동한 뒤 -> 검은 화면에 "눈 앞이 깜깜해졌다..."가 뜨고
-// -> 글자가 사라지면서 검은 화면도 옅어지며 걷힌다. 걷히기 시작할 때 병원 치료 문구를 화면에 보여 준다.
-public class FaintSequence : MonoBehaviour
+// 휴식 연출: 화면이 검게 변하고 -> 그 사이에 시간이 흐르며 회복하고 -> 검은 화면에 "휴식을 취했다."가 뜬 뒤
+// -> 글자가 사라지면서 검은 화면도 옅어지며 걷힌다 (눈을 붙이는 느낌). 걷히기 시작할 때 회복 결과 문구를 보여 준다.
+public class RestSequence : MonoBehaviour
 {
-    private const float DarkenTime = 1.0f;   // 어두워지는 시간
-    private const float TextInTime = 0.6f;   // 글자가 나타나는 시간
-    private const float TextHoldTime = 1.6f; // 글자가 또렷하게 보이는 시간
-    private const float ClearTime = 1.4f;    // 글자와 검은 화면이 함께 사라지는 시간
+    private const float DarkenTime = 0.8f;   // 어두워지는 시간
+    private const float TextInTime = 0.5f;   // 글자가 나타나는 시간
+    private const float TextHoldTime = 1.2f; // 글자가 또렷하게 보이는 시간
+    private const float ClearTime = 1.2f;    // 글자와 검은 화면이 함께 사라지는 시간
 
-    private static FaintSequence instance;
+    private static RestSequence instance;
     private CanvasGroup blackGroup;
     private CanvasGroup textGroup;
     private TextMeshProUGUI label;
     private bool playing;
 
+    // 연출이 진행 중이면 true (그동안 또 휴식하지 못한다)
     public static bool Playing { get { return instance != null && instance.playing; } }
 
-    // darkText: 검은 화면에 뜨는 글자, afterMessage: 걷힌 뒤 보여 줄 문구(병원 치료/병원비 등)
-    public static void Play(string darkText, string afterMessage)
+    // doRest: 화면이 완전히 어두워졌을 때 실행할 휴식 처리 (결과 문구를 돌려줌)
+    public static void Play(Func<string> doRest)
     {
         if (instance == null) instance = Create();
         if (instance.playing) return;
-        instance.StartCoroutine(instance.Run(darkText, afterMessage));
+        instance.StartCoroutine(instance.Run(doRest));
     }
 
-    private static FaintSequence Create()
+    private static RestSequence Create()
     {
-        GameObject canvasGo = new GameObject("FaintSequence Canvas", typeof(Canvas), typeof(CanvasScaler));
+        GameObject canvasGo = new GameObject("RestSequence Canvas", typeof(Canvas), typeof(CanvasScaler));
         DontDestroyOnLoad(canvasGo);
         Canvas canvas = canvasGo.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -57,39 +58,32 @@ public class FaintSequence : MonoBehaviour
         CanvasGroup tg = textRt.gameObject.AddComponent<CanvasGroup>();
         tg.alpha = 0f;
 
-        FaintSequence seq = canvasGo.AddComponent<FaintSequence>();
+        RestSequence seq = canvasGo.AddComponent<RestSequence>();
         seq.blackGroup = bg;
         seq.textGroup = tg;
         seq.label = t;
         return seq;
     }
 
-    private IEnumerator Run(string darkText, string afterMessage)
+    private IEnumerator Run(Func<string> doRest)
     {
         playing = true;
-        label.text = darkText;
+        label.text = "휴식을 취했다.";
         textGroup.alpha = 0f;
         blackGroup.blocksRaycasts = true;
 
         // 1) 화면이 완전히 어두워진다
         yield return Fade(blackGroup, 0f, 1f, DarkenTime);
 
-        GameTime.SkipPeriod(); // 기절하면 시간대가 하나 건너뛰어진다 (오후에 기절하면 밤)
-
-        // 2) 어두운 동안 마을로 이동 (장면 전환)
-        GameManager.selectedRegionID = 0;
-        SceneManager.LoadScene("LoopTown");
-        yield return null;
-        yield return null;
-        if (MapManager.Instance != null) MapManager.Instance.CloseMapQuiet();
-        if (InventoryManager.Instance != null) InventoryManager.Instance.CloseInventoryQuiet();
+        // 2) 어두운 동안 시간이 흐르고 회복한다
+        string result = doRest != null ? doRest() : "";
 
         // 3) 검은 화면에 글자가 뜬다
         yield return Fade(textGroup, 0f, 1f, TextInTime);
         yield return new WaitForSecondsRealtime(TextHoldTime);
 
-        // 4) 글자가 사라지면서 검은 화면도 옅어지며 걷힌다
-        if (!string.IsNullOrEmpty(afterMessage)) ItemGainToast.ShowMessage(afterMessage);
+        // 4) 글자가 사라지면서 검은 화면도 옅어지며 걷힌다. 걷히기 시작할 때 결과 문구를 보여 준다
+        if (!string.IsNullOrEmpty(result)) ItemGainToast.ShowMessage(result);
         StartCoroutine(Fade(textGroup, 1f, 0f, ClearTime * 0.7f));
         yield return Fade(blackGroup, 1f, 0f, ClearTime);
 

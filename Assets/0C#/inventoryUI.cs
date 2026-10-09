@@ -264,6 +264,9 @@ public class InventoryManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.C)) ToggleRecipePanel();
             if (Input.GetKeyDown(KeyCode.X)) OnClickSort();
             if (Input.GetKeyDown(KeyCode.Z)) OpenStat();
+            if (Input.GetKeyDown(KeyCode.E)) ToggleEquipPanel();
+            if (Input.GetKeyDown(KeyCode.R)) ToggleBuffPanel();
+            if (Input.GetKeyDown(KeyCode.T)) ToggleProficiencyPanel();
             HandleBagKeys();
         }
 
@@ -869,6 +872,12 @@ public class InventoryManager : MonoBehaviour
     // 마지막 제작이 실패한 이유 (제작 창이 보여 줌)
     public string LastCraftFailReason { get; private set; }
 
+    // 1회 제작에 드는 SP (제작 숙련도의 SP 감소 적용)
+    public static int CraftSpCost(Recipe recipe)
+    {
+        return recipe == null ? 0 : Proficiency.ReducedSp(ProficiencyKind.Crafting, recipe.spCost);
+    }
+
     // 해당 레시피로 최대 몇 개까지 만들 수 있는지 계산 (재료와 필요한 도구의 내구도 모두 고려)
     public int GetMaxCraftableAmount(Recipe recipe)
     {
@@ -896,6 +905,15 @@ public class InventoryManager : MonoBehaviour
                 if (possible < maxCraft) maxCraft = possible;
             }
         }
+
+        // SP: 1회 제작에 SP가 들면 지금 SP로 몇 번 만들 수 있는지
+        int spCost = CraftSpCost(recipe);
+        if (spCost > 0)
+        {
+            int possible = GameManager.SP / spCost;
+            if (possible < 1) return 0;
+            if (possible < maxCraft) maxCraft = possible;
+        }
         return maxCraft;
     }
 
@@ -912,7 +930,8 @@ public class InventoryManager : MonoBehaviour
         if (result == null || recipe == null) return false;
         if (craftCount <= 0 || GetMaxCraftableAmount(recipe) < craftCount)
         {
-            LastCraftFailReason = "재료나 도구가 부족합니다!";
+            int needSp = CraftSpCost(recipe) * craftCount;
+            LastCraftFailReason = needSp > GameManager.SP ? "SP가 부족합니다!" : "재료나 도구가 부족합니다!";
             return false;
         }
 
@@ -962,6 +981,9 @@ public class InventoryManager : MonoBehaviour
 
         // 4. 완성품 추가
         AddItem(result, total);
+
+        // SP 소모 (시간이 걸리는 작업)
+        GameManager.SP = Mathf.Max(0, GameManager.SP - CraftSpCost(recipe) * craftCount);
 
         // 제작했으니 제작 숙련도와 플레이어 레벨 경험치를 얻는다
         string craftReward = Proficiency.Reward(ProficiencyKind.Crafting);
@@ -1427,9 +1449,12 @@ public class InventoryManager : MonoBehaviour
         {
             if (GetItemCount(ing.itemId) < ing.amount) { message = "수리 재료가 부족합니다."; return false; }
         }
+        if (GameManager.SP < it.repairSpCost) { message = "SP가 부족합니다."; return false; }
         foreach (Ingredient ing in materials) RemoveItem(ing.itemId, ing.amount);
+        GameManager.SP = Mathf.Max(0, GameManager.SP - it.repairSpCost);
 
         s.durability = RepairedDurability(it);
+        PlayerUI.RefreshAll();
         RecalcEquipment();
         message = $"{Josa.WithEul(it.itemName)} 수리했다. (내구도 {s.durability}/{it.durabilitymax})";
         return true;
@@ -1732,4 +1757,4 @@ public class ItemStack
         this.amount = amount;
         this.durability = data != null ? data.durabilitymax : 0;
     }
-}
+}

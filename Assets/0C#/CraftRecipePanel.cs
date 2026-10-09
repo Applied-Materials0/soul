@@ -309,6 +309,13 @@ public class CraftRecipePanel : MonoBehaviour
                 parts.Add($"<color={color}>[{ToolTypeInfo.Name(tool.toolType)}{tier} 내구도 -{tool.durabilityCost}]</color>");
             }
         }
+        // 필요한 SP: 모자라면 빨간색
+        int spCost = InventoryManager.CraftSpCost(recipe);
+        if (spCost > 0)
+        {
+            string spColor = GameManager.SP >= spCost ? "#FFFFFF" : "#FF6666";
+            parts.Add($"<color={spColor}>[SP -{spCost}]</color>");
+        }
         text.text = title + "\n" + string.Join("   ", parts);
     }
 

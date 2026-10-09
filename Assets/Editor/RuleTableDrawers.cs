@@ -385,7 +385,8 @@ public static class RuleTableDrawers
         EditorGUILayout.HelpBox(
             "탐색 버튼을 눌렀을 때 무엇이 나오는지의 비율입니다. 확률 = 내 비중 / 비중 합계 (합이 100일 필요는 없음, 0이면 안 나옴). " +
             "[자원]이 나오면 어떤 자원인지는 [자원] 탭의 비중으로, [몬스터]가 나오면 어떤 몬스터인지는 몬스터의 출현 지역/비중으로 정해집니다. " +
-            "[이벤트]는 문구만 화면에 나옵니다 (줄을 추가해 이벤트 문구를 여러 개 둘 수 있음).",
+            "[이벤트]는 문구만 화면에 나옵니다 (줄을 추가해 이벤트 문구를 여러 개 둘 수 있음). " +
+            "오전/오후/밤 칸은 시간대별 배율(%)로, 비중에 곱해집니다 (100 = 그대로, 0 = 그 시간대에는 안 나옴). 확률 칸은 시간대 보정 전의 값입니다.",
             MessageType.None);
 
         SerializedProperty entries = so.FindProperty("entries");
@@ -399,6 +400,9 @@ public static class RuleTableDrawers
         GUILayout.Label("이름", header, GUILayout.Width(130));
         GUILayout.Label("비중", header, GUILayout.Width(50));
         GUILayout.Label("확률", header, GUILayout.Width(55));
+        GUILayout.Label("오전 %", header, GUILayout.Width(50));
+        GUILayout.Label("오후 %", header, GUILayout.Width(50));
+        GUILayout.Label("밤 %", header, GUILayout.Width(50));
         GUILayout.Label("이벤트 문구", header, GUILayout.Width(320));
         EditorGUILayout.EndHorizontal();
 
@@ -415,6 +419,9 @@ public static class RuleTableDrawers
             TableField.Draw(weight, 50);
             weight.intValue = Mathf.Max(0, weight.intValue);
             GUILayout.Label(total > 0 ? $"{w * 100f / total:0.#}%" : "-", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(55));
+            TableField.Draw(e.FindPropertyRelative("morningPercent"), 50);
+            TableField.Draw(e.FindPropertyRelative("afternoonPercent"), 50);
+            TableField.Draw(e.FindPropertyRelative("nightPercent"), 50);
             if (e.FindPropertyRelative("kind").enumValueIndex == (int)SearchOutcomeKind.Event)
                 TableField.Draw(e.FindPropertyRelative("text"), 320);
             else
@@ -432,6 +439,9 @@ public static class RuleTableDrawers
             added.FindPropertyRelative("kind").enumValueIndex = (int)SearchOutcomeKind.Event;
             added.FindPropertyRelative("weight").intValue = 1;
             added.FindPropertyRelative("text").stringValue = "";
+            added.FindPropertyRelative("morningPercent").floatValue = 100f;
+            added.FindPropertyRelative("afternoonPercent").floatValue = 100f;
+            added.FindPropertyRelative("nightPercent").floatValue = 100f;
         }
 
         bool changed = EditorGUI.EndChangeCheck();
@@ -534,6 +544,8 @@ public static class RuleTableDrawers
         new BaseRow("방어 보너스 (%)", "defendBonus", "[방어]할 때 방어력이 늘어나는 비율. 기본 50, 장비로 더 늘 수 있음"),
         new BaseRow("병원비 (골드)", "hospitalFee", "기절하면 내는 병원비. 골드가 모자라면 가진 만큼만 냄", 0),
         new BaseRow("기절 시 아이템 손실 (%)", "itemLossPercent", "기절하면 잃는 아이템 비율 (도구 제외)", 0),
+        new BaseRow("오후 SP 회복 (%)", "restAfternoonSpPercent", "[휴식]으로 오후가 될 때 회복하는 SP (최대 SP의 %)"),
+        new BaseRow("밤 SP 회복 (%)", "restNightSpPercent", "[휴식]으로 밤이 될 때 회복하는 SP (최대 SP의 %). 다음 날 오전은 체력과 SP가 가득 찬다"),
         new BaseRow("고유 특성 ID", "innateTraitId", "장비 없이도 가지는 특성 (특성 표의 ID, 0 = 없음). 예: 1 = 독", 0),
         new BaseRow("위험 1단계 체력 (%)", "lowHpPercent1", "체력이 이 비율 이하면 화면 가장자리가 붉어지기 시작"),
         new BaseRow("위험 1단계 세기", "lowHpAlpha1", "붉은 정도 (0~100)"),

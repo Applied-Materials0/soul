@@ -97,6 +97,7 @@ public class Item : ScriptableObject
     [HideInInspector] public int repairItemId;   // (옛 값: 재료 하나짜리. 에디터가 repairIngredients로 옮겨 줌)
     [HideInInspector] public int repairAmount;
     public int repairRestore;     // 수리하면 차는 내구도 (0 이하면 가득 참)
+    [Min(0)] public int repairSpCost;  // 수리할 때 드는 SP
     public int wearExp = 1;       // 내구도를 1 소모할 때마다 쌓이는 장비 경험치 (등급 표의 경험치로 등급이 오름)
 
     [Header("사용 효과 (소모품: 하나라도 0이 아니면 인벤토리에서 [사용] 버튼이 생김)")]
@@ -146,6 +147,7 @@ public class Recipe
     [HideInInspector]
     public int resultItemId;      // 완성품 아이템 ID (Item.OnValidate가 자동으로 채움)
     public int resultAmount = 1;  // 1회 제작 시 생산 수량
+    [Min(0)] public int spCost;   // 1회 제작에 드는 SP (제작 숙련도의 SP 감소가 적용됨)
 }
 
 // 레시피에 필요한 도구 한 줄

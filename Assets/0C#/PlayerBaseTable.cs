@@ -27,6 +27,10 @@ public class PlayerBaseTable : ScriptableObject
     [Min(0)] public int hospitalFee = 10;                  // 병원비(골드). 가진 골드보다 많으면 가진 만큼만 냄
     [Range(0f, 100f)] public float itemLossPercent = 10f;  // 잃는 아이템 비율 [%] (각 아이템 수량에서). 도구/장비(한 슬롯에 1개인 것, 도구 종류가 있는 것)는 잃지 않음
 
+    [Header("휴식 (마을의 [휴식] 버튼. 다음 날 오전은 체력과 SP가 가득 참)")]
+    [Range(0f, 100f)] public float restAfternoonSpPercent = 100f;  // 오후가 될 때 회복하는 SP (최대 SP의 [%])
+    [Range(0f, 100f)] public float restNightSpPercent = 50f;       // 밤이 될 때 회복하는 SP (최대 SP의 [%])
+
     [Header("고유 특성 (장비 없이도 항상 가지는 특성. 특성 표의 ID, 0이면 없음)")]
     public int innateTraitId = 0;
 

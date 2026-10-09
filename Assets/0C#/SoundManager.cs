@@ -12,6 +12,12 @@ public class SoundManager : MonoBehaviour
         if (Instance == null) Instance = this;
     }
 
+    // 효과음 표(SoundTable)에 정해 둔 소리를 재생
+    public void PlayEvent(SoundEvent sound)
+    {
+        GameTables.Sounds.Play(sound, sfxSource);
+    }
+
     // 외부에서 호출할 슬롯 클릭 사운드 재생 함수
     public void PlaySlotClickSound()
     {
@@ -21,4 +27,4 @@ public class SoundManager : MonoBehaviour
             sfxSource.PlayOneShot(slotClickClip);
         }
     }
-}
+}

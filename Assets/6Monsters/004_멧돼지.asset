@@ -17,11 +17,11 @@ MonoBehaviour:
   description: 
   sprite: {fileID: 0}
   level: 1
-  hpMax: 100
+  hpMax: 1000
   at: 5
   df: 5
   speed: 5
-  avoid: 0
+  avoid: 10
   criticalrate: 10
   critical: 10
   defendChance: 10

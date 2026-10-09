@@ -21,7 +21,7 @@ MonoBehaviour:
   at: 1
   df: 0
   speed: 0
-  avoid: 0
+  avoid: 1
   criticalrate: 0
   critical: 0
   defendChance: 0
