@@ -31,3 +31,8 @@ MonoBehaviour:
     volume: 1
     note: "\uD50C\uB808\uC774\uC5B4\uAC00 \uBC29\uC5B4\uD560 \uB54C (\uAE30\uBCF8:
       metal)"
+  - sound: 3
+    label: "\uC218\uB9AC"
+    clip: {fileID: 8300000, guid: 746b578a2e2e88842bcc08d93a2ed9ab, type: 3}
+    volume: 1
+    note: "\uD50C\uB808\uC774\uC5B4\uAC00 \uC218\uB9AC\uD560 \uB54C "

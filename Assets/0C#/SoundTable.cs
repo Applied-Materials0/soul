@@ -8,6 +8,7 @@ public enum SoundEvent
     PlayerAttack,  // 플레이어가 공격할 때
     EnemyAttack,   // 몬스터가 공격해 올 때 (플레이어가 공격받을 때)
     Defend,        // 플레이어가 방어할 때
+    Repair,  // 도구 및 장비를 수리할 때
 }
 
 [System.Serializable]

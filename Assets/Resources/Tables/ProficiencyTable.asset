@@ -629,3 +629,80 @@ MonoBehaviour:
       extraMax: 0
       expBonusPercent: 45
       spReducePercent: 27
+  - id: 8
+    kind: 1
+    tool: 0
+    label: "\uD0D0\uC0C9"
+    expPerUse: 1
+    playerExpPerUse: 1
+    levels:
+    - level: 1
+      expToNext: 10
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 0
+      spReducePercent: 0
+    - level: 2
+      expToNext: 20
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 5
+      spReducePercent: 3
+    - level: 3
+      expToNext: 40
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 10
+      spReducePercent: 6
+    - level: 4
+      expToNext: 70
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 15
+      spReducePercent: 9
+    - level: 5
+      expToNext: 110
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 20
+      spReducePercent: 12
+    - level: 6
+      expToNext: 160
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 25
+      spReducePercent: 15
+    - level: 7
+      expToNext: 220
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 30
+      spReducePercent: 18
+    - level: 8
+      expToNext: 300
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 35
+      spReducePercent: 21
+    - level: 9
+      expToNext: 400
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 40
+      spReducePercent: 24
+    - level: 10
+      expToNext: 0
+      bonusPercent: 0
+      extraMin: 0
+      extraMax: 0
+      expBonusPercent: 45
+      spReducePercent: 27
