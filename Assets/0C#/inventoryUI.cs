@@ -454,9 +454,32 @@ public class InventoryManager : MonoBehaviour
     private bool nextSortByWeight;
     private TextMeshProUGUI sortLabel;
 
+    // 하이어라키(BagUI)에 이미 있는 막대 버튼을 이름으로 찾아 눌렀을 때 동작을 연결한다. 없으면 null
+    private GameObject WireBarButton(string name, UnityEngine.Events.UnityAction onClick)
+    {
+        if (inventoryUI == null) return null;
+        Transform t = inventoryUI.transform.Find(name);
+        Button b = t != null ? t.GetComponent<Button>() : null;
+        if (b == null) return null;
+        b.onClick.RemoveListener(onClick);
+        b.onClick.AddListener(onClick);
+        return b.gameObject;
+    }
+
     private void SetupSortButton()
     {
         if (inventoryUI == null) return;
+
+        // 버튼이 하이어라키(BagUI)에 있으면 모양과 위치는 거기서 고치고, 여기서는 동작만 연결한다
+        GameObject sortExisting = WireBarButton("SortButton", OnClickSort);
+        if (sortExisting != null)
+        {
+            sortLabel = sortExisting.GetComponentInChildren<TextMeshProUGUI>();
+            WireBarButton("EquipButton", ToggleEquipPanel);
+            WireBarButton("BuffButton", ToggleBuffPanel);
+            WireBarButton("ProficiencyButton", ToggleProficiencyPanel);
+            return;
+        }
 
         RectTransform craft = craftRecipeButton != null
             ? craftRecipeButton.GetComponent<RectTransform>()
@@ -563,6 +586,11 @@ public class InventoryManager : MonoBehaviour
     // 가방 UI 상단의 [제작] 버튼: 스탯 버튼 바로 왼쪽에 같은 모양으로 만든다
     private void SetupCraftButton()
     {
+        if (craftRecipeButton == null && inventoryUI != null)
+        {
+            Transform existing = inventoryUI.transform.Find("CraftRecipeButton"); // 하이어라키에 있는 [제작] 버튼
+            if (existing != null) craftRecipeButton = existing.GetComponent<Button>();
+        }
         if (craftRecipeButton != null)
         {
             craftRecipeButton.onClick.AddListener(ToggleRecipePanel);
@@ -1377,6 +1405,7 @@ public class InventoryManager : MonoBehaviour
     {
         public TraitDef trait;
         public string source;   // 어디서 온 특성인가 (장비 이름 / 고유)
+        public ItemStack stack;   // 장비에서 온 특성이면 그 장비 (고유 특성은 null)
     }
 
     public List<TraitSource> ActiveTraits()
@@ -1387,7 +1416,7 @@ public class InventoryManager : MonoBehaviour
             if (!IsWorking(s)) continue;
             TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
             if (t != null && t.weaponType != WeaponType.None && t.weaponType != s.itemData.weaponType) continue; // 무기 종류가 정해진 특성은 그 종류의 무기에서만
-            if (t != null) result.Add(new TraitSource { trait = t, source = s.itemData.itemName });
+            if (t != null) result.Add(new TraitSource { trait = t, source = s.itemData.itemName, stack = s });
         }
         TraitDef innate = GameTables.Traits.Get(GameTables.PlayerBase.innateTraitId);
         if (innate != null) result.Add(new TraitSource { trait = innate, source = "고유 특성" });
@@ -1424,7 +1453,11 @@ public class InventoryManager : MonoBehaviour
         foreach (TraitSource ts in ActiveTraits())
         {
             TraitDef t = ts.trait;
-            atRate += (cleansing && t.atRate < 0f) ? 0f : t.atRate;
+            float ownAtRate = (cleansing && t.atRate < 0f) ? 0f : t.atRate;
+            if (ts.stack != null)
+                at += Mathf.RoundToInt(ts.stack.itemData.at * GradeMult(ts.stack) * ownAtRate / 100f); // 장비의 특성: 그 장비 자체의 공격력에만 %가 붙는다 (방어력 증감은 나의 총 방어력에 붙음)
+            else
+                atRate += ownAtRate;                                                                 // 나에게 걸린 특성: 나의 총 공격력에 %
             dfRate += EffectiveDfRate(t);
             hpRate += t.hpRate;
             breakDf += t.breakDf;
@@ -1630,12 +1663,12 @@ public class InventoryManager : MonoBehaviour
     }
 
     // 특성의 효과를 한 줄씩 (0이 아닌 것만). 버프 창과 설명에 쓴다
-    public static List<string> TraitEffectLines(TraitDef t, float effectiveDfRate)
+    public static List<string> TraitEffectLines(TraitDef t, float effectiveDfRate, bool onItem = false)
     {
         const string good = "<color=#1B7F2A>", bad = "<color=#C00000>", end = "</color>";
         List<string> r = new List<string>();
         string P(float v, string name, string unit = "%") { return $"{(v > 0f ? good : bad)}{name} {v:+0.#;-0.#}{unit}{end}"; }
-        if (t.atRate != 0f) r.Add(P(t.atRate, "공격력"));
+        if (t.atRate != 0f) r.Add(P(t.atRate, onItem ? "장비 공격력" : "공격력"));
         if (t.dfRate != 0f) r.Add(P(effectiveDfRate, "방어력"));
         if (t.hpRate != 0f) r.Add(P(t.hpRate, "최대 체력"));
         if (t.breakDf != 0f) r.Add(P(t.breakDf, "방어 관통"));
@@ -1681,7 +1714,7 @@ public class InventoryManager : MonoBehaviour
             TraitDef t = ts.trait;
             sb.AppendLine($"<b>{t.label}</b> ({ts.source})");
             float df = EffectiveDfRate(t);
-            foreach (string line in TraitEffectLines(t, df)) { sb.AppendLine("  " + line); lines++; }
+            foreach (string line in TraitEffectLines(t, df, ts.stack != null)) { sb.AppendLine("  " + line); lines++; }
             if (t.dfRate < 0f && t.resistPercent > 0f && !Mathf.Approximately(df, t.dfRate))
                 sb.AppendLine($"  <size=75%>(내성 {resist:0.#}로 방어력 {t.dfRate:+0.#;-0.#}% -> {df:+0.#;-0.#}%)</size>");
             if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"  <size=75%>{t.description}</size>");

@@ -371,7 +371,7 @@ public class ItemInfoPanel : MonoBehaviour
         if (trait != null)
         {
             string eff = "";
-            if (trait.atRate != 0f) eff += $" 공격력 {trait.atRate:+0.#;-0.#}%";
+            if (trait.atRate != 0f) eff += $" 장비 공격력 {trait.atRate:+0.#;-0.#}%";
             if (trait.dfRate != 0f) eff += $" 방어력 {trait.dfRate:+0.#;-0.#}%";
             string effText = eff.Length > 0 ? " (" + eff.Trim() + ")" : "";
             sb.AppendLine($" 특성 : {trait.label}{effText}");

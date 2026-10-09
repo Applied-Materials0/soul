@@ -6,13 +6,12 @@ public enum EquipSlot
 {
     None,       // 장비 아님
     Weapon,     // 무기 / 도구
-    Shield,     // 방패
     Head,       // 머리
     Body,       // 몸
-    Glove,      // 장갑
     Legs,       // 다리
-    Foot,       // 발
     Accessory,  // 장신구
+    Shield,      // 방패
+    Glove,  // 장갑
 }
 
 public static class EquipSlotInfo
@@ -149,7 +148,7 @@ public class Item : ScriptableObject
     {
         List<Ingredient> list = new List<Ingredient>();
         foreach (Ingredient ing in repairIngredients)
-            if (ing != null && ing.itemId > 0 && ing.amount > 0) list.Add(ing);
+            if (ing != null && ing.itemId >= 0 && ing.amount > 0) list.Add(ing);
         if (list.Count == 0 && repairItemId > 0 && repairAmount > 0)
             list.Add(new Ingredient { itemId = repairItemId, amount = repairAmount });
         return list;

@@ -220,11 +220,14 @@ public class BattleSystem : MonoBehaviour
     private int statusTurnsLeft;    // 남은 턴
     private int statusElapsed;      // 지금까지 지난 턴 (지속 피해가 이만큼 커짐)
 
+    // 이번 공격을 시작할 때의 특성 목록. 공격이 맞아 무기가 부서져 장착 해제돼도 이번 공격의 독/처형은 그대로 적용된다.
+    private List<InventoryManager.TraitSource> traitSnapshot;
+
     private IEnumerator TryInflictStatus(string name)
     {
         if (InventoryManager.Instance == null) yield break;
         if (monsterHp <= 0) yield break; // 이미 쓰러뜨렸으면 독이 퍼졌다는 문구도 없다
-        foreach (InventoryManager.TraitSource ts in InventoryManager.Instance.ActiveTraits())
+        foreach (InventoryManager.TraitSource ts in (traitSnapshot ?? InventoryManager.Instance.ActiveTraits()))
         {
             TraitDef t = ts.trait;
             if (t.inflictChance <= 0f || (t.dotDamage <= 0f && t.dotHpPercent <= 0f)) continue;
@@ -250,7 +253,8 @@ public class BattleSystem : MonoBehaviour
     {
         InventoryManager inv = InventoryManager.Instance;
         if (inv == null || monsterHp <= 0) return false;
-        float pct = inv.MaxTrait(t => t.executeHpPercent);
+        float pct = 0f;
+        foreach (InventoryManager.TraitSource ts in (traitSnapshot ?? inv.ActiveTraits())) pct = Mathf.Max(pct, ts.trait.executeHpPercent);
         return pct > 0f && monsterHp * 100f < monster.hpMax * pct;
     }
 
@@ -268,6 +272,7 @@ public class BattleSystem : MonoBehaviour
 
         PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
         InventoryManager inv = InventoryManager.Instance;
+        traitSnapshot = inv != null ? inv.ActiveTraits() : null;
         string name = monster.monsterName;
         bool sureHit = sureHitLeft > 0;   // 필중 횟수가 남아 있으면 이번 공격은 회피와 방어 태세를 무시한다
         if (sureHit) sureHitLeft--;
@@ -394,6 +399,7 @@ public class BattleSystem : MonoBehaviour
         RefreshPlayerUI();
 
         InventoryManager inv = InventoryManager.Instance;
+        traitSnapshot = inv != null ? inv.ActiveTraits() : null;
         string name = monster.monsterName;
 
         if (s.kind == SkillKind.Heal)
