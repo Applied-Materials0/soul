@@ -25,10 +25,12 @@ public static class GameTablesBootstrap
         Ensure<PlayerBaseTable>("PlayerBaseTable");
         Ensure<SearchTable>("SearchTable");
         Ensure<TraitTable>("TraitTable");
+        Ensure<SkillTable>("SkillTable");
         Ensure<GradeTable>("GradeTable");
         EnsureProficiencies();
         MigrateTraitDefaults();
         EnsureDefaultTraits();
+        MigrateTraitWeaponTypes();
         MigrateRepairMaterials();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
@@ -126,6 +128,30 @@ public static class GameTablesBootstrap
             }
         }
         if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+    }
+
+    // 무기 종류 칸이 생기기 전에 만든 무기 특성(다크나이트 = 메이스, 레인저 = 활, 검성 = 검, 도살자 = 배틀 엑스)에 종류를 채운다. 한 번만, 이름이 그대로인 것만.
+    private static void MigrateTraitWeaponTypes()
+    {
+        const string doneKey = "Soul.TraitWeaponTypeV1.Done";
+        if (EditorPrefs.GetBool(doneKey, false)) return;
+        TraitTable table = AssetDatabase.LoadAssetAtPath<TraitTable>(Folder + "/TraitTable.asset");
+        if (table == null) return;
+        bool changed = false;
+        foreach (TraitDef t in table.traits)
+        {
+            if (t == null || t.weaponType != WeaponType.None) continue;
+            WeaponType? w = null;
+            if (t.label == "다크나이트") w = WeaponType.Mace;
+            else if (t.label == "레인저") w = WeaponType.Bow;
+            else if (t.label == "검성") w = WeaponType.Sword;
+            else if (t.label == "도살자") w = WeaponType.BattleAxe;
+            if (!w.HasValue) continue;
+            t.weaponType = w.Value;
+            changed = true;
+        }
+        if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+        EditorPrefs.SetBool(doneKey, true);
     }
 
     // 기본 특성(독, 마나 도둑, 처형, 거인 ...)을 표에 반영한다. 한 번만 하고 (사용자가 지워도 다시 살아나지 않게),

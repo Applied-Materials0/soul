@@ -24,6 +24,7 @@ MonoBehaviour:
   avoid: 1
   criticalrate: 0
   critical: 0
+  defendBonus: 50
   defendChance: 0
   defendChanceLowHp: 0
   suppressChance: 0
@@ -43,6 +44,6 @@ MonoBehaviour:
   exp: 5
   gold: 20
   drops: []
-  spawns:
-  - regionId: 1
-    weight: 15
+  inflictTraitId: 0
+  inflictChance: 0
+  spawns: []

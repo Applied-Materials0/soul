@@ -53,7 +53,7 @@ public static class BattleCalc
     //  6) 피해 = 공격력 - 적 방어력 (0 미만이면 0), 여기에 방어력과 상관없는 고정 데미지를 더함
     //  7) 몬스터가 [방어] 중이면 피해가 몬스터의 방어 보너스(%)만큼 깎여 들어감
     //  8) 흡수 = 준 피해 x 체력 흡수%
-    public static AttackResult PlayerAttack(Monster m, int monsterHp, bool monsterDefending, bool sureHit = false)
+    public static AttackResult PlayerAttack(Monster m, int monsterHp, bool monsterDefending, bool sureHit = false, SkillDef skill = null)
     {
         AttackResult r = new AttackResult();
 
@@ -66,21 +66,23 @@ public static class BattleCalc
         float special = monsterHp * GameManager.HpRateAt / 100f; // 체력 퍼뎀: 적의 현재 체력 비례
         float atk = GameManager.At + GameManager.EquipAt + special;
 
-        r.crit = Roll(GameManager.CriticalRate);
+        r.crit = Roll(GameManager.CriticalRate + (skill != null ? skill.criticalRate : 0f));
         if (r.crit) atk *= Mult(GameManager.Critical);
 
         atk *= Mult(GameManager.AtRate);
+        if (skill != null) atk *= Mathf.Max(0f, skill.powerPercent) / 100f; // 스킬 위력 %
 
-        float def = m.df * (1f - Mathf.Clamp(GameManager.BreakDf, 0f, 100f) / 100f);
+        float def = m.df * (1f - Mathf.Clamp(GameManager.BreakDf + (skill != null ? skill.breakDf : 0f), 0f, 100f) / 100f);
 
         int main = Mathf.Max(0, Mathf.FloorToInt(atk - def));
-        int total = main + Mathf.Max(0, GameManager.FixAt);
+        int fix = Mathf.Max(0, GameManager.FixAt + (skill != null ? skill.fixedDamage : 0));
+        int total = main + fix;
 
         // 몬스터가 방어 태세면 방어 보너스(%)만큼 피해가 깎인다 (필중이면 무시)
         if (monsterDefending && !sureHit)
             total = Mathf.FloorToInt(total * (1f - Mathf.Clamp(m.defendBonus, 0f, 100f) / 100f));
 
-        r.fixedDamage = Mathf.Max(0, GameManager.FixAt);
+        r.fixedDamage = fix;
         r.damage = total;
         r.noEffect = total <= 0;
         int heal = total > 0 ? Mathf.FloorToInt(total * Mathf.Max(0f, GameManager.Abs) / 100f) : 0; // 흡수

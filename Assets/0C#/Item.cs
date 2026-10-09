@@ -6,12 +6,13 @@ public enum EquipSlot
 {
     None,       // 장비 아님
     Weapon,     // 무기 / 도구
+    Shield,     // 방패
     Head,       // 머리
     Body,       // 몸
+    Glove,      // 장갑
     Legs,       // 다리
+    Foot,       // 발
     Accessory,  // 장신구
-    Shield,      // 방패
-    Glove,  // 장갑
 }
 
 public static class EquipSlotInfo
@@ -28,6 +29,32 @@ public static class EquipSlotInfo
             case EquipSlot.Shield: return "방패";
             case EquipSlot.Glove: return "장갑";
             default: return "-";
+        }
+    }
+}
+
+// 무기 종류 (장비 표의 [무기 종류]). 스킬/특성이 "이 종류의 무기를 장착했을 때만" 쓰이게 하는 기준이다.
+// 배틀 엑스는 도끼 도구(도구 종류 Axe)로도 설정할 수 있다 (제작/수리/벌목 가능). 도구 종류는 따로 정하므로 둘 다 쓸 수 있다.
+public enum WeaponType
+{
+    None,       // 무기 종류 없음
+    Mace,       // 메이스
+    BattleAxe,  // 배틀 엑스
+    Bow,        // 활
+    Sword       // 검
+}
+
+public static class WeaponTypeInfo
+{
+    public static string Name(WeaponType type)
+    {
+        switch (type)
+        {
+            case WeaponType.Mace: return "메이스";
+            case WeaponType.BattleAxe: return "배틀 엑스";
+            case WeaponType.Bow: return "활";
+            case WeaponType.Sword: return "검";
+            default: return "";
         }
     }
 }
@@ -92,6 +119,7 @@ public class Item : ScriptableObject
 
     [Header("장착 (장비 장착창에 끼는 아이템. 장착해야 능력치와 특성이 적용됨)")]
     public EquipSlot equipSlot;   // 장착 부위 (None이면 장착 불가)
+    public WeaponType weaponType; // 무기 종류 (메이스/배틀 엑스/활/검. 무기가 아니면 None)
     public int traitId;           // 특성 ID (특성 표 참고. 0이면 없음. 예: 독)
 
     [Header("수리 / 등급 (장비/도구의 내구도가 0이 되면 정보창의 [수리]로 고침)")]
@@ -112,6 +140,9 @@ public class Item : ScriptableObject
     [Header("표시 / 제작")]
     public Sprite icon;        // 아이템 이미지
     public Recipe recipe;      // 제작법 (재료가 비어 있으면 제작 불가)
+
+    // 닳거나 부서질 수 있는 아이템인가: 최대 내구도가 있고 장신구가 아니어야 한다 (장신구는 깨지지 않음)
+    public bool CanBreak { get { return durabilitymax > 0 && equipSlot != EquipSlot.Accessory; } }
 
     // 수리에 드는 재료 목록 (옛 단일 재료 값도 인정)
     public List<Ingredient> RepairMaterials()

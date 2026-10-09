@@ -351,7 +351,7 @@ public class ItemInfoPanel : MonoBehaviour
         }
         if (item.durabilitymax <= 0 && stack != null && stack.durability > 0)
             sb.AppendLine($" 내구도 : {stack.durability}"); // 도구에서 이어받은 내구도 (최대 내구도가 표에 없는 아이템)
-        if (item.durabilitymax > 0)
+        if (item.CanBreak)
         {
             // 도구는 슬롯마다 내구도가 따로이므로 클릭한 슬롯(스택)의 현재 내구도를 표시
             int currentDurability = stack != null ? stack.durability : item.durabilitymax;
@@ -366,6 +366,7 @@ public class ItemInfoPanel : MonoBehaviour
         if (item.useSp > 0) sb.AppendLine($" SP 회복 : +{item.useSp}");
         if (item.useMana > 0) sb.AppendLine($" 마나 회복 : +{item.useMana}");
         if (item.equipSlot != EquipSlot.None) sb.AppendLine($" 장착 부위 : {EquipSlotInfo.Name(item.equipSlot)}");
+        if (item.weaponType != WeaponType.None) sb.AppendLine($" 무기 종류 : {WeaponTypeInfo.Name(item.weaponType)}");
         TraitDef trait = GameTables.Traits.Get(item.traitId);
         if (trait != null)
         {

@@ -69,6 +69,9 @@ public class GlobalUI : MonoBehaviour
         InventoryManager inv = InventoryManager.Instance;
         MapManager map = MapManager.Instance;
 
+        if (RepairPopup.CloseIfOpen()) return; // 수리 창만 닫고 가방은 그대로
+        if (SkillPanel.CloseIfOpen()) return; // 전투의 스킬 창
+
         if (inv != null && inv.CloseTopCraftLayer()) return;
 
         if (inv != null && inv.IsInventoryOpen)

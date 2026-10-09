@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "038_\uCD08\uAE09 \uCE58\uB8CC\uC81C"
+  m_Name: "039_\uCD08\uAE09 \uB9C8\uB098 \uD3EC\uC158"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 38
-  itemName: "\uCD08\uAE09 \uCE58\uB8CC\uC81C"
-  weight: 10
-  countmax: 100
+  id: 39
+  itemName: "\uCD08\uAE09 \uB9C8\uB098 \uD3EC\uC158"
+  weight: 30
+  countmax: 20
   durabilitymax: 0
   toolType: 0
   tier: 0
@@ -50,25 +50,14 @@ MonoBehaviour:
   repairRestore: 0
   repairSpCost: 0
   wearExp: 1
-  useHp: 50
+  useHp: 0
   useSp: 0
   useMana: 0
   useResultItemId: 0
   icon: {fileID: 0}
   recipe:
-    ingredients:
-    - itemId: 16
-      amount: 5
-    - itemId: 27
-      amount: 1
-    - itemId: 28
-      amount: 1
-    - itemId: 29
-      amount: 1
-    tools:
-    - toolType: 7
-      tier: 1
-      durabilityCost: 1
-    resultItemId: 38
+    ingredients: []
+    tools: []
+    resultItemId: 39
     resultAmount: 1
-    spCost: 5
+    spCost: 0

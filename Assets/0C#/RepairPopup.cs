@@ -12,6 +12,10 @@ public class RepairPopup : MonoBehaviour
     private Action onDone;
     private TextMeshProUGUI bodyText;
     private Button repairButton;
+    private Image repairImage;
+    private Image cancelImage;
+    private int cursor;            // 키보드 커서: 0 = [수리], 1 = [취소]
+    private int openedFrame;
 
     public static void Open(ItemStack stack, Action onDone)
     {
@@ -56,10 +60,54 @@ public class RepairPopup : MonoBehaviour
         GameObject repair = CraftQuantityPopup.CreateButton(panel, "RepairButton", "수리", font,
             new Color(0.2f, 0.55f, 0.3f), new Vector2(0.5f, 0f), new Vector2(-130f, 40f), new Vector2(220f, 80f), popup.OnRepair);
         popup.repairButton = repair.GetComponent<Button>();
-        CraftQuantityPopup.CreateButton(panel, "CancelButton", "취소", font,
-            new Color(0.5f, 0.5f, 0.5f), new Vector2(0.5f, 0f), new Vector2(130f, 40f), new Vector2(220f, 80f), popup.Close);
+        popup.repairImage = repair.GetComponent<Image>();
+        popup.cancelImage = CraftQuantityPopup.CreateButton(panel, "CancelButton", "취소", font,
+            new Color(0.5f, 0.5f, 0.5f), new Vector2(0.5f, 0f), new Vector2(130f, 40f), new Vector2(220f, 80f), popup.Close).GetComponent<Image>();
 
+        popup.openedFrame = Time.frameCount;
         popup.Refresh();
+        popup.UpdateCursor();
+    }
+
+    // A/D = 커서를 [수리]/[취소]로 옮김, Space/Enter = 커서가 있는 버튼 누르기. (ESC는 GlobalUI가 CloseIfOpen으로 이 창만 닫음)
+    void Update()
+    {
+        if (openedFrame == Time.frameCount) return; // 이 창을 연 Space가 곧바로 [수리]를 누르지 않게
+
+        if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) { cursor = 1; UpdateCursor(); }
+        else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) { cursor = 0; UpdateCursor(); }
+
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
+        {
+            if (cursor == 0) Confirm();
+            else Close();
+        }
+    }
+
+    // 커서가 있는 버튼을 밝게 키워 보여 준다
+    private void UpdateCursor()
+    {
+        if (repairImage != null)
+        {
+            repairImage.color = cursor == 0 ? new Color(0.3f, 0.75f, 0.42f) : new Color(0.2f, 0.55f, 0.3f);
+            repairImage.transform.localScale = cursor == 0 ? Vector3.one * 1.08f : Vector3.one;
+        }
+        if (cancelImage != null)
+        {
+            cancelImage.color = cursor == 1 ? new Color(0.8f, 0.38f, 0.38f) : new Color(0.55f, 0.25f, 0.25f);
+            cancelImage.transform.localScale = cursor == 1 ? Vector3.one * 1.08f : Vector3.one;
+        }
+    }
+
+    // ESC용: 수리 창이 떠 있으면 이 창만 닫고 true
+    public static bool CloseIfOpen()
+    {
+        InventoryManager inv = InventoryManager.Instance;
+        if (inv == null || inv.inventoryUI == null) return false;
+        Transform rp = inv.inventoryUI.transform.Find("RepairPopup");
+        if (rp == null) return false;
+        Destroy(rp.gameObject);
+        return true;
     }
 
     // 필요한 재료와 수리 후 내구도를 보여 준다 (모자란 재료는 빨간색)

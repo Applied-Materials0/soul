@@ -19,6 +19,7 @@ public class TraitDef
     public string label;           // 이름 (버프 창에 보임)
     public string description;     // 설명
     public bool debuff;            // 디버프 특성: 상대가 이 특성을 걸 때, 이미 같은 특성을 가진 쪽에는 걸리지 않는다
+    public WeaponType weaponType;  // 무기 종류: 정해 두면 그 종류의 무기(장비 표의 [무기 종류])에 붙어 있을 때만 적용 (None = 어떤 장비든)
 
     [Header("능력치 (장착 중 항상)")]
     public float atRate;           // 공격 증가량 [%] (마이너스면 감소)
@@ -109,10 +110,10 @@ public class TraitTable : ScriptableObject
             new TraitDef { id = 15, label = "마법", manaRate = 30f, skillManaReduce = 20f, description = "최대 마나가 늘고 스킬의 마나 소모가 줄어든다." },
             new TraitDef { id = 16, label = "치명", atRate = 10f, criticalRate = 10f, critical = 30f, description = "공격력, 치명타 확률, 치명타 데미지가 오른다." },
             new TraitDef { id = 17, label = "흡수", abs = 15f, description = "피해를 줄 때 체력을 흡수한다." },
-            new TraitDef { id = 18, label = "다크나이트", atRate = 20f, hpRateAt = 3f, description = "메이스류 무기의 공격력과 체력 퍼뎀이 오른다." },
-            new TraitDef { id = 19, label = "레인저", atRate = 20f, fixAt = 3, description = "활의 공격력과 고정 데미지가 오른다." },
-            new TraitDef { id = 20, label = "검성", atRate = 20f, critical = 30f, criticalRate = 10f, description = "칼의 공격력, 치명타 배율, 치명타 확률이 오른다." },
-            new TraitDef { id = 21, label = "도살자", atRate = 20f, abs = 10f, description = "도끼류의 공격력과 흡수가 오른다." },
+            new TraitDef { id = 18, label = "다크나이트", weaponType = WeaponType.Mace, atRate = 20f, hpRateAt = 3f, description = "메이스의 공격력과 체력 퍼뎀이 오른다." },
+            new TraitDef { id = 19, label = "레인저", weaponType = WeaponType.Bow, atRate = 20f, fixAt = 3, description = "활의 공격력과 고정 데미지가 오른다." },
+            new TraitDef { id = 20, label = "검성", weaponType = WeaponType.Sword, atRate = 20f, critical = 30f, criticalRate = 10f, description = "검의 공격력, 치명타 배율, 치명타 확률이 오른다." },
+            new TraitDef { id = 21, label = "도살자", weaponType = WeaponType.BattleAxe, atRate = 20f, abs = 10f, description = "배틀 엑스의 공격력과 흡수가 오른다." },
         };
     }
 

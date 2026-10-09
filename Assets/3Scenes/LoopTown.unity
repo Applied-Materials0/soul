@@ -3095,9 +3095,9 @@ MonoBehaviour:
     exp: 0
   - itemData: {fileID: 11400000, guid: e0ced2cf296500d47a65150e5275d737, type: 2}
     amount: 1
-    durability: 0
-    grade: 1
-    exp: 0
+    durability: 1
+    grade: 0
+    exp: 50
 --- !u!1 &1194302614
 GameObject:
   m_ObjectHideFlags: 0
@@ -4553,6 +4553,18 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7750000000000000002, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -50.000065
+      objectReference: {fileID: 0}
+    - target: {fileID: 7750000000000000002, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -24.999966
+      objectReference: {fileID: 0}
+    - target: {fileID: 7750000000000000005, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -200
+      objectReference: {fileID: 0}
     - target: {fileID: 7750000000000000007, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -4652,6 +4664,26 @@ PrefabInstance:
     - target: {fileID: 8100000000000000001, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000008, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_text
+      value: Equipments
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000013, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000020, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_text
+      value: Proficiency
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000025, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8100000000000000032, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
+      propertyPath: m_text
+      value: Buffs
       objectReference: {fileID: 0}
     - target: {fileID: 8181963836732731337, guid: 3717b675f9ed8ea41831adb48b92c0d9, type: 3}
       propertyPath: m_IsActive

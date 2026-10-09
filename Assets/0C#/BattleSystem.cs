@@ -83,6 +83,7 @@ public class BattleSystem : MonoBehaviour
         statusTurnsLeft = 0;
         statusElapsed = 0;
         revivesUsed = 0;
+        skillReadyTurn.Clear();
         InventoryManager binv = InventoryManager.Instance;
         sureHitLeft = binv != null ? Mathf.RoundToInt(binv.SumTrait(t => t.sureHitCount)) : 0;           // 필중 횟수 (한 전투)
         perfectLeft = binv != null ? Mathf.RoundToInt(binv.SumTrait(t => t.perfectDefendCount)) : 0;     // 완전 방어 횟수 (한 전투)
@@ -347,6 +348,157 @@ public class BattleSystem : MonoBehaviour
 
         yield return MonsterTurn();
         busy = false;
+    }
+
+    // =========================================================
+    //  스킬 (스킬 표). [스킬] 버튼 -> 스킬 창에서 고름 -> 마나/SP를 내고 이번 턴을 쓴다
+    // =========================================================
+    private readonly Dictionary<int, int> skillReadyTurn = new Dictionary<int, int>(); // 스킬 번호 -> 다시 쓸 수 있는 턴 (이번 전투)
+
+    // 이 스킬의 실제 마나 소모 (특성 "스킬 마나 감소 %" 반영)
+    public static int SkillManaCost(SkillDef s)
+    {
+        float reduce = Mathf.Clamp(GameManager.SkillManaReduce, 0f, 100f);
+        return Mathf.Max(0, Mathf.RoundToInt(s.manaCost * (1f - reduce / 100f)));
+    }
+
+    // 지금 쓸 수 없는 이유 (쓸 수 있으면 null)
+    public string SkillBlockReason(SkillDef s)
+    {
+        if (s == null) return "스킬이 없다";
+        if (GameManager.Level < s.unlockLevel) return $"Lv.{s.unlockLevel}부터 쓸 수 있다";
+        if (s.weaponType != WeaponType.None && (InventoryManager.Instance == null || !InventoryManager.Instance.HasEquippedWeaponType(s.weaponType))) { string wn = WeaponTypeInfo.Name(s.weaponType); return $"{wn}{Josa(wn, "을", "를")} 장착해야 쓸 수 있다"; }
+        if (skillReadyTurn.TryGetValue(s.id, out int ready) && turn < ready) return $"{ready - turn}턴 뒤에 쓸 수 있다";
+        if (GameManager.Mana < SkillManaCost(s)) return "마나가 부족하다";
+        if (GameManager.SP < s.spCost) return "SP가 부족하다";
+        return null;
+    }
+
+    // 스킬을 쓴다. 쓸 수 없으면 false (턴을 쓰지 않음)
+    public bool UseSkill(SkillDef s)
+    {
+        if (!active || busy || SkillBlockReason(s) != null) return false;
+        StopNarration();
+        int usedTurn = turn;
+        MarkActed(true);
+        StartCoroutine(SkillRoutine(s, usedTurn));
+        return true;
+    }
+
+    private IEnumerator SkillRoutine(SkillDef s, int usedTurn)
+    {
+        busy = true;
+        GameManager.Mana = Mathf.Max(0, GameManager.Mana - SkillManaCost(s));
+        GameManager.SP = Mathf.Max(0, GameManager.SP - s.spCost);
+        skillReadyTurn[s.id] = usedTurn + s.cooldown + 1;
+        RefreshPlayerUI();
+
+        InventoryManager inv = InventoryManager.Instance;
+        string name = monster.monsterName;
+
+        if (s.kind == SkillKind.Heal)
+        {
+            PlaySound(SoundEvent.Defend);
+            int amount = s.healAmount + Mathf.RoundToInt(BattleCalc.PlayerMaxHp() * s.healPercent / 100f);
+            int healed = HealPlayer(amount);
+            string line = healed > 0 ? $"{s.label}! 체력을 {healed} 회복했다." : $"{s.label}! 체력은 이미 가득 차 있다.";
+            if (s.cleanse && GameManager.StatusTraitId > 0)
+            {
+                ClearPlayerStatus();
+                line += " 상태이상이 치료되었다.";
+            }
+            yield return Say(line);
+            yield return MonsterTurn();
+            busy = false;
+            yield break;
+        }
+
+        yield return Say($"{s.label}!");
+
+        bool sure = s.sureHit;
+        if (!sure && sureHitLeft > 0) { sureHitLeft--; sure = true; } // 필중 특성 횟수가 남아 있으면 스킬에도 쓴다
+        bool defending = monsterDefending && !sure;
+        monsterDefending = false;
+
+        bool worn = false, connected = false, notDodged = false;
+        int absorbed = 0;
+
+        for (int i = 0; i < s.hits && monsterHp > 0; i++)
+        {
+            PlaySound(SoundEvent.PlayerAttack);
+            string prefix = s.hits > 1 ? $"{i + 1}타! " : "";
+            if (sure && i == 0) prefix = "필중! " + prefix;
+
+            BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, monsterHp, defending, sure, s);
+            if (!r.dodged) notDodged = true;
+
+            if (r.dodged || r.noEffect)
+            {
+                if (defending) yield return Say($"{prefix}{name}의 방어에 성공했다!");
+                else if (r.dodged) yield return Say($"{prefix}{name}{Josa(name, "이", "가")} 공격을 피했다!");
+                else yield return Say($"{prefix}효과가 없는 것 같다...");
+            }
+            else
+            {
+                connected = true;
+                monsterHp = Mathf.Max(0, monsterHp - r.damage);
+                string wear = "";
+                if (!worn && inv != null) { wear = inv.WearEquipment(true); worn = true; } // 맞았을 때 한 번만 무기가 닳는다
+                hud.SetHp(monsterHp, monster.hpMax);
+                string crit = r.crit ? "치명타! " : "";
+                if (defending)
+                    yield return Say($"{prefix}{crit}{name}{Josa(name, "이", "가")} {r.damage}의 데미지를 받았다!{wear}");
+                else
+                    yield return Say($"{prefix}{crit}{r.damage}의 데미지를 주었다!{wear}");
+                absorbed += r.heal;
+
+                if (ShouldExecute())
+                {
+                    monsterHp = 0;
+                    hud.SetHp(0, monster.hpMax);
+                    yield return Say($"처형! {name}{Josa(name, "을", "를")} 쓰러뜨렸다!");
+                }
+            }
+            defending = false; // 방어 태세는 첫 타에만 통한다
+        }
+
+        if (connected) yield return InflictSkillStatus(s);
+
+        if (absorbed > 0)
+        {
+            int healed = HealPlayerRaw(absorbed);
+            if (healed > 0) yield return Say($"체력을 {healed} 흡수했다.");
+        }
+
+        if (notDodged)
+        {
+            string combatReward = Proficiency.Reward(ProficiencyKind.Combat);
+            if (combatReward.Length > 0) yield return Say(combatReward);
+        }
+
+        if (monsterHp <= 0)
+        {
+            yield return VictoryRoutine();
+            yield break;
+        }
+
+        yield return MonsterTurn();
+        busy = false;
+    }
+
+    // 스킬이 거는 상태이상 (스킬 표의 상태이상 ID, 부여 확률)
+    private IEnumerator InflictSkillStatus(SkillDef s)
+    {
+        if (s.inflictTraitId <= 0 || monsterHp <= 0) yield break;
+        TraitDef t = GameTables.Traits.Get(s.inflictTraitId);
+        if (t == null || !BattleCalc.Roll(s.inflictChance)) yield break;
+        if (statusTrait != null && statusTrait.id == t.id && statusTurnsLeft > 0) yield break; // 이미 걸려 있음
+
+        statusTrait = t;
+        statusTurnsLeft = t.dotTurns > 0 ? t.dotTurns : 999;
+        statusElapsed = 0;
+        string name = monster.monsterName;
+        yield return Say($"{name}에게 {t.label}{Josa(t.label, "이", "가")} 퍼졌다!");
     }
 
     // 흡수처럼 이미 회복량 감소가 적용된 값을 체력에 더한다. 실제로 오른 양을 돌려줌

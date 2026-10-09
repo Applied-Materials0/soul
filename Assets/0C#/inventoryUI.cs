@@ -176,17 +176,104 @@ public class InventoryManager : MonoBehaviour
     // =========================================================
     private ItemStack kbSelected;
 
+    // 탭 줄: 맨 위 슬롯에서 W를 누르면 올라간다. 장비 - 버프 - 숙련도 - 스탯 - 정렬 - 제작 (버튼 순서와 같음)
+    private const int TabEquip = 0, TabBuff = 1, TabProficiency = 2, TabStat = 3, TabSort = 4, TabCrafting = 5, TabCount = 6;
+    private bool tabFocus;
+    private int tabIndex;
+
+    // ---- 탭 줄 커서: 지금 올라가 있는 탭 버튼에 노란 테두리를 씌우고 살짝 키운다 ----
+    private int shownTabCursor = -1;
+
+    private Transform TabButton(int index)
+    {
+        if (inventoryUI == null) return null;
+        switch (index)
+        {
+            case TabEquip: return inventoryUI.transform.Find("EquipButton");
+            case TabBuff: return inventoryUI.transform.Find("BuffButton");
+            case TabProficiency: return inventoryUI.transform.Find("ProficiencyButton");
+            case TabStat: return inventoryUI.transform.Find("StatButton");
+            case TabSort: return inventoryUI.transform.Find("SortButton");
+            default: return craftRecipeButton != null ? craftRecipeButton.transform : null;
+        }
+    }
+
+    private void UpdateTabCursor()
+    {
+        shownTabCursor = tabFocus ? tabIndex : -1;
+        for (int i = 0; i < TabCount; i++)
+        {
+            Transform t = TabButton(i);
+            if (t == null) continue;
+            bool on = i == shownTabCursor;
+            Outline o = t.GetComponent<Outline>();
+            if (o == null && on)
+            {
+                o = t.gameObject.AddComponent<Outline>();
+                o.effectColor = new Color(1f, 0.9f, 0.2f, 1f);
+                o.effectDistance = new Vector2(5f, -5f);
+            }
+            if (o != null) o.enabled = on;
+            t.localScale = on ? Vector3.one * 1.1f : Vector3.one;
+        }
+    }
+
+    private void EnterTabMode(int index)
+    {
+        MarkKeyboardSelection(null);
+        tabFocus = true;
+        ShowTab(index);
+    }
+
+    // 탭 줄에서 가방 슬롯으로 내려간다: 떠 있던 창을 닫고 첫 슬롯을 고른다
+    private void ExitTabMode()
+    {
+        tabFocus = false;
+        CloseSidePanels();
+        CloseStat();
+        MoveKeyboardSelection(0, -1);
+    }
+
+    // 탭으로 옮기면 그 창이 뜬다 (누를 필요 없음). 정렬은 창이 없어서 옮겨 오는 순간 정렬한다.
+    private void ShowTab(int index)
+    {
+        tabIndex = index;
+        if (index != TabCrafting && recipePanel != null && recipePanel.IsOpen) recipePanel.Close(true);
+
+        switch (index)
+        {
+            case TabEquip: if (equipPanel != null && !equipPanel.activeSelf) ToggleEquipPanel(); break;
+            case TabBuff: if (buffPanel != null && !buffPanel.activeSelf) ToggleBuffPanel(); break;
+            case TabProficiency: if (profPanel != null && !profPanel.activeSelf) ToggleProficiencyPanel(); break;
+            case TabStat: if (StatUI != null && !StatUI.activeSelf) OpenStat(); break;
+            case TabSort:
+                CloseSidePanels();
+                if (StatUI != null) StatUI.SetActive(false);
+                OnClickSort();
+                break;
+            case TabCrafting:
+                CloseSidePanels();
+                if (StatUI != null) StatUI.SetActive(false);
+                if (recipePanel == null || !recipePanel.IsOpen) ToggleRecipePanel();
+                break;
+        }
+    }
+
     private void HandleBagKeys()
     {
-        // 수리 창이 떠 있으면 그것만 조작: Space/Enter = 수리, Q = 취소
-        Transform rp = inventoryUI.transform.Find("RepairPopup");
-        if (rp != null)
+        // 수리 창이 떠 있으면 수리 창(RepairPopup)이 키를 쓴다 (A/D 커서, Space 누르기, ESC 닫기)
+        if (inventoryUI.transform.Find("RepairPopup") != null) return;
+
+        // 탭 줄에 있으면: A/D로 장비 - 버프 - 숙련도 - 스탯 - 정렬 - 제작 사이를 옮기고, 옮기면 그 창이 뜬다
+        if (tabFocus)
         {
-            RepairPopup popup = rp.GetComponent<RepairPopup>();
-            if (popup != null)
+            if (recipePanel != null && recipePanel.PopupOpen) return; // 제작 창이 열려 있으면 그쪽이 키를 쓴다
+            if ((Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A)) && tabIndex > 0) ShowTab(tabIndex - 1);
+            else if ((Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) && tabIndex < TabCount - 1) ShowTab(tabIndex + 1);
+            else if ((Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) && tabIndex != TabCrafting)
             {
-                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)) popup.Confirm();
-                else if (Input.GetKeyDown(KeyCode.Q)) popup.Close();
+                if (tabIndex == TabEquip) tabFocus = false; // 장비창이면 아래의 장비 칸으로 들어감
+                else ExitTabMode();                          // 나머지는 가방 슬롯으로 내려감 (제작 탭은 W/S를 제작 목록이 씀)
             }
             return;
         }
@@ -194,7 +281,7 @@ public class InventoryManager : MonoBehaviour
         // 제작 레시피 창이 열려 있으면 슬롯 이동 키는 쓰지 않는다
         if (recipePanel != null && recipePanel.IsOpen) return;
 
-        // 장비창이 열려 있으면 W/A/S/D로 장비 칸 사이를 옮기고(설명이 뜸), Space로 선택한 장비를 해제한다
+        // 장비창이 열려 있으면 W/A/S/D로 장비 칸 사이를 옮기고(설명이 뜸), Space로 선택한 장비를 해제한다. 맨 위(머리)에서 W를 더 누르면 탭 줄로 올라감
         if (equipPanel != null && equipPanel.activeSelf && equipSlots != null)
         {
             int ex = 0, ey = 0;
@@ -202,7 +289,12 @@ public class InventoryManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D)) ex = 1;
             else if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W)) ey = 1;
             else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S)) ey = -1;
-            if (ex != 0 || ey != 0) equipSlots.Move(ex, ey);
+            if (ex != 0 || ey != 0)
+            {
+                bool moved = equipSlots.Move(ex, ey);
+                if (!moved && ey == 1) EnterTabMode(TabEquip);
+                return;
+            }
             if (Input.GetKeyDown(KeyCode.Space)) equipSlots.ActivateSelected();
             return;
         }
@@ -223,6 +315,7 @@ public class InventoryManager : MonoBehaviour
     // 마우스로 슬롯을 눌렀을 때도 키보드 선택이 거기서 이어지게 한다
     public void MarkKeyboardSelection(ItemStack stack)
     {
+        if (stack != null) tabFocus = false; // 슬롯을 고르면 탭 줄에서 내려온 것
         SetKeyboardHighlight(kbSelected, false);
         kbSelected = stack;
         SetKeyboardHighlight(kbSelected, true);
@@ -238,7 +331,7 @@ public class InventoryManager : MonoBehaviour
         List<ItemStack> shown = new List<ItemStack>();
         foreach (ItemStack s in itemList)
             if (dynamicSlots.TryGetValue(s, out ItemSlot sl) && sl != null && sl.gameObject.activeInHierarchy) shown.Add(s);
-        if (shown.Count == 0) return;
+        if (shown.Count == 0) { if (dy == 1) EnterTabMode(TabEquip); return; } // 가방이 비었어도 W로 탭 줄에 올라갈 수 있다
 
         // 처음이거나 선택한 것이 사라졌으면 첫 슬롯부터
         if (kbSelected == null || !shown.Contains(kbSelected)) { SelectByKeyboard(shown[0]); return; }
@@ -258,6 +351,7 @@ public class InventoryManager : MonoBehaviour
             if (score < bestScore) { bestScore = score; best = s; }
         }
         if (best != null) SelectByKeyboard(best);
+        else if (dy == 1) EnterTabMode(TabEquip); // 맨 위 줄에서 W: 탭 줄로 올라가 장비창이 뜸
     }
 
     // 슬롯을 고르면 정보창이 열린다 (마우스로 누른 것과 같음)
@@ -274,6 +368,8 @@ public class InventoryManager : MonoBehaviour
     {
         if (inventoryUI != null && inventoryUI.activeInHierarchy)
         {
+            if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.Z)
+                || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.T)) tabFocus = false; // 단축키를 쓰면 탭 줄 조작은 끝
             if (Input.GetKeyDown(KeyCode.C)) ToggleRecipePanel();
             if (Input.GetKeyDown(KeyCode.X)) OnClickSort();
             if (Input.GetKeyDown(KeyCode.Z)) OpenStat();
@@ -281,6 +377,7 @@ public class InventoryManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.R)) ToggleBuffPanel();
             if (Input.GetKeyDown(KeyCode.T)) ToggleProficiencyPanel();
             HandleBagKeys();
+            if (shownTabCursor != (tabFocus ? tabIndex : -1)) UpdateTabCursor();
         }
 
         if (bagGaugeFill == null || inventoryUI == null || !inventoryUI.activeInHierarchy) return;
@@ -616,6 +713,8 @@ public class InventoryManager : MonoBehaviour
     {
         HideBagMessageNow();
         MarkKeyboardSelection(null);
+        tabFocus = false;
+        UpdateTabCursor();
         if (inventoryUI != null)
         {
             Transform rp = inventoryUI.transform.Find("RepairPopup");
@@ -773,6 +872,7 @@ public class InventoryManager : MonoBehaviour
                 targetStack.durability = usedTool.durabilitymax;
             }
         }
+        if (isBroken) RecalcEquipment(); // 장착 중이던 도구가 부서졌으면 장착 해제
         RefreshAllSlotMarks(); // 도구 슬롯의 내구도 테두리를 갱신
         return usedTool;
     }
@@ -867,7 +967,7 @@ public class InventoryManager : MonoBehaviour
     // =========================================================
     // 내구도(durabilitymax)가 0인 도구는 닳지 않는 도구다 (예: 가죽 물통). 내구도 검사와 소모를 하지 않는다.
     public const int UnbreakableDurability = 1000000; // 닳지 않는 도구의 "남은 내구도"로 취급하는 값 (화면에서는 "제한 없음")
-    private static bool IsUnbreakable(ItemStack s) { return s.itemData.durabilitymax <= 0; }
+    private static bool IsUnbreakable(ItemStack s) { return !s.itemData.CanBreak; }
     private static bool IsUsableTool(ItemStack s) { return IsUnbreakable(s) || s.durability > 0; }
 
     private List<ItemStack> EligibleTools(ToolType type, int tier)
@@ -1092,10 +1192,11 @@ public class InventoryManager : MonoBehaviour
 
         string exp = (g == null || g.expToNext <= 0 || tier >= grades.MaxTier) ? $"{s.exp} (MAX)" : $"{s.exp} / {g.expToNext}";
         title = $"<b>{DisplayName(s)}</b>\n<size=80%>등급 {grades.NameOf(tier)} (Tier {tier})   Lv.{tier}\n경험치 {exp}";
-        if (it.durabilitymax > 0) title += $"   내구도 {s.durability}/{it.durabilitymax}";
+        if (it.CanBreak) title += $"   내구도 {s.durability}/{it.durabilitymax}";
         title += "</size>";
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        if (it.weaponType != WeaponType.None) sb.AppendLine($"무기 종류  {WeaponTypeInfo.Name(it.weaponType)}");
         int at = Mathf.RoundToInt(it.at * m), df = Mathf.RoundToInt(it.df * m), hp = Mathf.RoundToInt(it.hp * m), fix = Mathf.RoundToInt(it.fixat * m);
         if (at != 0) sb.AppendLine($"공격력  {at:+0;-0}");
         if (df != 0) sb.AppendLine($"방어력  {df:+0;-0}");
@@ -1119,6 +1220,14 @@ public class InventoryManager : MonoBehaviour
         body = sb.ToString();
     }
 
+    // 이 종류의 (멀쩡한) 무기를 장착하고 있는가
+    public bool HasEquippedWeaponType(WeaponType type)
+    {
+        foreach (ItemStack s in EquippedIn(EquipSlot.Weapon))
+            if (IsWorking(s) && s.itemData.weaponType == type) return true;
+        return false;
+    }
+
     // 그 부위에 장착한 스택들 (없으면 빈 목록)
     public List<ItemStack> EquippedIn(EquipSlot slot)
     {
@@ -1132,7 +1241,7 @@ public class InventoryManager : MonoBehaviour
     }
 
     // 부서진(내구도 0인) 장비는 능력치가 적용되지 않는다
-    private static bool IsWorking(ItemStack s) { return s != null && (s.itemData.durabilitymax <= 0 || s.durability > 0); }
+    private static bool IsWorking(ItemStack s) { return s != null && (!s.itemData.CanBreak || s.durability > 0); }
 
     public bool Equip(ItemStack stack, out string message)
     {
@@ -1277,6 +1386,7 @@ public class InventoryManager : MonoBehaviour
         {
             if (!IsWorking(s)) continue;
             TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
+            if (t != null && t.weaponType != WeaponType.None && t.weaponType != s.itemData.weaponType) continue; // 무기 종류가 정해진 특성은 그 종류의 무기에서만
             if (t != null) result.Add(new TraitSource { trait = t, source = s.itemData.itemName });
         }
         TraitDef innate = GameTables.Traits.Get(GameTables.PlayerBase.innateTraitId);
@@ -1287,6 +1397,9 @@ public class InventoryManager : MonoBehaviour
     // 장착한 장비와 가방의 도구를 모아 플레이어의 장비 능력치를 다시 계산한다 (가방/장착이 바뀔 때마다 부름)
     public void RecalcEquipment()
     {
+        // 파괴된(내구도 0) 장비는 자동으로 장착 해제된다 (가방에는 "파괴된 ..."으로 남고, 수리하면 다시 장착할 수 있음)
+        foreach (List<ItemStack> list in equipped.Values) list.RemoveAll(s => !IsWorking(s));
+
         int at = 0, df = 0, hp = 0, fixAt = 0, slotB = 0, weightB = 0, sp = 0, mana = 0;
         float atRate = 0f, dfRate = 0f, hpRate = 0f, hpRateAt = 0f, breakDf = 0f, abs = 0f, avoid = 0f;
         float crit = 0f, critRate = 0f, goldRate = 0f, expRate = 0f;
@@ -1490,7 +1603,7 @@ public class InventoryManager : MonoBehaviour
                     if (i >= list.Count) { sb.AppendLine($"{label} : -"); continue; }
 
                     ItemStack s = list[i];
-                    string dur = s.itemData.durabilitymax > 0
+                    string dur = s.itemData.CanBreak
                         ? (s.durability > 0 ? $"  ({s.durability}/{s.itemData.durabilitymax})" : "  <color=#C00000>(파괴됨)</color>")
                         : "";
                     TraitDef t = GameTables.Traits.Get(s.itemData.traitId);
@@ -1621,7 +1734,7 @@ public class InventoryManager : MonoBehaviour
         List<string> worn = new List<string>();
         foreach (ItemStack s in targets.ToArray())
         {
-            if (s.itemData.durabilitymax <= 0 || s.durability <= 0) continue;
+            if (!s.itemData.CanBreak || s.durability <= 0) continue;
             s.durability -= 1;
             changed = true;
             worn.Add($"{s.itemData.itemName} {s.durability}/{s.itemData.durabilitymax}");
@@ -1629,7 +1742,7 @@ public class InventoryManager : MonoBehaviour
             if (s.durability <= 0)
             {
                 s.durability = 0;
-                ItemGainToast.ShowBroken(s.itemData, "장비가 파괴되었다!");
+                ItemGainToast.ShowBroken(s.itemData, "장비가 파괴되어 해제되었다!");
             }
         }
         if (changed) RecalcEquipment();
@@ -1639,13 +1752,13 @@ public class InventoryManager : MonoBehaviour
     // ---- 수리 ----
     public static bool NeedsRepair(ItemStack s)
     {
-        return s != null && s.itemData.durabilitymax > 0 && s.durability <= 0;
+        return s != null && s.itemData.CanBreak && s.durability <= 0;
     }
 
     // 내구도에 따른 경고색: 남은 내구도가 50% 이하면 주황, 10% 이하(파괴 포함)면 빨강. 문제가 없으면 null
     public static Color? WearColor(ItemStack s)
     {
-        if (s == null || s.itemData == null || s.itemData.durabilitymax <= 0) return null;
+        if (s == null || s.itemData == null || !s.itemData.CanBreak) return null;
         if (s.durability <= 0) return WearRed;
         float left = s.durability / (float)s.itemData.durabilitymax;
         if (left <= 0.1f) return WearRed;

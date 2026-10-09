@@ -89,6 +89,7 @@ public static class GameTime
                 Exhaustion.Reset();
                 GameManager.FirstStrikeUsed = 0;
                 GameManager.SP = GameManager.SPMax;
+                GameManager.Mana = GameManager.ManaMax;
                 break;
         }
         PlayerUI.RefreshAll();
@@ -128,7 +129,8 @@ public static class GameTime
                 Exhaustion.Reset();
                 GameManager.FirstStrikeUsed = 0;
                 GameManager.SP = GameManager.SPMax;
-                message = "푹 자고 일어났다. " + Day + "일째 오전, 날씨는 " + WeatherName(Weather) + ".\n체력과 SP가 가득 찼다.";
+                GameManager.Mana = GameManager.ManaMax;
+                message = "푹 자고 일어났다. " + Day + "일째 오전, 날씨는 " + WeatherName(Weather) + ".\n체력, SP, 마나가 가득 찼다.";
                 break;
             }
         }

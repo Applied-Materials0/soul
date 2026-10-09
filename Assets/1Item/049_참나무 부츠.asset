@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "041_\uAD6C\uB9AC \uD310"
+  m_Name: "049_\uCC38\uB098\uBB34 \uBD80\uCE20"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 41
-  itemName: "\uAD6C\uB9AC \uD310"
-  weight: 400
-  countmax: 99
+  id: 49
+  itemName: "\uCC38\uB098\uBB34 \uBD80\uCE20"
+  weight: 250
+  countmax: 1
   durabilitymax: 0
   toolType: 0
   tier: 0
@@ -58,6 +58,6 @@ MonoBehaviour:
   recipe:
     ingredients: []
     tools: []
-    resultItemId: 41
+    resultItemId: 49
     resultAmount: 1
     spCost: 0

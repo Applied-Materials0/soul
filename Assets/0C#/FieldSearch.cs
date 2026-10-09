@@ -99,6 +99,7 @@ public class FieldSearch : MonoBehaviour
     // 키보드 단축키: Space 탐색, E 채집, A 공격, S 스킬, D 방어, R 도망 (가방/지도가 열려 있으면 쓰지 않음)
     private void Update()
     {
+        if (SkillPanel.IsOpen) return; // 스킬 창이 키(W/S/Space)를 쓴다
         if (InventoryManager.Instance != null && InventoryManager.Instance.IsInventoryOpen) return;
         if (MapManager.Instance != null && MapManager.Instance.IsMapOpen) return;
 
@@ -545,7 +546,21 @@ public class FieldSearch : MonoBehaviour
     {
         SearchAudio.Stop();
         BtnAudio.Play();
-        SearchText.text = "스킬창 오픈!";
+
+        if (battle == null || !battle.Active) { SearchText.text = "스킬을 쓸 상대가 없다."; return; }
+        if (SkillPanel.Instance == null) { SearchText.text = "스킬 창(SkillPanel)이 장면에 없다."; return; }
+        if (battle.CanAct || SkillPanel.IsOpen) SkillPanel.Instance.Toggle(); // 내 차례일 때 스킬 창을 열고, 다시 누르면 닫는다
+    }
+
+    // 스킬 창에서 고른 스킬을 쓴다 (쓸 수 없으면 false)
+    public bool UseSkill(SkillDef skill)
+    {
+        return battle != null && battle.UseSkill(skill);
+    }
+
+    public string SkillBlockReason(SkillDef skill)
+    {
+        return battle != null ? battle.SkillBlockReason(skill) : "전투 중에만 쓸 수 있다";
     }
 
     // =========================================================

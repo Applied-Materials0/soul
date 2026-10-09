@@ -42,7 +42,8 @@ MonoBehaviour:
   spmax: 0
   weightmax: 0
   slotmax: 0
-  equipSlot: 0
+  equipSlot: 1
+  weaponType: 3
   traitId: 0
   repairIngredients: []
   repairItemId: 0

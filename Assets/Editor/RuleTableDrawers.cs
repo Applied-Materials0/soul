@@ -301,6 +301,7 @@ public static class RuleTableDrawers
         new[] { "ID", "id", "40", "특성 번호 (장비의 '특성ID'에 적음)" },
         new[] { "이름", "label", "90", "버프 창에 보이는 이름" },
         new[] { "디버프", "debuff", "50", "켜면 디버프 특성: 상대가 걸 때, 이미 같은 특성을 가진 쪽에는 걸리지 않음" },
+        new[] { "무기 종류", "weaponType", "80", "정해 두면 그 종류의 무기(메이스/배틀 엑스/활/검)에 이 특성이 붙어 있을 때만 적용. None이면 어떤 장비든" },
         new[] { "공격 증가량 %", "atRate", "80", "공격력 증감 [%] (마이너스면 감소)" },
         new[] { "방어 증가량 %", "dfRate", "80", "방어력 증감 [%] (마이너스면 디버프)" },
         new[] { "체력 증가량 %", "hpRate", "80", "최대 체력 증감 [%]" },
@@ -709,6 +710,127 @@ public static class RuleTableDrawers
 
         bool changed = EditorGUI.EndChangeCheck();
         so.ApplyModifiedProperties();
+        return changed;
+    }
+
+    private static readonly string[][] SkillCols =
+    {
+        // 제목, 변수, 너비, 설명(칸 이름에 마우스를 올리면 보임)
+        new[] { "ID", "id", "40", "스킬 번호" },
+        new[] { "이름", "label", "100", "스킬 창에 보이는 이름" },
+        new[] { "종류", "kind", "80", "공격: 적을 공격 / 회복: 내 체력을 회복" },
+        new[] { "필요 레벨", "unlockLevel", "70", "플레이어가 이 레벨이 되면 쓸 수 있음" },
+        new[] { "무기 종류", "weaponType", "80", "정해 두면 그 종류의 무기를 장착해야 쓸 수 있음 (None = 어떤 무기든)" },
+        new[] { "마나 소모", "manaCost", "70", "쓸 때 드는 마나 (특성 '스킬 마나 감소 %'만큼 줄어듦). 마나는 다음 날이 되면 가득 참" },
+        new[] { "SP 소모", "spCost", "65", "쓸 때 드는 SP" },
+        new[] { "쿨다운 턴", "cooldown", "70", "쓴 뒤 다시 쓰기까지 기다리는 턴 수 (한 전투 안에서)" },
+        new[] { "타수", "hits", "50", "한 번에 연속으로 때리는 횟수 (공격 스킬)" },
+        new[] { "위력 %", "powerPercent", "70", "한 번당 공격력. 100이면 일반 공격과 같음 (공격 스킬)" },
+        new[] { "고정 데미지", "fixedDamage", "75", "한 번당 더해지는 고정 데미지 (공격 스킬)" },
+        new[] { "방어 관통 %", "breakDf", "75", "이 스킬에서만 더해지는 방어 관통 (공격 스킬)" },
+        new[] { "치명타 확률 %", "criticalRate", "85", "이 스킬에서만 더해지는 치명타 확률 (공격 스킬)" },
+        new[] { "필중", "sureHit", "45", "켜면 적의 회피와 방어 태세를 무시 (공격 스킬)" },
+        new[] { "상태이상 ID", "inflictTraitId", "80", "맞췄을 때 적에게 거는 상태이상 (특성 표의 ID, 0 = 없음. 예: 1 = 독)" },
+        new[] { "부여 확률 %", "inflictChance", "80", "상태이상을 거는 확률" },
+        new[] { "회복량", "healAmount", "65", "회복 스킬: 고정 회복량" },
+        new[] { "회복량 %", "healPercent", "70", "회복 스킬: 최대 체력의 이 비율만큼 회복" },
+        new[] { "상태이상 치료", "cleanse", "85", "회복 스킬: 내게 걸린 상태이상을 지움" },
+        new[] { "설명", "description", "380", "스킬 창에 보이는 설명" },
+    };
+
+    private static Vector2 skillScroll;
+
+    public static bool DrawSkillTable(SerializedObject so)
+    {
+        so.Update();
+        EditorGUI.BeginChangeCheck();
+
+        EditorGUILayout.HelpBox(
+            "전투에서 [스킬] 버튼(S 키)을 누르면 스킬 창이 뜨고, 고른 스킬을 쓰면 이번 턴을 씁니다. 값이 0(또는 꺼짐)인 칸은 그 효과가 없다는 뜻이니 필요한 칸만 채우세요. " +
+            "마나는 최대 마나(기본 능력치 표 + 장비 특성) 안에서 쓰고, 다음 날이 되면 가득 찹니다. " +
+            "구분: 타수~상태이상 부여 확률은 공격 스킬, 회복량~상태이상 치료는 회복 스킬 칸입니다. 표가 넓으니 아래 스크롤바로 옆으로 움직입니다.",
+            MessageType.None);
+
+        SerializedProperty list = so.FindProperty("skills");
+
+        const float rowH = 20f, headH = 34f, gap = 2f, delW = 28f;
+        float[] widths = new float[SkillCols.Length];
+        float total = delW;
+        for (int i = 0; i < SkillCols.Length; i++) { widths[i] = float.Parse(SkillCols[i][2]); total += widths[i] + gap; }
+
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        skillScroll = EditorGUILayout.BeginScrollView(skillScroll, true, false);
+
+        Rect hr = GUILayoutUtility.GetRect(total, headH);
+        float x = hr.x;
+        for (int i = 0; i < SkillCols.Length; i++)
+        {
+            GUI.Label(new Rect(x, hr.y, widths[i], headH), new GUIContent(SkillCols[i][0], SkillCols[i][3]), header);
+            x += widths[i] + gap;
+        }
+
+        int removeAt = -1;
+        for (int r = 0; r < list.arraySize; r++)
+        {
+            SerializedProperty t = list.GetArrayElementAtIndex(r);
+            Rect rr = GUILayoutUtility.GetRect(total, rowH);
+            x = rr.x;
+            for (int i = 0; i < SkillCols.Length; i++)
+            {
+                SerializedProperty p = t.FindPropertyRelative(SkillCols[i][1]);
+                Rect cell = new Rect(x, rr.y, widths[i], rowH);
+                if (p != null && p.propertyType == SerializedPropertyType.Boolean)
+                    p.boolValue = EditorGUI.Toggle(new Rect(cell.x + (cell.width - 14f) / 2f, cell.y, 14f, cell.height), p.boolValue);
+                else
+                    TableField.Draw(cell, p);
+                x += widths[i] + gap;
+            }
+            if (GUI.Button(new Rect(x, rr.y, delW - 2f, rowH), "X")) removeAt = r;
+        }
+        if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        EditorGUILayout.EndScrollView();
+
+        if (GUILayout.Button("+ 스킬 추가", GUILayout.Height(24)))
+        {
+            int maxId = 0;
+            for (int i = 0; i < list.arraySize; i++)
+                maxId = Mathf.Max(maxId, list.GetArrayElementAtIndex(i).FindPropertyRelative("id").intValue);
+
+            list.InsertArrayElementAtIndex(list.arraySize);
+            SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            foreach (string[] c in SkillCols)
+            {
+                SerializedProperty p = added.FindPropertyRelative(c[1]);
+                if (p == null) continue;
+                switch (p.propertyType)
+                {
+                    case SerializedPropertyType.Integer:
+                    case SerializedPropertyType.Enum: p.intValue = 0; break;
+                    case SerializedPropertyType.Float: p.floatValue = 0f; break;
+                    case SerializedPropertyType.Boolean: p.boolValue = false; break;
+                    case SerializedPropertyType.String: p.stringValue = ""; break;
+                }
+            }
+            added.FindPropertyRelative("id").intValue = maxId + 1;
+            added.FindPropertyRelative("label").stringValue = "새 스킬";
+            added.FindPropertyRelative("unlockLevel").intValue = 1;
+            added.FindPropertyRelative("hits").intValue = 1;
+            added.FindPropertyRelative("powerPercent").floatValue = 100f;
+        }
+
+        bool changed = EditorGUI.EndChangeCheck();
+        so.ApplyModifiedProperties();
+
+        EditorGUILayout.Space();
+        if (GUILayout.Button("기본값으로 되돌리기") &&
+            EditorUtility.DisplayDialog("기본값으로 되돌리기", "스킬 표의 모든 값이 처음 기본값으로 바뀝니다. 계속할까요?", "되돌리기", "취소"))
+        {
+            Undo.RecordObject(so.targetObject, "Reset Skill Table");
+            ((SkillTable)so.targetObject).ResetToDefaults();
+            EditorUtility.SetDirty(so.targetObject);
+            changed = true;
+        }
         return changed;
     }
 }

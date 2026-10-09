@@ -28,6 +28,7 @@ public class CraftRecipePanel : MonoBehaviour
     private int selIndex;
 
     public bool IsOpen { get; private set; }
+    public bool PopupOpen { get { return popup != null && popup.gameObject.activeSelf; } } // 개별 제작 창이 떠 있는가
 
     // =========================================================
     //  생성

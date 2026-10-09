@@ -65,10 +65,11 @@ public class EquipmentSlots : MonoBehaviour
     }
 
     // 키보드 이동: 칸의 실제 위치를 보고 그 방향에서 가장 가까운 칸으로 간다
-    public void Move(int dx, int dy)
+    // 옮겼으면 true (그 방향에 칸이 없으면 false)
+    public bool Move(int dx, int dy)
     {
-        if (!interactive || views == null || views.Length == 0) return;
-        if (selected == null) { selected = views[0]; Refresh(); return; }
+        if (!interactive || views == null || views.Length == 0) return false;
+        if (selected == null) { selected = views[0]; Refresh(); return true; }
 
         Vector2 from = selected.Rect.anchoredPosition;
         Vector2 dir = new Vector2(dx, dy);
@@ -84,7 +85,9 @@ public class EquipmentSlots : MonoBehaviour
             float score = along + across * 2f;
             if (score < bestScore) { bestScore = score; best = v; }
         }
-        if (best != null) Select(best);
+        if (best == null) return false;
+        Select(best);
+        return true;
     }
 
     // 선택한 칸의 장비를 해제한다 (전투 중이면 이번 턴을 씀)

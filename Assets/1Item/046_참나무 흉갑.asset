@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d11075acb670dd741961314f20334d02, type: 3}
-  m_Name: "040_\uAD6C\uB9AC \uC8FC\uAD34"
+  m_Name: "046_\uCC38\uB098\uBB34 \uD749\uAC11"
   m_EditorClassIdentifier: Assembly-CSharp::Item
-  id: 40
-  itemName: "\uAD6C\uB9AC \uC8FC\uAD34"
-  weight: 400
-  countmax: 99
+  id: 46
+  itemName: "\uCC38\uB098\uBB34 \uD749\uAC11"
+  weight: 500
+  countmax: 1
   durabilitymax: 0
   toolType: 0
   tier: 0
@@ -42,7 +42,8 @@ MonoBehaviour:
   spmax: 0
   weightmax: 0
   slotmax: 0
-  equipSlot: 0
+  equipSlot: 3
+  weaponType: 0
   traitId: 0
   repairIngredients: []
   repairItemId: 0
@@ -58,6 +59,6 @@ MonoBehaviour:
   recipe:
     ingredients: []
     tools: []
-    resultItemId: 40
+    resultItemId: 46
     resultAmount: 1
     spCost: 0
