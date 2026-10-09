@@ -166,7 +166,7 @@ public class FieldSearch : MonoBehaviour
         SearchAudio.Play();
 
         // 1단계: 무엇이 나올지를 탐색 결과 표(SearchTable)의 비중대로 정함
-        SearchOutcome outcome = GameTables.Search.Pick();
+        SearchOutcome outcome = GameTables.Search.Pick(GameManager.selectedRegionID);
         if (outcome == null)
         {
             Debug.LogWarning("[FieldSearch] 탐색 결과 표의 비중이 모두 0입니다. Soul > 데이터 표 > [탐색 결과] 탭을 확인하세요.");
@@ -369,7 +369,7 @@ public class FieldSearch : MonoBehaviour
 
         // 채집 숙련도: 이 도구 종류에 맞는 숙련도가 있으면 레벨의 보너스만큼 한 번에 채집하는 양이 늘어난다
         if (gatherProf != null)
-            damage = Mathf.Max(damage, Mathf.RoundToInt(damage * BattleCalc.Mult(Proficiency.Bonus(gatherProf))));
+            damage += Proficiency.Bonus(gatherProf); // 수확 보너스(정량)
 
         // 3. 자원 차감 및 인벤토리 추가
         int wanted = Mathf.Min(sourceHP, damage);

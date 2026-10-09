@@ -25,11 +25,11 @@ public class ProficiencyLevel
 {
     public int level;                   // 숙련도 레벨 (표가 자동으로 맞춤)
     [Min(0)] public int expToNext;      // 다음 숙련도 레벨까지 필요한 경험치 (마지막 레벨은 0)
-    public float bonusPercent;          // 수확 보너스 [%] (얻는 수량이 이만큼 늘어남). 회복 숙련도에서는 독 내성 [%]
+    public int bonus;                   // 수확 보너스 (얻는 수량이 이만큼 늘어남). 회복 숙련도에서는 독 내성 (방어력 감소를 이만큼 줄이고, 독 지속 피해도 이만큼 줄임)
     [Min(0)] public int extraMin;       // 채집/도려내기 때 같은 아이템을 최소 이만큼 더 얻음
     [Min(0)] public int extraMax;       // 최대 이만큼 더 얻음 (최소~최대 중에서 뽑음)
-    public float expBonusPercent;       // 이 숙련도 행동으로 얻는 플레이어 레벨 경험치가 늘어나는 비율 [%]
-    public float spReducePercent;       // 이 숙련도 행동에 드는 SP가 줄어드는 비율 [%]
+    public int expBonus;                // 이 숙련도 행동으로 얻는 플레이어 레벨 경험치가 이만큼 늘어남 (+1이면 1 증가)
+    public int spReduce;                // 이 숙련도 행동에 드는 SP가 이만큼 줄어듦 (-1이면 1 감소. 0 밑으로는 안 내려감)
 }
 
 [System.Serializable]
@@ -136,14 +136,14 @@ public class ProficiencyTable : ScriptableObject
         {
             int lv = i + 1;
             ProficiencyLevel l = new ProficiencyLevel { level = lv, expToNext = exp[i] };
-            l.bonusPercent = (recovery || kind == ProficiencyKind.Carving || gatherLike) ? i * 10f : 0f;
+            l.bonus = (recovery || kind == ProficiencyKind.Carving || gatherLike) ? i : 0;
             if (gatherLike || kind == ProficiencyKind.Carving)
             {
                 l.extraMin = lv >= 7 ? 1 : 0;
                 l.extraMax = lv >= 7 ? 2 : (lv >= 4 ? 1 : 0);
             }
-            l.expBonusPercent = i * 5f;
-            l.spReducePercent = (gatherLike || combat || searching || kind == ProficiencyKind.Carving) ? i * 3f : 0f;
+            l.expBonus = i / 3;
+            l.spReduce = (gatherLike || combat || searching || kind == ProficiencyKind.Carving) ? i / 3 : 0;
             def.levels.Add(l);
         }
         return def;

@@ -62,12 +62,8 @@ public class EquipSlotView : MonoBehaviour, IPointerEnterHandler, IPointerClickH
     // 내구도를 얼마나 썼는가에 따른 테두리 색
     public static Color BorderColor(ItemStack s)
     {
-        if (s == null || s.itemData.durabilitymax <= 0) return EmptyBorder;
-        if (s.durability <= 0) return DangerBorder;
-        float used = 1f - Mathf.Clamp01(s.durability / (float)s.itemData.durabilitymax);
-        if (used >= 0.9f) return DangerBorder;
-        if (used >= 0.5f) return WornBorder;
-        return EmptyBorder;
+        Color? c = InventoryManager.WearColor(s); // 인벤토리와 같은 기준 (남은 내구도 50% 이하 주황, 10% 이하 빨강)
+        return c.HasValue ? c.Value : EmptyBorder;
     }
 
     public void OnPointerEnter(PointerEventData e)

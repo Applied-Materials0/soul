@@ -86,6 +86,8 @@ public static class GameTime
                 Period = DayPeriod.Morning;
                 Weather = RollWeather();
                 GameManager.Hp = BattleCalc.PlayerMaxHp();
+                Exhaustion.Reset();
+                GameManager.FirstStrikeUsed = 0;
                 GameManager.SP = GameManager.SPMax;
                 break;
         }
@@ -123,6 +125,8 @@ public static class GameTime
                 Period = DayPeriod.Morning;
                 Weather = RollWeather();
                 GameManager.Hp = BattleCalc.PlayerMaxHp();
+                Exhaustion.Reset();
+                GameManager.FirstStrikeUsed = 0;
                 GameManager.SP = GameManager.SPMax;
                 message = "Ç« ÀÚ°í ÀÏ¾î³µ´Ù. " + Day + "ÀÏÂ° ¿ÀÀü, ³¯¾¾´Â " + WeatherName(Weather) + ".\nÃ¼·Â°ú SP°¡ °¡µæ Ã¡´Ù.";
                 break;

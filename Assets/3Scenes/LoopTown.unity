@@ -3095,8 +3095,8 @@ MonoBehaviour:
     exp: 0
   - itemData: {fileID: 11400000, guid: e0ced2cf296500d47a65150e5275d737, type: 2}
     amount: 1
-    durability: 48
-    grade: 0
+    durability: 0
+    grade: 1
     exp: 0
 --- !u!1 &1194302614
 GameObject:
@@ -5745,6 +5745,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NightOverlay
   fadeSeconds: 1.2
+  overcastAlpha: 0.22
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

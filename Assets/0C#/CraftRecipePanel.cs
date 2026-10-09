@@ -19,6 +19,13 @@ public class CraftRecipePanel : MonoBehaviour
     private TextMeshProUGUI emptyText;
     private CraftQuantityPopup popup;
     private Coroutine slideRoutine;
+    private ScrollRect scrollRect;
+    private RectTransform viewportRt;
+
+    // 키보드로 고르는 목록 항목
+    private class Entry { public Item item; public Image bg; public bool canCraft; }
+    private readonly List<Entry> entries = new List<Entry>();
+    private int selIndex;
 
     public bool IsOpen { get; private set; }
 
@@ -89,6 +96,8 @@ public class CraftRecipePanel : MonoBehaviour
         content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
         ScrollRect sr = scroll.gameObject.AddComponent<ScrollRect>();
+        scrollRect = sr;
+        viewportRt = viewport;
         sr.viewport = viewport;
         sr.content = content;
         sr.horizontal = false;
@@ -209,6 +218,7 @@ public class CraftRecipePanel : MonoBehaviour
     // 도감(ItemDatabase)에서 레시피가 있는 아이템을 id 순서로 모아 목록을 다시 만든다
     private void Rebuild()
     {
+        entries.Clear();
         foreach (Transform child in content)
         {
             child.gameObject.SetActive(false);
@@ -233,6 +243,8 @@ public class CraftRecipePanel : MonoBehaviour
                 shown++;
             }
         }
+        selIndex = Mathf.Clamp(selIndex, 0, Mathf.Max(0, entries.Count - 1));
+        UpdateSelectionVisual();
         emptyText.gameObject.SetActive(shown == 0);
     }
 
@@ -255,6 +267,7 @@ public class CraftRecipePanel : MonoBehaviour
         button.onClick.AddListener(() => OnClickRecipe(item));
 
         go.GetComponent<LayoutElement>().preferredHeight = 110f;
+        entries.Add(new Entry { item = item, bg = bg, canCraft = canCraft });
 
         HorizontalLayoutGroup h = go.GetComponent<HorizontalLayoutGroup>();
         h.spacing = 14f;
@@ -317,6 +330,60 @@ public class CraftRecipePanel : MonoBehaviour
             parts.Add($"<color={spColor}>[SP -{spCost}]</color>");
         }
         text.text = title + "\n" + string.Join("   ", parts);
+    }
+
+    // =========================================================
+    //  키보드: W/S로 제작 항목 고르기, Space로 그 항목의 제작 창 열기 (제작 창 안의 키는 CraftQuantityPopup이 처리)
+    // =========================================================
+    void Update()
+    {
+        if (!IsOpen) return;
+        if (popup != null && popup.gameObject.activeSelf) return;      // 제작 창이 열려 있으면 그쪽이 키를 쓴다
+        if (CraftQuantityPopup.ClosedFrame == Time.frameCount) return; // 방금 제작 창을 닫은 Space는 무시
+
+        int move = 0;
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) move = -1;
+        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) move = 1;
+        if (move != 0 && entries.Count > 0)
+        {
+            selIndex = Mathf.Clamp(selIndex + move, 0, entries.Count - 1);
+            UpdateSelectionVisual();
+            ScrollToSelected();
+            SoundManager.Instance?.PlaySlotClickSound();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && entries.Count > 0)
+            OnClickRecipe(entries[selIndex].item);
+    }
+
+    // 고른 항목은 노란빛으로 보인다 (제작 가능한 항목은 초록빛)
+    private void UpdateSelectionVisual()
+    {
+        for (int i = 0; i < entries.Count; i++)
+        {
+            Entry e = entries[i];
+            if (e.bg == null) continue;
+            if (i == selIndex) e.bg.color = e.canCraft ? new Color(0.55f, 0.7f, 0.25f, 0.75f) : new Color(0.8f, 0.7f, 0.25f, 0.45f);
+            else e.bg.color = e.canCraft ? new Color(0.2f, 0.45f, 0.25f, 0.45f) : new Color(1f, 1f, 1f, 0.08f);
+        }
+    }
+
+    // 고른 항목이 목록 밖으로 벗어나면 그때만 한 칸씩 스크롤해서 보이게 한다 (보이는 안에서 움직일 때는 커서만 움직임)
+    private const float EntryHeight = 110f, EntrySpacing = 8f;
+
+    private void ScrollToSelected()
+    {
+        if (viewportRt == null || content == null || entries.Count == 0) return;
+
+        float top = selIndex * (EntryHeight + EntrySpacing);
+        float bottom = top + EntryHeight;
+        float viewH = viewportRt.rect.height;
+        Vector2 pos = content.anchoredPosition;
+        float y = pos.y;
+
+        if (top < y) y = top;                         // 위로 벗어남: 그 항목이 맨 위에 오도록
+        else if (bottom > y + viewH) y = bottom - viewH; // 아래로 벗어남: 그 항목이 맨 아래에 오도록
+        content.anchoredPosition = new Vector2(pos.x, Mathf.Max(0f, y));
     }
 
     private void OnClickRecipe(Item item)

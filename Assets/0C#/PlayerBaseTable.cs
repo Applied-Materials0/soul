@@ -31,6 +31,10 @@ public class PlayerBaseTable : ScriptableObject
     [Range(0f, 100f)] public float restAfternoonSpPercent = 100f;  // 오후가 될 때 회복하는 SP (최대 SP의 [%])
     [Range(0f, 100f)] public float restNightSpPercent = 50f;       // 밤이 될 때 회복하는 SP (최대 SP의 [%])
 
+    [Header("탈진 (SP가 0에 닿을 때마다 스택이 쌓이고, 스택이 차면 건강이 나빠져 최대 SP가 줄어듦. 푹 자고 다음 날이 되면 풀림)")]
+    [Min(0)] public int exhaustStacks = 3;                       // 건강이 나빠지기까지 필요한 스택 (0이면 탈진 없음)
+    [Range(0f, 100f)] public float exhaustSpMaxPercent = 20f;    // 건강이 나빠지면 줄어드는 최대 SP [%]
+
     [Header("고유 특성 (장비 없이도 항상 가지는 특성. 특성 표의 ID, 0이면 없음)")]
     public int innateTraitId = 0;
 

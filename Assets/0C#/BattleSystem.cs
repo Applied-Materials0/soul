@@ -10,7 +10,7 @@ using UnityEngine;
 // FieldSearch가 같은 오브젝트에 자동으로 붙인다.
 public class BattleSystem : MonoBehaviour
 {
-    private const float LineDelay = 0.9f;       // 문구 한 줄이 보이는 시간
+    private const float LineDelay = 1.0f;       // 문구 한 줄이 보이는 시간 (모든 문구 간격을 1초로 통일)
     private const float HitResultDelay = 1.0f;  // "OO의 공격!" 뒤에 결과(데미지/피했다 등)가 나오기까지의 시간
     private static readonly Color HitFlashColor = new Color(0.9f, 0.05f, 0.05f); // 맞았을 때 화면이 붉어지는 색
 
@@ -82,6 +82,11 @@ public class BattleSystem : MonoBehaviour
         statusTrait = null;
         statusTurnsLeft = 0;
         statusElapsed = 0;
+        revivesUsed = 0;
+        InventoryManager binv = InventoryManager.Instance;
+        sureHitLeft = binv != null ? Mathf.RoundToInt(binv.SumTrait(t => t.sureHitCount)) : 0;           // 필중 횟수 (한 전투)
+        perfectLeft = binv != null ? Mathf.RoundToInt(binv.SumTrait(t => t.perfectDefendCount)) : 0;     // 완전 방어 횟수 (한 전투)
+        ClearPlayerStatus();
         suppressed = false;
         lineShownAt = Time.time; // FieldSearch가 방금 띄운 "OO이(가) 나타났다!"가 읽힐 시간을 센다
         turn = 1;
@@ -101,17 +106,42 @@ public class BattleSystem : MonoBehaviour
         // 만났다는 문구(FieldSearch가 띄움)를 잠깐 보여 준 뒤 시작
         yield return new WaitForSeconds(LineDelay);
 
-        // Speed가 높은 쪽이 먼저 행동 (같으면 플레이어가 먼저)
-        bool playerFirst = GameManager.Speed >= monster.speed;
+        InventoryManager inv = InventoryManager.Instance;
+
+        // 전투를 시작할 때 한 번 체력을 회복하는 특성 (회복량 + 회복량%)
+        float startHeal = inv != null ? inv.SumTrait(t => t.healAmount) + BattleCalc.PlayerMaxHp() * inv.SumTrait(t => t.healPercent) / 100f : 0f;
+        if (startHeal > 0f && GameManager.Hp < BattleCalc.PlayerMaxHp())
+        {
+            int healed = HealPlayer(Mathf.RoundToInt(startHeal));
+            if (healed > 0) yield return Say($"체력을 {healed} 회복했다.");
+        }
+
+        // Speed가 높은 쪽이 먼저 행동 (같으면 플레이어가 먼저). 선제공격 횟수가 남아 있으면 하루에 정해진 횟수만큼 내가 먼저
+        int firstStrikes = inv != null ? Mathf.RoundToInt(inv.SumTrait(t => t.firstStrikeCount)) : 0;
+        bool quick = firstStrikes > GameManager.FirstStrikeUsed;
+        if (quick && GameManager.Speed < monster.speed) GameManager.FirstStrikeUsed++; // 선제공격으로 먼저 움직이게 된 때만 횟수를 쓴다
+        else quick = quick && GameManager.Speed < monster.speed;
+        bool playerFirst = quick || GameManager.Speed >= monster.speed;
         if (playerFirst)
         {
-            field.SearchText.SetText("먼저 움직일 수 있다! 무엇을 할까?");
+            field.SearchText.SetText(quick ? "선제공격! 무엇을 할까?" : "먼저 움직일 수 있다! 무엇을 할까?");
         }
         else
         {
             yield return MonsterTurn(true); // 몬스터의 선제 행동
         }
         busy = false;
+    }
+
+    // 플레이어 체력을 회복한다 (회복량 감소 상태이상 적용, 최대 체력 한도). 실제로 회복한 양을 돌려줌
+    private int HealPlayer(int amount)
+    {
+        int heal = Mathf.RoundToInt(amount * BattleCalc.HealMult());
+        int max = BattleCalc.PlayerMaxHp();
+        int before = GameManager.Hp;
+        GameManager.Hp = Mathf.Min(max, GameManager.Hp + Mathf.Max(0, heal));
+        RefreshPlayerUI();
+        return GameManager.Hp - before;
     }
 
     // =========================================================
@@ -164,7 +194,24 @@ public class BattleSystem : MonoBehaviour
         if (!active) return;
         StopNarration();
         busy = true;
-        StartCoroutine(FaintRoutine());
+        StartCoroutine(FaintByItemRoutine());
+    }
+
+    // 아이템 때문에 쓰러졌을 때도 부활 특성이 있으면 되살아나 전투를 이어 간다
+    private IEnumerator FaintByItemRoutine()
+    {
+        List<Step> revive = new List<Step>();
+        if (TryRevive(revive))
+        {
+            yield return Say(revive[0].text);
+            GameManager.isfaint = false;
+            yield return MonsterTurn();
+            busy = false;
+        }
+        else
+        {
+            yield return FaintRoutine();
+        }
     }
 
     // ===== 적에게 붙은 상태이상 (독 등. 특성 표에서 정함) =====
@@ -179,7 +226,7 @@ public class BattleSystem : MonoBehaviour
         foreach (InventoryManager.TraitSource ts in InventoryManager.Instance.ActiveTraits())
         {
             TraitDef t = ts.trait;
-            if (t.inflictChance <= 0f || t.dotDamage <= 0f) continue;
+            if (t.inflictChance <= 0f || (t.dotDamage <= 0f && t.dotHpPercent <= 0f)) continue;
             if (!BattleCalc.Roll(t.inflictChance)) continue;
 
             int duration = t.dotTurns > 0 ? t.dotTurns : 999;
@@ -197,6 +244,15 @@ public class BattleSystem : MonoBehaviour
         }
     }
 
+    // 처형 특성: 적 체력이 정해진 비율 미만이면 바로 쓰러뜨린다. 처형했으면 true
+    private bool ShouldExecute()
+    {
+        InventoryManager inv = InventoryManager.Instance;
+        if (inv == null || monsterHp <= 0) return false;
+        float pct = inv.MaxTrait(t => t.executeHpPercent);
+        return pct > 0f && monsterHp * 100f < monster.hpMax * pct;
+    }
+
     private IEnumerator AttackRoutine()
     {
         busy = true;
@@ -210,41 +266,69 @@ public class BattleSystem : MonoBehaviour
         }
 
         PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
-        bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
-        BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, targetDefending);
-        monsterDefending = false; // 몬스터의 방어는 이 공격 한 번에만 적용
-
+        InventoryManager inv = InventoryManager.Instance;
         string name = monster.monsterName;
+        bool sureHit = sureHitLeft > 0;   // 필중 횟수가 남아 있으면 이번 공격은 회피와 방어 태세를 무시한다
+        if (sureHit) sureHitLeft--;
+
+        // 처형: 이미 체력이 충분히 낮으면 공격 판정 없이 바로 처형
+        if (ShouldExecute())
+        {
+            monsterDefending = false;
+            monsterHp = 0;
+            hud.SetHp(0, monster.hpMax);
+            yield return Say($"처형! {name}{Josa(name, "을", "를")} 쓰러뜨렸다!");
+            string execReward = Proficiency.Reward(ProficiencyKind.Combat);
+            if (execReward.Length > 0) yield return Say(execReward);
+            yield return VictoryRoutine();
+            yield break;
+        }
+
+        bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
+        monsterDefending = false;                // 몬스터의 방어는 이 공격 한 번에만 적용
+        string stealNote = sureHit ? "필중! " : "";
+        if (sureHit) targetDefending = false;
+
+        BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, monsterHp, targetDefending, sureHit);
+
         if (r.dodged || r.noEffect)
         {
             // 피하거나 막혀서 피해가 안 들어감
             if (targetDefending)
-                yield return Say($"{name}의 방어에 성공했다!");
+                yield return Say($"{stealNote}{name}의 방어에 성공했다!");
             else if (r.dodged)
-                yield return Say($"{name}{Josa(name, "이", "가")} 공격을 피했다!");
+                yield return Say($"{stealNote}{name}{Josa(name, "이", "가")} 공격을 피했다!");
             else
-                yield return Say("효과가 없는 것 같다...");
+                yield return Say($"{stealNote}효과가 없는 것 같다...");
         }
         else
         {
             monsterHp = Mathf.Max(0, monsterHp - r.damage);
-            string wearInfo = InventoryManager.Instance != null ? InventoryManager.Instance.WearEquipment(true) : ""; // 공격이 맞았을 때만 무기가 닳는다 (피하거나 막히면 안 닳음)
+            string wearInfo = inv != null ? inv.WearEquipment(true) : ""; // 공격이 맞았을 때만 무기가 닳는다 (피하거나 막히면 안 닳음)
             hud.SetHp(monsterHp, monster.hpMax);
 
-            // 몬스터가 방어했는데 피해가 들어갔으면 방어 실패
-            string head = targetDefending ? $"{name}의 방어가 실패했다... " : "";
+            // 문구: 방어 중이던 적은 "{적}이 n의 데미지를 받았다!", 그 외는 "n의 데미지를 주었다!"
             string crit = r.crit ? "치명타! " : "";
-            string fixedNote = r.fixedDamage > 0 ? $" (고정 {r.fixedDamage} 포함)" : "";
-            yield return Say($"{head}{crit}{name}에게 {r.damage}의 피해를 주었다!{fixedNote}{wearInfo}");
+            if (targetDefending)
+                yield return Say($"{stealNote}{crit}{name}{Josa(name, "이", "가")} {r.damage}의 데미지를 받았다!{wearInfo}");
+            else
+                yield return Say($"{stealNote}{crit}{r.damage}의 데미지를 주었다!{wearInfo}");
 
             // 독 같은 특성이 있으면 확률적으로 적에게 상태이상을 건다
             yield return TryInflictStatus(name);
 
             if (r.heal > 0)
             {
-                GameManager.Hp = Mathf.Min(GameManager.Hp + r.heal, BattleCalc.PlayerMaxHp());
-                RefreshPlayerUI();
-                yield return Say($"체력을 {r.heal} 흡수했다.");
+                int healed = HealPlayerRaw(r.heal);
+                if (healed > 0) yield return Say($"체력을 {healed} 흡수했다.");
+            }
+
+            // 처형: 공격으로 체력이 기준 아래로 떨어지면 마무리
+            if (ShouldExecute())
+            {
+                monsterHp = 0;
+                hud.SetHp(0, monster.hpMax);
+                yield return Say($"처형! {name}{Josa(name, "을", "를")} 쓰러뜨렸다!");
             }
         }
 
@@ -263,6 +347,15 @@ public class BattleSystem : MonoBehaviour
 
         yield return MonsterTurn();
         busy = false;
+    }
+
+    // 흡수처럼 이미 회복량 감소가 적용된 값을 체력에 더한다. 실제로 오른 양을 돌려줌
+    private int HealPlayerRaw(int amount)
+    {
+        int before = GameManager.Hp;
+        GameManager.Hp = Mathf.Min(BattleCalc.PlayerMaxHp(), GameManager.Hp + Mathf.Max(0, amount));
+        RefreshPlayerUI();
+        return GameManager.Hp - before;
     }
 
     // [방어]: 턴을 소모하고, 몬스터의 다음 공격을 회피율로 먼저 피해 보고 못 피하면 방어력을 높여 막는다
@@ -359,6 +452,9 @@ public class BattleSystem : MonoBehaviour
             field.SearchText.SetText(step.text);
             lineShownAt = Time.time;
         }
+        // 마지막 문구도 LineDelay(1초) 동안은 그대로 보인 뒤에 "무엇을 할까?"가 붙는다 (그 사이 행동하면 바로 넘어감)
+        float remain = lineShownAt + LineDelay - Time.time;
+        if (remain > 0f) yield return new WaitForSeconds(remain);
         narration = null;
         EndTurn(); // 마지막 문구 아래에 "무엇을 할까?"
     }
@@ -370,11 +466,14 @@ public class BattleSystem : MonoBehaviour
         suppressed = false;
 
         string name = monster.monsterName;
+        InventoryManager inv = InventoryManager.Instance;
 
-        // 상태이상(독 등)의 지속 피해: 턴이 지날수록 커진다
+        // 상태이상(독 등)의 지속 피해: 턴이 지날수록 커지고, 최대 체력 비례 피해도 더해진다
         if (statusTrait != null && statusTurnsLeft > 0)
         {
-            int dmg = Mathf.Max(1, Mathf.RoundToInt(statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed));
+            float dot = statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed
+                + monsterHp * (statusTrait.dotHpPercent + statusTrait.dotHpGrowth * statusElapsed) / 100f; // 체력 퍼뎀은 현재 체력 비례
+            int dmg = Mathf.Max(1, Mathf.RoundToInt(dot));
             statusElapsed++;
             statusTurnsLeft--;
             yield return Say($"{name}{Josa(name, "이", "가")} {statusTrait.label}{Josa(statusTrait.label, "으로", "로")} 인해 {dmg}의 데미지를 입었다!"); // 문구가 보인 뒤에
@@ -412,7 +511,9 @@ public class BattleSystem : MonoBehaviour
         else
         {
             bool defended = playerDefending;
-            BattleCalc.HitResult h = BattleCalc.MonsterAttack(monster, defended);
+            bool perfect = defended && perfectLeft > 0; // 굳히기: 횟수가 남아 있으면 [방어]가 완전 방어
+            if (perfect) perfectLeft--;
+            BattleCalc.HitResult h = BattleCalc.MonsterAttack(monster, defended, perfect);
 
             // 1) 공격 알림과 동시에 판정을 적용한다: 효과음, 맞았다면 화면이 바로 붉어지고 체력이 줄어듦
             yield return Say(preemptive ? $"{name}의 선제공격!" : $"{name}의 공격!");
@@ -421,7 +522,7 @@ public class BattleSystem : MonoBehaviour
             bool perfectBlock = defended && !h.dodged && h.noEffect;
             bool gotHit = !h.dodged && !perfectBlock; // 타격 여부: 회피하지도, 완전히 막지도 못함
             if (gotHit && flash != null) flash.Play(HitFlashColor);
-            if (gotHit && InventoryManager.Instance != null) InventoryManager.Instance.WearEquipment(false); // 맞으면 방어구가 닳는다
+            if (gotHit && inv != null) inv.WearEquipment(false); // 맞으면 방어구가 닳는다
 
             // 2) 결과 문구는 잠시 뒤에 나온다
             if (h.dodged)
@@ -440,17 +541,29 @@ public class BattleSystem : MonoBehaviour
             {
                 GameManager.Hp = Mathf.Max(0, GameManager.Hp - h.damage);
                 RefreshPlayerUI();
-                if (defended)
+                steps.Add(new Step($"{h.damage}의 데미지를 받았다!", HitResultDelay));
+
+                // 가시: 받은 피해의 일부를 적에게 되돌린다
+                float reflectPct = inv != null ? inv.SumTrait(t => t.reflectPercent) : 0f;
+                if (reflectPct > 0f && monsterHp > 0)
                 {
-                    steps.Add(new Step($"{name}의 공격을 받아내 {h.damage}의 데미지를 받았다!", HitResultDelay));
+                    int reflect = Mathf.Max(1, Mathf.RoundToInt(h.damage * reflectPct / 100f));
+                    monsterHp = Mathf.Max(0, monsterHp - reflect);
+                    hud.SetHp(monsterHp, monster.hpMax);
+                    steps.Add(new Step($"{reflect}의 피해를 반사했다!", LineDelay));
                 }
-                else
-                {
-                    steps.Add(new Step($"{h.damage}의 데미지를 받았다!", HitResultDelay));
-                }
+
+                // 몬스터가 특성(독 등)을 건다. 이미 그 특성을 가졌거나 이미 걸려 있으면 걸리지 않는다
+                TryInflictOnPlayer(steps);
             }
         }
         playerDefending = false; // [방어]는 몬스터의 한 번의 행동에만 적용
+
+        // 턴이 끝날 때의 효과: 내게 걸린 상태이상의 피해, 마나/체력 회복 특성
+        TurnTick(steps);
+
+        // 체력이 0이 됐다: 부활 특성이 있으면 부활
+        if (GameManager.Hp <= 0) TryRevive(steps);
 
         // 쓰러지는 장면은 건너뛸 수 없다: 결과 문구를 끝까지 보여 준 뒤 기절 처리
         if (GameManager.Hp <= 0)
@@ -465,6 +578,19 @@ public class BattleSystem : MonoBehaviour
             yield break;
         }
 
+        // 반사 피해로 적이 쓰러졌다: 문구를 보여 준 뒤 승리
+        if (monsterHp <= 0)
+        {
+            foreach (Step step in steps)
+            {
+                if (step.delayBefore > 0f) yield return new WaitForSeconds(step.delayBefore);
+                field.SearchText.SetText(step.text);
+                lineShownAt = Time.time;
+            }
+            yield return VictoryRoutine();
+            yield break;
+        }
+
         // 제압: 일정 확률로 플레이어가 다음 턴에 도망치지 못하게 한다 (판정은 지금, 알림 문구는 이어서)
         if (BattleCalc.Roll(monster.suppressChance))
         {
@@ -472,9 +598,115 @@ public class BattleSystem : MonoBehaviour
             steps.Add(new Step($"{name}{Josa(name, "이", "가")} 당신을 제압했다! 다음 턴에는 도망칠 수 없다.", LineDelay));
         }
 
-        MarkActed(false); // 몬스터도 행동했다
         // 판정은 끝났다. 문구는 백그라운드로 이어 보여 주고, 호출한 쪽은 바로 플레이어의 입력을 받는다
+        MarkActed(false); // 몬스터도 행동했다
         narration = StartCoroutine(Narrate(steps));
+    }
+
+    // 몬스터가 맞춘 공격으로 플레이어에게 특성(상태이상)을 건다
+    private void TryInflictOnPlayer(List<Step> steps)
+    {
+        if (monster.inflictTraitId <= 0 || !BattleCalc.Roll(monster.inflictChance)) return;
+        TraitDef t = GameTables.Traits.Get(monster.inflictTraitId);
+        if (t == null) return;
+        if (GameManager.StatusTraitId == t.id && GameManager.StatusTurnsLeft > 0) return; // 이미 걸려 있음
+
+        // 내가 이미 그 특성을 가지고 있으면 걸리지 않는다 (디버프 특성끼리의 면역)
+        if (t.debuff && InventoryManager.Instance != null && InventoryManager.Instance.HasTrait(t.id))
+        {
+            steps.Add(new Step($"이미 {t.label} 특성이 있어 걸리지 않았다!", LineDelay));
+            return;
+        }
+        // 정화 특성이 있으면 상태이상은 걸리지 않는다
+        if (InventoryManager.Instance != null && InventoryManager.Instance.AnyTrait(x => x.cleanse)) return;
+
+        GameManager.StatusTraitId = t.id;
+        GameManager.StatusTurnsLeft = t.dotTurns > 0 ? t.dotTurns : 999;
+        GameManager.StatusElapsed = 0;
+        steps.Add(new Step($"{t.label}에 걸렸다!", LineDelay));
+    }
+
+    // 턴이 끝날 때마다: 내게 걸린 상태이상 피해, 마나 회복(마나 도둑), 체력 회복(회복)
+    private void TurnTick(List<Step> steps)
+    {
+        InventoryManager inv = InventoryManager.Instance;
+
+        // 정화: 내게 걸린 상태이상을 지운다
+        if (GameManager.StatusTraitId > 0 && inv != null && inv.AnyTrait(t => t.cleanse))
+        {
+            TraitDef gone = GameTables.Traits.Get(GameManager.StatusTraitId);
+            ClearPlayerStatus();
+            if (gone != null) steps.Add(new Step($"정화로 {gone.label}{Josa(gone.label, "이", "가")} 사라졌다!", LineDelay));
+        }
+
+        // 몬스터가 건 상태이상(독 등): 턴마다 지속 피해. 독 내성만큼 피해가 줄어든다
+        if (GameManager.StatusTraitId > 0)
+        {
+            TraitDef st = GameTables.Traits.Get(GameManager.StatusTraitId);
+            if (st != null && GameManager.StatusTurnsLeft > 0)
+            {
+                float dot = st.dotDamage + st.dotGrowth * GameManager.StatusElapsed
+                    + GameManager.Hp * (st.dotHpPercent + st.dotHpGrowth * GameManager.StatusElapsed) / 100f; // 현재 체력 비례
+                dot -= InventoryManager.PoisonResist() * st.resistPercent / 100f; // 독 내성 x 내성 적용%
+                int dmg = Mathf.Max(1, Mathf.RoundToInt(dot));
+                GameManager.StatusElapsed++;
+                GameManager.StatusTurnsLeft--;
+                GameManager.Hp = Mathf.Max(0, GameManager.Hp - dmg);
+                RefreshPlayerUI();
+                steps.Add(new Step($"{st.label}{Josa(st.label, "으로", "로")} 인해 {dmg}의 데미지를 받았다!", LineDelay));
+                if (GameManager.StatusTurnsLeft <= 0)
+                {
+                    ClearPlayerStatus();
+                    steps.Add(new Step($"{st.label}{Josa(st.label, "이", "가")} 사라졌다.", LineDelay));
+                }
+            }
+        }
+
+        if (inv == null || GameManager.Hp <= 0) return;
+
+        // 마나 도둑: 턴마다 마나 회복
+        int manaGain = Mathf.RoundToInt(inv.SumTrait(t => t.manaPerTurn) + GameManager.ManaMax * inv.SumTrait(t => t.manaPercentPerTurn) / 100f);
+        if (manaGain > 0 && GameManager.Mana < GameManager.ManaMax)
+        {
+            int before = GameManager.Mana;
+            GameManager.Mana = Mathf.Min(GameManager.ManaMax, GameManager.Mana + manaGain);
+            RefreshPlayerUI();
+            steps.Add(new Step($"마나를 {GameManager.Mana - before} 회복했다.", LineDelay));
+        }
+
+        // 회복: 턴마다 체력 회복 (정량 + 최대 체력 비례)
+        float regen = inv.SumTrait(t => t.regenPerTurn) + BattleCalc.PlayerMaxHp() * inv.SumTrait(t => t.regenHpPercent) / 100f;
+        if (regen > 0f && GameManager.Hp < BattleCalc.PlayerMaxHp())
+        {
+            int healed = HealPlayer(Mathf.RoundToInt(regen));
+            if (healed > 0) steps.Add(new Step($"체력을 {healed} 회복했다.", LineDelay));
+        }
+    }
+
+    private static void ClearPlayerStatus()
+    {
+        GameManager.StatusTraitId = 0;
+        GameManager.StatusTurnsLeft = 0;
+        GameManager.StatusElapsed = 0;
+    }
+
+    // 부활 특성: 체력이 0이 되면 한 전투에 정해진 횟수만큼 되살아난다. 부활했으면 true
+    private int revivesUsed;
+    private int sureHitLeft, perfectLeft;   // 이번 전투에서 남은 필중 / 완전 방어 횟수
+    private bool TryRevive(List<Step> steps)
+    {
+        InventoryManager inv = InventoryManager.Instance;
+        if (inv == null) return false;
+        int allowed = Mathf.RoundToInt(inv.SumTrait(t => t.reviveCount));
+        if (revivesUsed >= allowed) return false;
+
+        revivesUsed++;
+        float pct = Mathf.Max(1f, inv.MaxTrait(t => t.reviveHpPercent));
+        GameManager.Hp = Mathf.Max(1, Mathf.RoundToInt(BattleCalc.PlayerMaxHp() * Mathf.Clamp(pct, 1f, 100f) / 100f));
+        ClearPlayerStatus();
+        RefreshPlayerUI();
+        steps.Add(new Step("부활 특성으로 부활하였다!", LineDelay));
+        return true;
     }
 
     // =========================================================
@@ -515,8 +747,7 @@ public class BattleSystem : MonoBehaviour
         string reward = $"골드 +{gold}, 경험치 +{exp}";
         if (drops.Count > 0) reward += "\n획득: " + string.Join(", ", drops);
         if (bagFull) reward += "\n" + InventoryManager.BlockMessage(InventoryManager.Instance.LastAddBlock);
-        string levelText = LevelSystem.Describe(oldLevel, levelUps); // 레벨이 올랐다! 이전 -> 현재 (늘어난 능력치 합계)
-        if (levelText.Length > 0) reward += "\n" + levelText;
+        ItemGainToast.ShowCenter(LevelSystem.Describe(oldLevel, levelUps)); // 레벨이 올랐다! 는 숙련도 알림과 같이 화면 중앙에
         yield return Say(reward); // 직전 문구("쓰러뜨렸다!")가 충분히 보인 뒤에 보상을 보여 줌
 
         field.RestoreExploreButtons();
@@ -557,6 +788,7 @@ public class BattleSystem : MonoBehaviour
     private void EndBattle()
     {
         ShowTurn(false);
+        ClearPlayerStatus(); // 몬스터가 건 상태이상은 전투가 끝나면 사라진다
         StopNarration(); // 이어지던 문구가 있으면 멈춤
         active = false;
         monster = null;

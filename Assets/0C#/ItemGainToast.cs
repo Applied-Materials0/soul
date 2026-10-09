@@ -19,6 +19,7 @@ public class ItemGainToast : MonoBehaviour
 
     private static ItemGainToast instance;
     private RectTransform row;
+    private RectTransform msgColumn; // 글자 알림은 화면 한가운데에 세로로 쌓인다 (아이템 표시처럼 옆으로 밀리지 않음)
 
     // 아이템 amount개를 얻었다고 화면 중앙에 표시한다
     public static void Show(Item item, int amount)
@@ -39,7 +40,7 @@ public class ItemGainToast : MonoBehaviour
         canvasGo.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
 
         // 화면 중앙(조금 위)에 가로로 나란히
-        RectTransform row = CraftQuantityPopup.NewRect("Row", canvasGo.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 60f), new Vector2(1400f, 220f));
+        RectTransform row = CraftQuantityPopup.NewRect("Row", canvasGo.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 150f), new Vector2(1400f, 220f));
         HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing = 24f;
         layout.childAlignment = TextAnchor.MiddleCenter;
@@ -48,8 +49,19 @@ public class ItemGainToast : MonoBehaviour
         layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = false;
 
+        // 글자 알림 줄: 화면 한가운데, 세로로 쌓임
+        RectTransform col = CraftQuantityPopup.NewRect("MessageColumn", canvasGo.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -30f), new Vector2(1400f, 400f));
+        VerticalLayoutGroup vlayout = col.gameObject.AddComponent<VerticalLayoutGroup>();
+        vlayout.spacing = 12f;
+        vlayout.childAlignment = TextAnchor.MiddleCenter;
+        vlayout.childControlWidth = false;
+        vlayout.childControlHeight = false;
+        vlayout.childForceExpandWidth = false;
+        vlayout.childForceExpandHeight = false;
+
         ItemGainToast toast = row.gameObject.AddComponent<ItemGainToast>();
         toast.row = row;
+        toast.msgColumn = col;
         return toast;
     }
 
@@ -96,6 +108,9 @@ public class ItemGainToast : MonoBehaviour
         if (instance == null || instance.row == null) return;
         for (int i = instance.row.childCount - 1; i >= 0; i--)
             Destroy(instance.row.GetChild(i).gameObject);
+        if (instance.msgColumn != null)
+            for (int i = instance.msgColumn.childCount - 1; i >= 0; i--)
+                Destroy(instance.msgColumn.GetChild(i).gameObject);
     }
 
     // 장비/도구가 부서졌을 때: 아이템 이미지와 "~가 파괴되었다!" 문구를 화면 중앙에 띄운다
@@ -149,6 +164,14 @@ public class ItemGainToast : MonoBehaviour
     private const float MessageHoldTime = 2.5f; // 글자 알림은 읽을 시간을 더 준다
 
     // 아이템 이미지 없이 글자만 화면 중앙에 잠깐 보여 준다 (아이템 사용 결과, 기절 페널티 안내 등)
+    // 화면 한가운데에 보여 준다 (가방이 열려 있어도 가방 안 알림이 아니라 중앙에). 숙련도/레벨 오름 알림이 쓴다
+    public static void ShowCenter(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return;
+        if (instance == null) instance = Create();
+        instance.SpawnMessage(text);
+    }
+
     public static void ShowMessage(string text)
     {
         if (string.IsNullOrEmpty(text)) return;
@@ -159,14 +182,14 @@ public class ItemGainToast : MonoBehaviour
 
     private void SpawnMessage(string text)
     {
-        while (row.childCount >= MaxShown)
-            DestroyImmediate(row.GetChild(0).gameObject);
+        while (msgColumn.childCount >= 4)
+            DestroyImmediate(msgColumn.GetChild(0).gameObject);
 
         TMP_FontAsset font = InventoryManager.Instance != null ? InventoryManager.Instance.UIFont : null;
 
         GameObject go = new GameObject("ToastMessage", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform rt = (RectTransform)go.transform;
-        rt.SetParent(row, false);
+        rt.SetParent(msgColumn, false);
         rt.sizeDelta = new Vector2(1200f, 110f);
         CanvasGroup group = go.GetComponent<CanvasGroup>();
         group.alpha = 0f;

@@ -80,7 +80,7 @@ public class CarveSystem : MonoBehaviour
         field.GatherAudio.Play();
 
         // 얻는 것: 줄마다 확률 판정, 수량은 최소~최대 중에서 뽑고 숙련도 보너스만큼 늘림
-        float bonus = Proficiency.Bonus(ProficiencyKind.Carving);
+        int bonus = Proficiency.Bonus(ProficiencyKind.Carving);
         List<string> gained = new List<string>();
         bool bagFull = false;
         foreach (MonsterDrop d in monster.carveDrops)
@@ -90,7 +90,7 @@ public class CarveSystem : MonoBehaviour
             if (item == null) continue;
 
             int amount = Random.Range(d.amountMin, Mathf.Max(d.amountMin, d.amountMax) + 1);
-            amount = Mathf.Max(1, Mathf.RoundToInt(amount * BattleCalc.Mult(bonus)));
+            amount = Mathf.Max(1, amount + bonus); // 숙련도 수확 보너스(정량)
             amount += Proficiency.ExtraAmount(GameTables.Proficiency.Get(ProficiencyKind.Carving)); // 숙련도의 수량 추가(최소~최대)
 
             // 가방의 슬롯/무게 한도 안에서 넣을 수 있는 만큼만 얻는다

@@ -145,6 +145,30 @@ public class ItemSlot : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, 
     // =========================================================
     private TextMeshProUGUI equippedMark;
 
+    // 내구도가 낮은 장비/도구는 테두리가 주황(50% 이하) / 빨강(10% 이하)이 되고, 파괴된(내구도 0) 것은 슬롯 바탕도 붉어진다
+    private Color? normalColor;
+    private Outline wearOutline;
+    public void SetWear(ItemStack stack)
+    {
+        Image bg = GetComponent<Image>();
+        if (bg == null) return;
+        if (!normalColor.HasValue) normalColor = bg.color;
+
+        bool broken = InventoryManager.NeedsRepair(stack);
+        bg.color = broken ? new Color(0.9f, 0.25f, 0.25f, Mathf.Max(0.9f, normalColor.Value.a)) : normalColor.Value;
+
+        Color? wear = InventoryManager.WearColor(stack);
+        if (wearOutline == null)
+        {
+            if (!wear.HasValue) return;
+            wearOutline = bg.gameObject.GetComponent<Outline>();
+            if (wearOutline == null) wearOutline = bg.gameObject.AddComponent<Outline>();
+            wearOutline.effectDistance = new Vector2(4f, -4f);
+        }
+        wearOutline.enabled = wear.HasValue;
+        if (wear.HasValue) wearOutline.effectColor = wear.Value;
+    }
+
     public void SetEquippedMark(bool on)
     {
         if (equippedMark == null)

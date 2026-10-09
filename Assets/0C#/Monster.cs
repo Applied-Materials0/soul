@@ -25,6 +25,7 @@ public class Monster : ScriptableObject
     public float critical;         // 치명타 피해 증가 [%]
 
     [Header("전투 행동")]
+    [Range(0f, 100f)] public float defendBonus = 50f;       // 방어 보너스 [%]: 몬스터가 방어 태세일 때 플레이어의 공격 피해가 이만큼 깎여 들어감
     [Range(0f, 100f)] public float defendChance = 10f;       // 자기 턴에 방어를 고를 확률 [%] (체력이 충분할 때)
     [Range(0f, 100f)] public float defendChanceLowHp = 40f;  // 체력이 30% 이하일 때 방어를 고를 확률 [%]
     [Range(0f, 100f)] public float suppressChance = 10f;     // 제압 확률 [%]: 자기 턴마다 이 확률로 플레이어를 제압해 다음 턴에 도망치지 못하게 함
@@ -42,6 +43,10 @@ public class Monster : ScriptableObject
     public int exp;                // 경험치
     public int gold;               // 골드
     public List<MonsterDrop> drops = new List<MonsterDrop>(); // 아이템 드랍 (여러 개 가능)
+
+    [Header("특성 공격 (플레이어에게 상태이상을 거는 몬스터. 특성 표의 ID)")]
+    public int inflictTraitId;                                // 걸 특성 ID (0이면 없음. 예: 1 = 독). 플레이어가 이미 그 특성을 가지고 있으면 걸리지 않음
+    [Range(0f, 100f)] public float inflictChance = 0f;        // 공격이 들어갔을 때 거는 확률 [%]
 
     [Header("출현 지역")]
     public List<MonsterSpawn> spawns = new List<MonsterSpawn>(); // 어느 지역에 얼마나 자주 나오는지

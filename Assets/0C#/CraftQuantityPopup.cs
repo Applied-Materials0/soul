@@ -33,6 +33,11 @@ public class CraftQuantityPopup : MonoBehaviour
     private Recipe recipe;
     private Action onCrafted;
     private int maxCraftable; // 현재 보유 재료로 만들 수 있는 최대 횟수
+    private string baseDesc = "";   // 설명 글 (SP 소모 줄은 수량에 따라 그 아래에 붙음)
+    private Image confirmImage, cancelImage;
+    private int cursor;              // 키보드 커서: 0 = [제작], 1 = [취소]
+    private int openedFrame = -1;
+    public static int ClosedFrame = -1; // 팝업이 닫힌 프레임 (같은 프레임의 Space가 다른 곳에서 또 처리되지 않게)
 
     // =========================================================
     //  생성
@@ -100,7 +105,8 @@ public class CraftQuantityPopup : MonoBehaviour
 
         // 제작 / 취소
         confirmButton = CreateButton(window, "Confirm", "제작", font, new Color(0.2f, 0.55f, 0.3f), top, new Vector2(-130f, -650f), new Vector2(220f, 60f), OnClickConfirm).GetComponent<Button>();
-        CreateButton(window, "Cancel", "취소", font, new Color(0.55f, 0.25f, 0.25f), top, new Vector2(130f, -650f), new Vector2(220f, 60f), OnClickCancel);
+        cancelImage = CreateButton(window, "Cancel", "취소", font, new Color(0.55f, 0.25f, 0.25f), top, new Vector2(130f, -650f), new Vector2(220f, 60f), OnClickCancel).GetComponent<Image>();
+        confirmImage = confirmButton.GetComponent<Image>();
 
         // 실패 이유 (버튼 아래)
         noticeText = NewText(NewRect("Notice", window, top, new Vector2(0f, -718f), new Vector2(760f, 50f)), 26, TextAlignmentOptions.Center);
@@ -140,6 +146,40 @@ public class CraftQuantityPopup : MonoBehaviour
     }
 
     // =========================================================
+    //  키보드: W = 수량 +1, S = 수량 -1, A/D = 커서를 [제작]/[취소]로 옮김, Space = 커서가 있는 버튼 누르기
+    // =========================================================
+    void Update()
+    {
+        if (openedFrame == Time.frameCount) return; // 이 창을 연 Space가 곧바로 [제작]을 누르지 않게
+
+        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow)) OnClickPlus();
+        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) OnClickMinus();
+        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow)) { cursor = 1; UpdateCursor(); }
+        else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow)) { cursor = 0; UpdateCursor(); }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (cursor == 0) { if (confirmButton != null && confirmButton.interactable) OnClickConfirm(); }
+            else OnClickCancel();
+        }
+    }
+
+    // 커서가 있는 버튼을 밝게 키워 보여 준다
+    private void UpdateCursor()
+    {
+        if (confirmImage != null)
+        {
+            confirmImage.color = cursor == 0 ? new Color(0.3f, 0.75f, 0.42f) : new Color(0.2f, 0.55f, 0.3f);
+            confirmImage.transform.localScale = cursor == 0 ? Vector3.one * 1.08f : Vector3.one;
+        }
+        if (cancelImage != null)
+        {
+            cancelImage.color = cursor == 1 ? new Color(0.8f, 0.38f, 0.38f) : new Color(0.55f, 0.25f, 0.25f);
+            cancelImage.transform.localScale = cursor == 1 ? Vector3.one * 1.08f : Vector3.one;
+        }
+    }
+
+    // =========================================================
     //  열기 / 닫기
     // =========================================================
     // result: 만들 아이템, r: 그 아이템의 제작법
@@ -152,8 +192,9 @@ public class CraftQuantityPopup : MonoBehaviour
 
         // 목표 아이템 표시
         resultTitle.text = result.itemName;
-        resultDesc.text = (!string.IsNullOrEmpty(result.description) ? result.description + "\n\n" : "")
+        baseDesc = (!string.IsNullOrEmpty(result.description) ? result.description + "\n" : "")
             + $"1회 제작 시 {r.resultAmount}개 생산";
+        resultDesc.text = baseDesc;
         resultIcon.sprite = result.icon;
         resultIcon.enabled = resultIcon.sprite != null;
 
@@ -176,16 +217,20 @@ public class CraftQuantityPopup : MonoBehaviour
             }
         }
 
+        cursor = 0;
+        openedFrame = Time.frameCount;
         noticeText.text = "";
         qtyInput.SetTextWithoutNotify("1");
         RefreshRows();
 
         transform.SetAsLastSibling(); // 다른 UI보다 위에 표시
+        UpdateCursor();
         gameObject.SetActive(true);
     }
 
     public void Close()
     {
+        ClosedFrame = Time.frameCount;
         onCrafted = null;
         gameObject.SetActive(false);
     }
@@ -255,6 +300,16 @@ public class CraftQuantityPopup : MonoBehaviour
 
         maxCraftable = InventoryManager.Instance.GetMaxCraftableAmount(recipe);
         int count = ParseCount();
+
+        // SP 소모: 1회 제작에 드는 SP x 수량 (모자라면 빨간색)
+        int spPer = InventoryManager.CraftSpCost(recipe);
+        if (spPer > 0)
+        {
+            int spNeed = spPer * count;
+            string spColor = GameManager.SP >= spNeed ? "#FFFFFF" : "#FF6666";
+            resultDesc.text = baseDesc + $"\n<color={spColor}>SP 소모 {spNeed} (보유 {GameManager.SP})</color>";
+        }
+        else resultDesc.text = baseDesc;
 
         foreach (Row row in rows)
         {

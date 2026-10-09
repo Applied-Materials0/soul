@@ -70,6 +70,13 @@ public class GameManager : MonoBehaviour
     static public int SPHeal;           //스태미나 회복량
     static public int MPHeal;           //마나 회복량
     static public float GoldR;          //골드 보너스
+    static public int FirstStrikeUsed;  //오늘 쓴 선제공격 횟수 (다음 날이 되면 0)
+    static public int AbsFlat;          //체력 흡수(정량): 피해를 줄 때마다 회복 (특성)
+    static public float SkillManaReduce;//스킬 마나 소모 감소 [%] (특성)
+    // 몬스터가 내게 건 상태이상 (독 등. 전투가 끝나면 사라짐)
+    static public int StatusTraitId;    //걸린 상태이상의 특성 ID (0이면 없음)
+    static public int StatusTurnsLeft;  //남은 턴
+    static public int StatusElapsed;    //지난 턴 (지속 피해가 이만큼 커짐)
     static public int WeightMax;        //가방 최대 무게
 
     //게임 시스템

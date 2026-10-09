@@ -693,6 +693,7 @@ public class InventoryManager : MonoBehaviour
 
         slot.Stack = stack; // 슬롯이 어느 스택(수량/내구도)을 보여 주는지 연결
         slot.SetupSlot(stack.itemData);
+        slot.SetWear(stack);
         slot.UpdateCountUI(stack.amount);
         dynamicSlots[stack] = slot;
         slot.SetEquippedMark(IsEquipped(stack));
@@ -772,6 +773,7 @@ public class InventoryManager : MonoBehaviour
                 targetStack.durability = usedTool.durabilitymax;
             }
         }
+        RefreshAllSlotMarks(); // 도구 슬롯의 내구도 테두리를 갱신
         return usedTool;
     }
 
@@ -1089,7 +1091,7 @@ public class InventoryManager : MonoBehaviour
         float m = GradeMult(s);
 
         string exp = (g == null || g.expToNext <= 0 || tier >= grades.MaxTier) ? $"{s.exp} (MAX)" : $"{s.exp} / {g.expToNext}";
-        title = $"<b>{it.itemName}</b>\n<size=80%>등급 {grades.NameOf(tier)} (Tier {tier})   Lv.{tier}\n경험치 {exp}";
+        title = $"<b>{DisplayName(s)}</b>\n<size=80%>등급 {grades.NameOf(tier)} (Tier {tier})   Lv.{tier}\n경험치 {exp}";
         if (it.durabilitymax > 0) title += $"   내구도 {s.durability}/{it.durabilitymax}";
         title += "</size>";
 
@@ -1218,17 +1220,47 @@ public class InventoryManager : MonoBehaviour
         return $"{name}   EXP {s.exp} / {g.expToNext}";
     }
 
-    // 독 같은 디버프에 대한 내성 [%] = 회복 숙련도 레벨의 보너스
+    // 독 같은 디버프에 대한 내성 (정량) = 회복 숙련도 레벨의 보너스. 방어력 감소를 이만큼 [%p] 줄이고, 독 지속 피해도 이만큼 줄인다
     public static float PoisonResist()
     {
-        return Mathf.Clamp(Proficiency.Bonus(ProficiencyKind.Recovery), 0f, 100f);
+        return Mathf.Max(0, Proficiency.Bonus(ProficiencyKind.Recovery));
     }
 
-    // 특성의 방어력 증감 [%]. 내성이 있으면 디버프(마이너스)가 그만큼 줄어든다
-    private static float EffectiveDfRate(TraitDef t)
+    // 특성의 방어력 증감 [%]. 정화 특성이 있으면 디버프(마이너스)는 받지 않고, 독 내성이 있으면 디버프가 그만큼 줄어든다
+    private float EffectiveDfRate(TraitDef t)
     {
-        if (t.dfRate < 0f && t.resistable) return t.dfRate * (1f - PoisonResist() / 100f);
+        if (t.dfRate < 0f)
+        {
+            if (AnyTrait(x => x.cleanse)) return 0f;
+            if (t.resistPercent > 0f) return Mathf.Min(0f, t.dfRate + PoisonResist() * t.resistPercent / 100f); // 내성 x 내성 적용%
+        }
         return t.dfRate;
+    }
+
+    // 지금 적용 중인 특성들 중 조건에 맞는 것이 있는가 / 효과 값의 합 / 최댓값 (전투 효과 계산용)
+    public bool AnyTrait(System.Func<TraitDef, bool> f)
+    {
+        foreach (TraitSource ts in ActiveTraits()) if (f(ts.trait)) return true;
+        return false;
+    }
+
+    public float SumTrait(System.Func<TraitDef, float> f)
+    {
+        float sum = 0f;
+        foreach (TraitSource ts in ActiveTraits()) sum += f(ts.trait);
+        return sum;
+    }
+
+    public float MaxTrait(System.Func<TraitDef, float> f)
+    {
+        float max = 0f;
+        foreach (TraitSource ts in ActiveTraits()) max = Mathf.Max(max, f(ts.trait));
+        return max;
+    }
+
+    public bool HasTrait(int id)
+    {
+        return AnyTrait(t => t.id == id);
     }
 
     // 지금 적용 중인 특성들: 장착한 (멀쩡한) 장비의 특성 + 기본 능력치 표의 고유 특성
@@ -1273,11 +1305,34 @@ public class InventoryManager : MonoBehaviour
             goldRate += it.goldrate; expRate += it.exprate;
         }
 
+        // 특성 효과 합산 (정화 특성이 있으면 공격력/방어력 감소 같은 디버프는 받지 않음)
+        bool cleansing = AnyTrait(x => x.cleanse);
+        float skillManaReduce = 0f, manaRateSum = 0f, spRateSum = 0f;
         foreach (TraitSource ts in ActiveTraits())
         {
-            atRate += ts.trait.atRate;
-            dfRate += EffectiveDfRate(ts.trait);
+            TraitDef t = ts.trait;
+            atRate += (cleansing && t.atRate < 0f) ? 0f : t.atRate;
+            dfRate += EffectiveDfRate(t);
+            hpRate += t.hpRate;
+            breakDf += t.breakDf;
+            fixAt += t.fixAt;
+            hpRateAt += t.hpRateAt;
+            critRate += t.criticalRate;
+            crit += t.critical;
+            abs += t.abs;
+            manaRateSum += t.manaRate;
+            spRateSum += t.spRate;
+            skillManaReduce += t.skillManaReduce;
         }
+        GameManager.AbsFlat = 0;
+        GameManager.SkillManaReduce = skillManaReduce;
+
+        // 최대 SP / 마나 증가 [%]: 장비 보너스를 뺀 기본값에 비율을 곱해 더한다. 탈진으로 건강이 나빠지면 최대 SP가 줄어든다
+        int baseSp = GameManager.SPMax - appliedSpBonus;
+        int baseMana = GameManager.ManaMax - appliedManaBonus;
+        sp += Mathf.RoundToInt(baseSp * spRateSum / 100f);
+        mana += Mathf.RoundToInt(baseMana * manaRateSum / 100f);
+        sp -= Exhaustion.SpMaxPenalty(baseSp);
 
         // 가방의 도구 중 가장 높은 공격력 하나 (장착한 것은 위에서 이미 더함)
         int toolAt = 0;
@@ -1407,10 +1462,10 @@ public class InventoryManager : MonoBehaviour
             ProficiencyLevel l = Proficiency.Current(def);
             if (l == null) continue;
             List<string> bonus = new List<string>();
-            if (l.bonusPercent != 0f) bonus.Add(def.kind == ProficiencyKind.Recovery ? $"독 내성 {l.bonusPercent:0.#}%" : $"수확 +{l.bonusPercent:0.#}%");
+            if (l.bonus != 0) bonus.Add(def.kind == ProficiencyKind.Recovery ? $"독 내성 {l.bonus}" : $"수확 +{l.bonus}");
             if (l.extraMax > 0) bonus.Add($"수량 +{Mathf.Min(l.extraMin, l.extraMax)}~{Mathf.Max(l.extraMin, l.extraMax)}");
-            if (l.expBonusPercent != 0f) bonus.Add($"레벨 경험치 +{l.expBonusPercent:0.#}%");
-            if (l.spReducePercent != 0f) bonus.Add($"SP -{l.spReducePercent:0.#}%");
+            if (l.expBonus != 0) bonus.Add($"레벨 경험치 +{l.expBonus}");
+            if (l.spReduce != 0) bonus.Add($"SP -{l.spReduce}");
             if (bonus.Count > 0) sb.AppendLine("   <size=75%>" + string.Join(" / ", bonus) + "</size>");
         }
         return sb.ToString();
@@ -1461,7 +1516,46 @@ public class InventoryManager : MonoBehaviour
             profBody.text = ProficiencyText();
     }
 
-    // 버프/디버프 내역: 적용 중인 특성과 독 내성
+    // 특성의 효과를 한 줄씩 (0이 아닌 것만). 버프 창과 설명에 쓴다
+    public static List<string> TraitEffectLines(TraitDef t, float effectiveDfRate)
+    {
+        const string good = "<color=#1B7F2A>", bad = "<color=#C00000>", end = "</color>";
+        List<string> r = new List<string>();
+        string P(float v, string name, string unit = "%") { return $"{(v > 0f ? good : bad)}{name} {v:+0.#;-0.#}{unit}{end}"; }
+        if (t.atRate != 0f) r.Add(P(t.atRate, "공격력"));
+        if (t.dfRate != 0f) r.Add(P(effectiveDfRate, "방어력"));
+        if (t.hpRate != 0f) r.Add(P(t.hpRate, "최대 체력"));
+        if (t.breakDf != 0f) r.Add(P(t.breakDf, "방어 관통"));
+        if (t.fixAt != 0) r.Add(P(t.fixAt, "고정 데미지", ""));
+        if (t.hpRateAt != 0f) r.Add(P(t.hpRateAt, "체력 퍼뎀 (적 현재 체력)"));
+        if (t.criticalRate != 0f) r.Add(P(t.criticalRate, "치명타 확률"));
+        if (t.critical != 0f) r.Add(P(t.critical, "치명타 데미지"));
+        if (t.abs != 0f) r.Add(P(t.abs, "체력 흡수"));
+        if (t.manaRate != 0f) r.Add(P(t.manaRate, "최대 마나"));
+        if (t.spRate != 0f) r.Add(P(t.spRate, "최대 SP"));
+        if (t.skillManaReduce != 0f) r.Add($"{good}스킬 마나 소모 -{t.skillManaReduce:0.#}%{end}");
+        if (t.healAmount != 0 || t.healPercent != 0f) r.Add($"{good}전투 시작 시 체력 +{t.healAmount} (+최대 체력의 {t.healPercent:0.#}%){end}");
+        if (t.regenPerTurn != 0 || t.regenHpPercent != 0f) r.Add($"{good}턴마다 체력 +{t.regenPerTurn} (+최대 체력의 {t.regenHpPercent:0.#}%){end}");
+        if (t.manaPerTurn != 0 || t.manaPercentPerTurn != 0f) r.Add($"{good}턴마다 마나 +{t.manaPerTurn} (+최대 마나의 {t.manaPercentPerTurn:0.#}%){end}");
+        if (t.inflictChance > 0f && (t.dotDamage > 0f || t.dotHpPercent > 0f))
+        {
+            string flat = t.dotDamage > 0f ? $"{t.dotDamage:0.#} (+{t.dotGrowth:0.#}씩)" : "";
+            string hp = t.dotHpPercent > 0f ? $" 현재 체력의 {t.dotHpPercent:0.#}% (+{t.dotHpGrowth:0.#}%p씩)" : "";
+            string heal = t.healReducePercent > 0f ? $", 적 회복량 -{t.healReducePercent:0.#}%" : "";
+            r.Add($"공격 시 {t.inflictChance:0.#}% 확률로 {t.label} 부여: 매 턴 {flat}{hp}, {t.dotTurns}턴{heal}");
+        }
+        if (t.executeHpPercent > 0f) r.Add($"적 체력 {t.executeHpPercent:0.#}% 미만이면 처형");
+        if (t.reflectPercent > 0f) r.Add($"받은 데미지의 {t.reflectPercent:0.#}% 반사");
+        if (t.perfectDefendCount > 0) r.Add($"완전 방어 {t.perfectDefendCount}회 (한 전투)");
+        if (t.stealBuff) r.Add("상대 버프 탈취 (미구현)");
+        if (t.cleanse) r.Add("나의 디버프 제거");
+        if (t.reviveCount > 0) r.Add($"부활 {t.reviveCount}회 (체력 {t.reviveHpPercent:0.#}%)");
+        if (t.sureHitCount > 0) r.Add($"필중 {t.sureHitCount}회 (한 전투)");
+        if (t.firstStrikeCount > 0) r.Add($"선제공격 {t.firstStrikeCount}회 (하루)");
+        return r;
+    }
+
+    // 버프/디버프 내역: 적용 중인 특성, 몬스터가 건 상태이상, 탈진, 독 내성
     public string BuffText()
     {
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
@@ -1473,20 +1567,30 @@ public class InventoryManager : MonoBehaviour
         {
             TraitDef t = ts.trait;
             sb.AppendLine($"<b>{t.label}</b> ({ts.source})");
-            if (t.atRate != 0f) { sb.AppendLine($"  {(t.atRate > 0 ? good : bad)}공격력 {t.atRate:+0.#;-0.#}%{end}"); lines++; }
             float df = EffectiveDfRate(t);
-            if (t.dfRate != 0f)
-            {
-                string note = t.resistable && t.dfRate < 0f ? $" (내성 {resist:0.#}%로 {t.dfRate:+0.#;-0.#}% -> {df:+0.#;-0.#}%)" : "";
-                sb.AppendLine($"  {(df > 0 ? good : bad)}방어력 {df:+0.#;-0.#}%{end}{note}");
-                lines++;
-            }
-            if (t.inflictChance > 0f && t.dotDamage > 0f)
-            {
-                sb.AppendLine($"  공격 시 {t.inflictChance:0.#}% 확률로 {t.label} 부여 (매 턴 {t.dotDamage:0.#} +{t.dotGrowth:0.#}씩, {t.dotTurns}턴)");
-                lines++;
-            }
+            foreach (string line in TraitEffectLines(t, df)) { sb.AppendLine("  " + line); lines++; }
+            if (t.dfRate < 0f && t.resistPercent > 0f && !Mathf.Approximately(df, t.dfRate))
+                sb.AppendLine($"  <size=75%>(내성 {resist:0.#}로 방어력 {t.dfRate:+0.#;-0.#}% -> {df:+0.#;-0.#}%)</size>");
             if (!string.IsNullOrEmpty(t.description)) sb.AppendLine($"  <size=75%>{t.description}</size>");
+        }
+
+        // 몬스터가 내게 건 상태이상
+        TraitDef status = GameManager.StatusTraitId > 0 ? GameTables.Traits.Get(GameManager.StatusTraitId) : null;
+        if (status != null && GameManager.StatusTurnsLeft > 0)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"{bad}<b>{status.label}</b> 상태이상 (남은 {GameManager.StatusTurnsLeft}턴){end}");
+            lines++;
+        }
+
+        // 탈진
+        PlayerBaseTable b = GameTables.PlayerBase;
+        if (b.exhaustStacks > 0 && Exhaustion.Stacks > 0)
+        {
+            sb.AppendLine();
+            if (Exhaustion.Weakened) sb.AppendLine($"{bad}<b>건강 악화</b> 최대 SP -{b.exhaustSpMaxPercent:0.#}%  (푹 자면 회복){end}");
+            else sb.AppendLine($"{bad}탈진 {Exhaustion.Stacks}/{b.exhaustStacks}{end}  <size=75%>(SP가 0에 닿으면 쌓이고, 다 차면 건강이 나빠짐)</size>");
+            lines++;
         }
         if (lines == 0) sb.AppendLine("적용 중인 버프/디버프가 없습니다.");
 
@@ -1494,7 +1598,7 @@ public class InventoryManager : MonoBehaviour
         if (rec != null)
         {
             sb.AppendLine();
-            sb.AppendLine($"{good}독 내성 {resist:0.#}%{end}  ({rec.label} 숙련도 Lv.{Proficiency.Level(rec)})");
+            sb.AppendLine($"{good}독 내성 {resist:0.#}{end}  ({rec.label} 숙련도 Lv.{Proficiency.Level(rec)})");
         }
         return sb.ToString();
     }
@@ -1538,6 +1642,27 @@ public class InventoryManager : MonoBehaviour
         return s != null && s.itemData.durabilitymax > 0 && s.durability <= 0;
     }
 
+    // 내구도에 따른 경고색: 남은 내구도가 50% 이하면 주황, 10% 이하(파괴 포함)면 빨강. 문제가 없으면 null
+    public static Color? WearColor(ItemStack s)
+    {
+        if (s == null || s.itemData == null || s.itemData.durabilitymax <= 0) return null;
+        if (s.durability <= 0) return WearRed;
+        float left = s.durability / (float)s.itemData.durabilitymax;
+        if (left <= 0.1f) return WearRed;
+        if (left <= 0.5f) return WearOrange;
+        return null;
+    }
+
+    public static readonly Color WearOrange = new Color(1f, 0.55f, 0.1f, 1f);
+    public static readonly Color WearRed = new Color(0.9f, 0.1f, 0.1f, 1f);
+
+    // 화면에 보이는 이름: 파괴된 장비/도구는 "파괴된 돌 도끼"처럼 앞에 붙는다
+    public static string DisplayName(ItemStack s)
+    {
+        if (s == null || s.itemData == null) return "";
+        return NeedsRepair(s) ? "파괴된 " + s.itemData.itemName : s.itemData.itemName;
+    }
+
     // 수리 후 내구도
     public static int RepairedDurability(Item it)
     {
@@ -1571,7 +1696,7 @@ public class InventoryManager : MonoBehaviour
     private void RefreshAllSlotMarks()
     {
         foreach (KeyValuePair<ItemStack, ItemSlot> kv in dynamicSlots)
-            if (kv.Value != null) kv.Value.SetEquippedMark(IsEquipped(kv.Key));
+            if (kv.Value != null) { kv.Value.SetEquippedMark(IsEquipped(kv.Key)); kv.Value.SetWear(kv.Key); }
     }
 
     // 마을처럼 필드가 없는 곳에서 기절했을 때: 체력을 채우고 페널티를 적용한다
@@ -1608,7 +1733,8 @@ public class InventoryManager : MonoBehaviour
         int spBefore = GameManager.SP;
         int manaBefore = GameManager.Mana;
 
-        GameManager.Hp = Mathf.Clamp(GameManager.Hp + item.useHp, 0, Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp)); // 체력을 깎는 아이템은 쓰러질 수도 있다
+        int useHp = item.useHp > 0 ? Mathf.RoundToInt(item.useHp * BattleCalc.HealMult()) : item.useHp; // 화염 같은 상태이상이면 회복량이 줄어든다
+        GameManager.Hp = Mathf.Clamp(GameManager.Hp + useHp, 0, Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp)); // 체력을 깎는 아이템은 쓰러질 수도 있다
         GameManager.SP = Mathf.Clamp(GameManager.SP + item.useSp, 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
         GameManager.Mana = Mathf.Clamp(GameManager.Mana + item.useMana, 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
 
@@ -1652,7 +1778,7 @@ public class InventoryManager : MonoBehaviour
         if (recoveryReward.Length > 0) message += "\n" + recoveryReward;
         if (!Mathf.Approximately(resistBefore, PoisonResist()))
         {
-            message += $" (독 내성 {PoisonResist():0.#}%)";
+            message += $" (독 내성 {PoisonResist():0.#})";
             RecalcEquipment(); // 내성이 바뀌면 장비 특성의 디버프도 달라짐
         }
         if (GameManager.Hp <= 0)

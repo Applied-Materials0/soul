@@ -34,6 +34,7 @@ public class PlayerUI : MonoBehaviour
     // 모든 PlayerUI의 스탯 텍스트와 SP 텍스트를 지금 값으로 갱신
     public static void RefreshAll()
     {
+        Exhaustion.Observe(); // SP가 0에 닿았는지 (탈진 스택)
         for (int i = all.Count - 1; i >= 0; i--)
         {
             if (all[i] == null) { all.RemoveAt(i); continue; }

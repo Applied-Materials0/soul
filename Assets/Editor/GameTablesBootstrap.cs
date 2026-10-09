@@ -28,6 +28,7 @@ public static class GameTablesBootstrap
         Ensure<GradeTable>("GradeTable");
         EnsureProficiencies();
         MigrateTraitDefaults();
+        EnsureDefaultTraits();
         MigrateRepairMaterials();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
@@ -124,6 +125,50 @@ public static class GameTablesBootstrap
                 changed = true;
             }
         }
+        if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+    }
+
+    // 기본 특성(독, 마나 도둑, 처형, 거인 ...)을 표에 반영한다. 한 번만 하고 (사용자가 지워도 다시 살아나지 않게),
+    //  - 표에 없는 번호는 추가하고
+    //  - 이름이 기본 이름과 같은 특성은 새 구조(칸 이름 정리)에 맞는 값으로 다시 채운다 (이름을 바꿨거나 다른 특성으로 쓰는 번호는 그대로 둠)
+    //  - 독(1번)은 내성 적용 100%, 체력 비례 피해, 디버프 표시가 없으면 채워 준다.
+    private static void EnsureDefaultTraits()
+    {
+        const string doneKey = "Soul.TraitDefaultsV2.Added";
+        if (EditorPrefs.GetBool(doneKey, false)) return;
+        TraitTable table = AssetDatabase.LoadAssetAtPath<TraitTable>(Folder + "/TraitTable.asset");
+        if (table == null) return;
+        bool changed = false;
+
+        foreach (TraitDef def in TraitTable.CreateDefaultTraits())
+        {
+            int index = -1;
+            for (int i = 0; i < table.traits.Count; i++) if (table.traits[i] != null && table.traits[i].id == def.id) { index = i; break; }
+
+            if (index < 0)
+            {
+                table.traits.Add(def);
+                changed = true;
+                Debug.Log($"[GameTablesBootstrap] 특성 표에 [{def.label}] 특성을 추가했습니다.");
+            }
+            else if (def.id == 1)
+            {
+                TraitDef t = table.traits[index];
+                if (t.label == "독")
+                {
+                    if (t.resistPercent == 0f) t.resistPercent = 100f;
+                    if (!t.debuff) t.debuff = true;
+                    if (t.dotHpPercent == 0f) t.dotHpPercent = 1f;
+                    changed = true;
+                }
+            }
+            else if (table.traits[index].label == def.label)
+            {
+                table.traits[index] = def; // 같은 이름: 새 칸 구조의 기본값으로 교체
+                changed = true;
+            }
+        }
+        EditorPrefs.SetBool(doneKey, true);
         if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
     }
 

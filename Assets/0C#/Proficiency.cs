@@ -30,11 +30,11 @@ public static class Proficiency
         return lv >= 1 && lv <= def.levels.Count ? def.levels[lv - 1] : null;
     }
 
-    // 현재 숙련도 레벨의 수확 보너스 [%] (회복 숙련도에서는 독 내성 [%])
-    public static float Bonus(ProficiencyDef def)
+    // 현재 숙련도 레벨의 수확 보너스 (회복 숙련도에서는 독 내성)
+    public static int Bonus(ProficiencyDef def)
     {
         ProficiencyLevel l = Current(def);
-        return l != null ? l.bonusPercent : 0f;
+        return l != null ? l.bonus : 0;
     }
 
     // 현재 레벨에서 같은 아이템을 더 얻는 수량 (최소~최대 중에서 뽑음)
@@ -47,13 +47,12 @@ public static class Proficiency
         return hi <= 0 ? 0 : Random.Range(lo, hi + 1);
     }
 
-    // 행동에 드는 SP에 숙련도의 SP 감소를 적용한다 (반올림)
+    // 행동에 드는 SP에서 숙련도의 SP 감소(정량)를 뺀다 (0 밑으로는 안 내려감)
     public static int ReducedSp(ProficiencyDef def, int baseCost)
     {
         ProficiencyLevel l = Current(def);
-        if (l == null || baseCost <= 0 || l.spReducePercent <= 0f) return baseCost;
-        float reduced = baseCost * (1f - Mathf.Clamp(l.spReducePercent, 0f, 100f) / 100f);
-        return Mathf.Max(0, Mathf.FloorToInt(reduced + 0.5f));
+        if (l == null || baseCost <= 0 || l.spReduce <= 0) return baseCost;
+        return Mathf.Max(0, baseCost - l.spReduce);
     }
 
     public static int ReducedSp(ProficiencyKind kind, int baseCost)
@@ -87,31 +86,24 @@ public static class Proficiency
     }
 
     // 행동을 했을 때: 숙련도 경험치와 플레이어 레벨 경험치를 함께 얻는다 (레벨 경험치에는 숙련도의 보너스가 곱해짐).
-    // 레벨이 오르면 그 알림 문구를 돌려준다 (없으면 빈 문자열).
+    // 숙련도나 플레이어 레벨이 오르면 그 알림을 화면 한가운데에 띄운다 (어디서 얻든 같은 자리). 돌려주는 글은 항상 빈 문자열이다.
     public static string Reward(ProficiencyDef def)
     {
         if (def == null) return "";
-        StringBuilder sb = new StringBuilder();
-
         if (AddExp(def, def.expPerUse, out int profLevel))
-            sb.Append($"{def.label} 숙련도가 올랐다! Lv.{profLevel}");
+            ItemGainToast.ShowCenter($"{def.label} 숙련도가 올랐다! Lv.{profLevel}");
 
         if (def.playerExpPerUse > 0)
         {
             ProficiencyLevel l = Current(def);
-            float mult = BattleCalc.Mult(l != null ? l.expBonusPercent : 0f);
-            int playerExp = Mathf.Max(1, Mathf.RoundToInt(def.playerExpPerUse * mult));
+            int playerExp = Mathf.Max(1, def.playerExpPerUse + (l != null ? l.expBonus : 0)); // 레벨의 경험치 보너스(정량)를 더한다
             int oldLevel = GameManager.Level;
             string levelText = LevelSystem.Describe(oldLevel, LevelSystem.AddExp(playerExp));
-            if (levelText.Length > 0)
-            {
-                if (sb.Length > 0) sb.Append('\n');
-                sb.Append(levelText);
-            }
+            if (levelText.Length > 0) ItemGainToast.ShowCenter(levelText);
         }
 
         PlayerUI.RefreshAll();
-        return sb.ToString();
+        return "";
     }
 
     public static string Reward(ProficiencyKind kind)
@@ -150,7 +142,7 @@ public static class Proficiency
     // 종류로 찾는 편의 함수 (종류마다 숙련도가 하나인 경우)
     public static int Level(ProficiencyKind kind) { return Level(GameTables.Proficiency.Get(kind)); }
     public static int Exp(ProficiencyKind kind) { return Exp(GameTables.Proficiency.Get(kind)); }
-    public static float Bonus(ProficiencyKind kind) { return Bonus(GameTables.Proficiency.Get(kind)); }
+    public static int Bonus(ProficiencyKind kind) { return Bonus(GameTables.Proficiency.Get(kind)); }
     public static bool AddExp(ProficiencyKind kind, int amount, out int newLevel)
     {
         return AddExp(GameTables.Proficiency.Get(kind), amount, out newLevel);

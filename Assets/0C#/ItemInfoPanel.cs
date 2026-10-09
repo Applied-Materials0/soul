@@ -70,7 +70,7 @@ public class ItemInfoPanel : MonoBehaviour
         gradeLabel.text = isGear && stack != null && InventoryManager.Instance != null ? InventoryManager.Instance.GradeLine(stack) : "";
 
         // 이름 세팅
-        if (infoName != null) infoName.text = item.itemName;
+        if (infoName != null) infoName.text = stack != null ? InventoryManager.DisplayName(stack) : item.itemName;
         else Debug.LogError("infoName (Text)이 인스펙터에 연결되지 않았습니다!");
 
         // 설명 세팅
@@ -82,6 +82,7 @@ public class ItemInfoPanel : MonoBehaviour
         {
             infoIcon.sprite = item.icon;
             infoIcon.gameObject.SetActive(true);
+            ApplyIconWear(stack);
         }
         else
         {
@@ -229,6 +230,24 @@ public class ItemInfoPanel : MonoBehaviour
         }
     }
 
+    // 정보창 아이콘 테두리: 내구도가 낮으면 주황(50% 이하) / 빨강(10% 이하)
+    private Outline iconOutline;
+
+    private void ApplyIconWear(ItemStack stack)
+    {
+        if (infoIcon == null) return;
+        Color? wear = InventoryManager.WearColor(stack);
+        if (iconOutline == null)
+        {
+            if (!wear.HasValue) return;
+            iconOutline = infoIcon.GetComponent<Outline>();
+            if (iconOutline == null) iconOutline = infoIcon.gameObject.AddComponent<Outline>();
+            iconOutline.effectDistance = new Vector2(4f, -4f);
+        }
+        iconOutline.enabled = wear.HasValue;
+        if (wear.HasValue) iconOutline.effectColor = wear.Value;
+    }
+
     // 아이템 이름 위의 작은 글자: 등급과 경험치 (BagUI/ItemInfoPanel 프리팹의 InfoGrade 오브젝트. 없으면 만든다)
     private TextMeshProUGUI gradeLabel;
 
@@ -336,7 +355,11 @@ public class ItemInfoPanel : MonoBehaviour
         {
             // 도구는 슬롯마다 내구도가 따로이므로 클릭한 슬롯(스택)의 현재 내구도를 표시
             int currentDurability = stack != null ? stack.durability : item.durabilitymax;
-            sb.AppendLine($" 내구도 : {currentDurability} / {item.durabilitymax}");
+            // 남은 내구도가 50% 이하면 주황색, 10% 이하(파괴 포함)면 빨간색으로 보인다
+            Color? wear = InventoryManager.WearColor(stack != null ? stack : null);
+            string durText = $"{currentDurability} / {item.durabilitymax}";
+            if (wear.HasValue) durText = $"<color=#{ColorUtility.ToHtmlStringRGB(wear.Value)}>{durText}</color>";
+            sb.AppendLine($" 내구도 : {durText}");
         }
         // 사용 효과: 회복하는 것(플러스 값)만 보여 준다. 마이너스 값은 표시하지 않는다.
         if (item.useHp > 0) sb.AppendLine($" 체력 회복 : +{item.useHp}");

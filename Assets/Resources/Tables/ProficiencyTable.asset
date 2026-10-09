@@ -21,75 +21,75 @@ MonoBehaviour:
     playerExpPerUse: 1
     levels:
     - level: 1
-      expToNext: 5
-      bonusPercent: 0
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
-    - level: 2
-      expToNext: 10
-      bonusPercent: 10
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
-    - level: 3
       expToNext: 20
-      bonusPercent: 20
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
-    - level: 4
-      expToNext: 35
-      bonusPercent: 30
+      expBonus: 0
+      spReduce: 0
+    - level: 2
+      expToNext: 40
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
-    - level: 5
-      expToNext: 55
-      bonusPercent: 40
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
-    - level: 6
+      expBonus: 0
+      spReduce: 0
+    - level: 3
       expToNext: 80
-      bonusPercent: 50
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 4
+      expToNext: 140
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 5
+      expToNext: 220
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 6
+      expToNext: 320
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
     - level: 7
-      expToNext: 110
-      bonusPercent: 60
+      expToNext: 440
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 8
-      expToNext: 150
-      bonusPercent: 70
+      expToNext: 600
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 9
-      expToNext: 200
-      bonusPercent: 80
+      expToNext: 800
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 10
       expToNext: 0
-      bonusPercent: 100
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
   - id: 1
     kind: 3
     tool: 2
@@ -99,74 +99,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 20
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 40
-      bonusPercent: 10
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 10
-      spReducePercent: 10
+      expBonus: 1
+      spReduce: 1
     - level: 3
       expToNext: 80
-      bonusPercent: 20
+      bonus: 0
       extraMin: 0
       extraMax: 2
-      expBonusPercent: 10
-      spReducePercent: 10
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 140
-      bonusPercent: 30
+      bonus: 0
       extraMin: 0
       extraMax: 3
-      expBonusPercent: 10
-      spReducePercent: 10
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 220
-      bonusPercent: 40
+      bonus: 0
       extraMin: 1
       extraMax: 3
-      expBonusPercent: 20
-      spReducePercent: 20
+      expBonus: 1
+      spReduce: 2
     - level: 6
       expToNext: 320
-      bonusPercent: 50
+      bonus: 0
       extraMin: 1
       extraMax: 4
-      expBonusPercent: 20
-      spReducePercent: 20
+      expBonus: 1
+      spReduce: 2
     - level: 7
       expToNext: 440
-      bonusPercent: 60
+      bonus: 0
       extraMin: 1
       extraMax: 5
-      expBonusPercent: 20
-      spReducePercent: 20
+      expBonus: 1
+      spReduce: 2
     - level: 8
       expToNext: 600
-      bonusPercent: 70
+      bonus: 0
       extraMin: 1
       extraMax: 6
-      expBonusPercent: 20
-      spReducePercent: 20
+      expBonus: 1
+      spReduce: 2
     - level: 9
       expToNext: 800
-      bonusPercent: 80
+      bonus: 0
       extraMin: 1
       extraMax: 7
-      expBonusPercent: 20
-      spReducePercent: 20
+      expBonus: 1
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 100
+      bonus: 0
       extraMin: 2
       extraMax: 7
-      expBonusPercent: 30
-      spReducePercent: 30
+      expBonus: 2
+      spReduce: 3
   - id: 2
     kind: 5
     tool: 2
@@ -176,74 +176,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 20
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 40
-      bonusPercent: 10
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 80
-      bonusPercent: 20
+      bonus: 2
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 4
       expToNext: 140
-      bonusPercent: 30
+      bonus: 3
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 5
       expToNext: 220
-      bonusPercent: 40
+      bonus: 4
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 6
       expToNext: 320
-      bonusPercent: 50
+      bonus: 5
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 7
       expToNext: 440
-      bonusPercent: 60
+      bonus: 6
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 8
       expToNext: 600
-      bonusPercent: 70
+      bonus: 7
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 9
       expToNext: 800
-      bonusPercent: 80
+      bonus: 8
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 10
       expToNext: 0
-      bonusPercent: 100
+      bonus: 10
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
   - id: 3
     kind: 2
     tool: 0
@@ -253,74 +253,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 5
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 10
-      bonusPercent: 10
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 20
-      bonusPercent: 20
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 35
-      bonusPercent: 30
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 55
-      bonusPercent: 40
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 20
-      spReducePercent: 12
+      expBonus: 1
+      spReduce: 1
     - level: 6
       expToNext: 80
-      bonusPercent: 50
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 2
+      spReduce: 2
     - level: 7
       expToNext: 110
-      bonusPercent: 60
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
       expToNext: 150
-      bonusPercent: 70
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
       expToNext: 200
-      bonusPercent: 80
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 90
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3
   - id: 4
     kind: 7
     tool: 0
@@ -330,74 +330,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 5
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 10
-      bonusPercent: 10
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 20
-      bonusPercent: 20
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 35
-      bonusPercent: 30
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 55
-      bonusPercent: 40
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 20
-      spReducePercent: 12
+      expBonus: 1
+      spReduce: 1
     - level: 6
       expToNext: 80
-      bonusPercent: 50
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 2
+      spReduce: 2
     - level: 7
       expToNext: 110
-      bonusPercent: 60
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
       expToNext: 150
-      bonusPercent: 70
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
       expToNext: 200
-      bonusPercent: 80
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 90
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3
   - id: 5
     kind: 4
     tool: 0
@@ -407,74 +407,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 5
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 10
-      bonusPercent: 10
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 20
-      bonusPercent: 20
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 35
-      bonusPercent: 30
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 55
-      bonusPercent: 40
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 20
-      spReducePercent: 12
+      expBonus: 1
+      spReduce: 1
     - level: 6
       expToNext: 80
-      bonusPercent: 50
+      bonus: 0
       extraMin: 0
       extraMax: 1
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 2
+      spReduce: 2
     - level: 7
       expToNext: 110
-      bonusPercent: 60
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
       expToNext: 150
-      bonusPercent: 70
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
       expToNext: 200
-      bonusPercent: 80
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 90
+      bonus: 0
       extraMin: 1
       extraMax: 2
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3
   - id: 6
     kind: 8
     tool: 0
@@ -484,74 +484,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 5
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 10
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 20
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 0
+      expBonus: 1
+      spReduce: 0
     - level: 4
       expToNext: 35
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 15
-      spReducePercent: 0
+      expBonus: 1
+      spReduce: 0
     - level: 5
       expToNext: 55
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 20
-      spReducePercent: 0
+      expBonus: 1
+      spReduce: 0
     - level: 6
       expToNext: 80
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 25
-      spReducePercent: 0
+      expBonus: 2
+      spReduce: 0
     - level: 7
       expToNext: 110
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 30
-      spReducePercent: 0
+      expBonus: 2
+      spReduce: 0
     - level: 8
       expToNext: 150
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 35
-      spReducePercent: 0
+      expBonus: 2
+      spReduce: 0
     - level: 9
       expToNext: 200
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 40
-      spReducePercent: 0
+      expBonus: 3
+      spReduce: 0
     - level: 10
       expToNext: 0
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 45
-      spReducePercent: 0
+      expBonus: 3
+      spReduce: 0
   - id: 7
     kind: 6
     tool: 0
@@ -561,74 +561,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 10
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 20
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 40
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 70
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 110
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 20
-      spReducePercent: 12
+      expBonus: 1
+      spReduce: 1
     - level: 6
       expToNext: 160
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 2
+      spReduce: 2
     - level: 7
       expToNext: 220
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
       expToNext: 300
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
       expToNext: 400
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3
   - id: 8
     kind: 9
     tool: 0
@@ -638,74 +638,74 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 10
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 20
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 40
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
       expToNext: 70
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
       expToNext: 110
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 20
-      spReducePercent: 12
+      expBonus: 1
+      spReduce: 1
     - level: 6
       expToNext: 160
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 2
+      spReduce: 2
     - level: 7
       expToNext: 220
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
       expToNext: 300
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
       expToNext: 400
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 0
+      bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3
   - id: 9
     kind: 1
     tool: 0
@@ -715,71 +715,71 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 10
-      bonusPercent: 0
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 0
-      spReducePercent: 0
+      expBonus: 0
+      spReduce: 0
     - level: 2
       expToNext: 20
-      bonusPercent: 0
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 5
-      spReducePercent: 3
+      expBonus: 0
+      spReduce: 0
     - level: 3
       expToNext: 40
-      bonusPercent: 0
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 10
-      spReducePercent: 6
+      expBonus: 1
+      spReduce: 1
     - level: 4
-      expToNext: 70
-      bonusPercent: 0
+      expToNext: 80
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 15
-      spReducePercent: 9
+      expBonus: 1
+      spReduce: 1
     - level: 5
-      expToNext: 110
-      bonusPercent: 0
-      extraMin: 0
-      extraMax: 0
-      expBonusPercent: 20
-      spReducePercent: 12
-    - level: 6
       expToNext: 160
-      bonusPercent: 0
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 25
-      spReducePercent: 15
+      expBonus: 1
+      spReduce: 1
+    - level: 6
+      expToNext: 320
+      bonus: 1
+      extraMin: 0
+      extraMax: 0
+      expBonus: 2
+      spReduce: 2
     - level: 7
-      expToNext: 220
-      bonusPercent: 0
+      expToNext: 640
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 30
-      spReducePercent: 18
+      expBonus: 2
+      spReduce: 2
     - level: 8
-      expToNext: 300
-      bonusPercent: 0
+      expToNext: 1280
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 35
-      spReducePercent: 21
+      expBonus: 2
+      spReduce: 2
     - level: 9
-      expToNext: 400
-      bonusPercent: 0
+      expToNext: 2560
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 40
-      spReducePercent: 24
+      expBonus: 3
+      spReduce: 2
     - level: 10
       expToNext: 0
-      bonusPercent: 0
+      bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonusPercent: 45
-      spReducePercent: 27
+      expBonus: 3
+      spReduce: 3

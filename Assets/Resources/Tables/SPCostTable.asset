@@ -22,7 +22,7 @@ MonoBehaviour:
     cost: 5
     note: "\uC790\uC6D0\uC744 \uD55C \uBC88 \uCC44\uC9D1\uD560 \uB54C"
   - action: 2
-    label: "\uB3C4\uB824\uB0B4\uAE30"
+    label: "\uB3C4\uCD95"
     cost: 5
     note: "\uCE7C\uB85C \uD55C \uBC88 \uB3C4\uB824\uB0BC \uB54C"
   - action: 3

@@ -141,11 +141,11 @@ public static class RuleTableDrawers
     private static readonly Row[] ProficiencyRows =
     {
         new Row("다음 레벨까지 경험치", "expToNext", "이 숙련도 레벨에서 다음 레벨이 되기까지 필요한 숙련도 경험치. 마지막 레벨은 0"),
-        new Row("수확 보너스 (%)", "bonusPercent", "이 레벨일 때 얻는 수량이 늘어나는 비율 [%]. [회복] 숙련도에서는 독 내성 [%]"),
+        new Row("수확 보너스", "bonus", "이 레벨일 때 한 번에 얻는 수량이 이만큼 늘어남 (+1이면 1개 더). [회복] 숙련도에서는 독 내성: 방어력 감소를 이만큼 [%p] 줄이고 독 지속 피해도 이만큼 줄임"),
         new Row("수량 추가 최소", "extraMin", "채집/도려내기 때 같은 아이템을 최소 이만큼 더 얻음"),
         new Row("수량 추가 최대", "extraMax", "최대 이만큼 더 얻음 (최소~최대 중에서 뽑음)"),
-        new Row("레벨 경험치 보너스 (%)", "expBonusPercent", "이 숙련도 행동으로 얻는 플레이어 레벨 경험치가 늘어나는 비율 [%]"),
-        new Row("행동 SP 감소 (%)", "spReducePercent", "이 숙련도 행동(공격/방어/채집/도려내기)에 드는 SP가 줄어드는 비율 [%]"),
+        new Row("레벨 경험치 보너스", "expBonus", "이 숙련도 행동으로 얻는 플레이어 레벨 경험치가 이만큼 늘어남 (+1이면 1 증가)"),
+        new Row("행동 SP 감소", "spReduce", "이 숙련도 행동(공격/방어/채집/도려내기/탐색)에 드는 SP가 이만큼 줄어듦 (-1이면 1 감소, 0 밑으로는 안 내려감)"),
     };
 
     private static Vector2[] profScrolls = new Vector2[0];
@@ -157,7 +157,7 @@ public static class RuleTableDrawers
 
         EditorGUILayout.HelpBox(
             "행동을 하면 숙련도 경험치와 플레이어 레벨 경험치를 함께 얻습니다. 종류: 전투(공격/방어), 벌목(도끼), 채광(곡괭이), 채석(Quarrying: 자원 표의 숙련도 칸에서 지정), 풀 베기(낫), 제작, 회복(아이템 사용, 레벨 보너스가 독 내성), 도려내기. " +
-            "레벨 보너스: 수확 보너스(%), 수량 추가(최소~최대), 레벨 경험치 보너스(%), 행동 SP 감소(%). [Gather]는 예전 방식(아래 '도구'로 채집할 때)입니다. " +
+            "레벨 보너스는 모두 정량입니다: 수확 보너스(+n개), 수량 추가(최소~최대), 레벨 경험치 보너스(+n), 행동 SP 감소(-n). [Gather]는 예전 방식(아래 '도구'로 채집할 때)입니다. " +
             "같은 종류의 숙련도를 여러 개 만들 수 있고, 번호(ID)가 겹치지 않아야 진행도가 따로 쌓입니다.",
             MessageType.None);
 
@@ -295,53 +295,106 @@ public static class RuleTableDrawers
     // =========================================================
     //  특성 표: 한 줄 = 특성 하나 (장비의 "특성ID"가 이 표를 가리킴)
     // =========================================================
+    private static readonly string[][] TraitCols =
+    {
+        // 제목, 변수, 너비, 설명(칸 이름에 마우스를 올리면 보임)
+        new[] { "ID", "id", "40", "특성 번호 (장비의 '특성ID'에 적음)" },
+        new[] { "이름", "label", "90", "버프 창에 보이는 이름" },
+        new[] { "디버프", "debuff", "50", "켜면 디버프 특성: 상대가 걸 때, 이미 같은 특성을 가진 쪽에는 걸리지 않음" },
+        new[] { "공격 증가량 %", "atRate", "80", "공격력 증감 [%] (마이너스면 감소)" },
+        new[] { "방어 증가량 %", "dfRate", "80", "방어력 증감 [%] (마이너스면 디버프)" },
+        new[] { "체력 증가량 %", "hpRate", "80", "최대 체력 증감 [%]" },
+        new[] { "내성 적용 %", "resistPercent", "75", "이 특성의 공격(방어력 감소, 지속 피해)이 독 내성에 의해 줄어드는 정도. 100이면 내성만큼 그대로, 0이면 내성이 안 통함. 내성은 회복 숙련도 레벨이 오를수록 늘어남" },
+        new[] { "방어 관통 %", "breakDf", "75", "상대 방어력을 무시하는 비율" },
+        new[] { "고정 데미지", "fixAt", "75", "방어력과 상관없이 더해지는 피해" },
+        new[] { "체력 퍼뎀 %", "hpRateAt", "75", "적의 현재 체력의 이 비율만큼 추가 피해" },
+        new[] { "치명타 확률 %", "criticalRate", "85", "" },
+        new[] { "치명타 데미지 %", "critical", "90", "" },
+        new[] { "흡수 %", "abs", "60", "준 피해의 이 비율만큼 체력 회복" },
+        new[] { "회복량", "healAmount", "65", "전투를 시작할 때 한 번 회복하는 체력" },
+        new[] { "회복량 %", "healPercent", "70", "전투를 시작할 때 한 번 회복하는 체력 (최대 체력의 %)" },
+        new[] { "턴당 회복", "regenPerTurn", "75", "전투 중 턴마다 회복하는 체력" },
+        new[] { "턴당 회복 %", "regenHpPercent", "85", "전투 중 턴마다 회복하는 체력 (최대 체력의 %)" },
+        new[] { "턴당 체력 퍼뎀 %", "dotHpPercent", "100", "상태이상: 턴마다 대상의 현재 체력의 이 비율만큼 피해" },
+        new[] { "턴당 체력 퍼뎀 증가", "dotHpGrowth", "110", "상태이상: 턴이 지날 때마다 체력 퍼뎀 %가 이만큼 늘어남" },
+        new[] { "부여 확률 %", "inflictChance", "80", "공격이 들어갔을 때 이 특성의 상태이상을 붙일 확률" },
+        new[] { "턴당 지속 데미지", "dotDamage", "100", "상태이상: 첫 턴의 지속 데미지" },
+        new[] { "턴당 지속 데미지 증가", "dotGrowth", "125", "상태이상: 턴이 지날 때마다 지속 데미지가 이만큼 늘어남" },
+        new[] { "마나 회복", "manaPerTurn", "70", "전투 중 턴마다 회복하는 마나" },
+        new[] { "마나 회복 %", "manaPercentPerTurn", "80", "전투 중 턴마다 회복하는 마나 (최대 마나의 %)" },
+        new[] { "최대 마나 증가 %", "manaRate", "100", "" },
+        new[] { "스킬 마나 감소 %", "skillManaReduce", "100", "스킬 마나 소모 감소 (스킬이 생기면 적용)" },
+        new[] { "최대 SP 증가 %", "spRate", "95", "" },
+        new[] { "적 회복 감소 %", "healReducePercent", "90", "상태이상에 걸린 대상의 회복량이 줄어드는 비율" },
+        new[] { "지속 턴 수", "dotTurns", "70", "상태이상이 지속되는 턴 수" },
+        new[] { "처형 체력 %", "executeHpPercent", "85", "적의 현재 체력이 최대 체력의 이 비율 미만이면 공격 때 바로 처형" },
+        new[] { "반사 %", "reflectPercent", "60", "적에게 받은 데미지의 이 비율을 적에게 되돌림" },
+        new[] { "완전 방어 횟수", "perfectDefendCount", "100", "한 전투에서 [방어]가 공격을 완전히 막는 횟수" },
+        new[] { "상대 버프 탈취 (미구현)", "stealBuff", "125", "아직 구현되지 않았습니다. 표에만 있음" },
+        new[] { "나의 디버프 제거", "cleanse", "100", "매 턴 내게 걸린 상태이상을 지우고 디버프 효과를 받지 않음" },
+        new[] { "부활 횟수", "reviveCount", "70", "한 전투에서 체력이 0이 되었을 때 되살아나는 횟수" },
+        new[] { "부활 체력 %", "reviveHpPercent", "80", "부활할 때 회복하는 체력 (최대 체력의 %)" },
+        new[] { "필중 횟수", "sureHitCount", "70", "한 전투에서 적의 회피와 방어 태세를 무시하고 반드시 맞히는 횟수" },
+        new[] { "선제공격 횟수", "firstStrikeCount", "100", "하루(다음 날이 되면 초기화) 동안 전투 시작 때 내가 먼저 움직이는 횟수" },
+        new[] { "설명", "description", "380", "" },
+    };
+
+    private static Vector2 traitScroll;
+
+    // 칸마다 정해진 자리(Rect)에 그려서 머리글과 칸이 어긋나지 않게 한다
     public static bool DrawTraitTable(SerializedObject so)
     {
         so.Update();
         EditorGUI.BeginChangeCheck();
 
         EditorGUILayout.HelpBox(
-            "장비를 [장착]하면 그 장비에 적힌 특성ID의 효과가 적용됩니다 (장비 스탯 탭의 '특성ID'). " +
-            "공격력/방어력 증감은 %이고, 방어력 증감이 마이너스(디버프)인 특성에 '내성 적용'을 켜면 [회복] 숙련도로 쌓은 독 내성만큼 디버프가 줄어듭니다. " +
-            "예) 독: 공격력 +30%, 방어력 -30%, 내성 적용 -> 내성이 없으면 방어력이 줄고, 내성이 100%면 방어력은 그대로. " +
-            "'부여 확률'이 0보다 크면 이 특성을 가진 채 적을 공격해 피해를 줄 때 그 확률로 적에게 지속 피해를 건다 (첫 턴 '지속피해', 턴마다 '턴당 증가'만큼 커지고 '턴 수'만큼 지속).",
+            "장비를 [장착]하면 그 장비에 적힌 특성ID의 효과가 적용됩니다 (장비 스탯 탭의 '특성ID'). 값이 0(또는 꺼짐)인 칸은 그 효과가 없다는 뜻이니 필요한 칸만 채우세요. " +
+            "표가 넓으니 아래 스크롤바로 옆으로 움직입니다. 칸 이름에 마우스를 올리면 설명이 나옵니다.\n" +
+            "구분: 공격 증가량~선제공격 횟수 중 [능력치] 공격/방어/체력 증가량~최대 SP 증가량, [회복] 회복량~마나 회복 %, [상태이상] 턴당 체력 퍼뎀~지속 턴 수 (공격으로 적에게 붙이는 독/화염, 몬스터가 플레이어에게 걸 수도 있음), " +
+            "[전투 효과] 처형 체력~선제공격 횟수. 체력 퍼뎀은 대상의 현재 체력 비율입니다. '횟수'는 한 전투에 몇 번이고, 선제공격만 하루에 몇 번입니다.",
             MessageType.None);
 
         SerializedProperty list = so.FindProperty("traits");
 
-        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.Label("ID", header, GUILayout.Width(40));
-        GUILayout.Label("이름", header, GUILayout.Width(100));
-        GUILayout.Label("공격력 %", header, GUILayout.Width(70));
-        GUILayout.Label("방어력 %", header, GUILayout.Width(70));
-        GUILayout.Label("내성 적용", header, GUILayout.Width(60));
-        GUILayout.Label("부여 확률 %", header, GUILayout.Width(70));
-        GUILayout.Label("지속피해", header, GUILayout.Width(60));
-        GUILayout.Label("턴당 증가", header, GUILayout.Width(60));
-        GUILayout.Label("턴 수", header, GUILayout.Width(45));
-        GUILayout.Label("설명", header, GUILayout.Width(380));
-        EditorGUILayout.EndHorizontal();
+        const float rowH = 20f, headH = 34f, gap = 2f, delW = 28f;
+        float[] widths = new float[TraitCols.Length];
+        float total = delW;
+        for (int i = 0; i < TraitCols.Length; i++) { widths[i] = float.Parse(TraitCols[i][2]); total += widths[i] + gap; }
 
-        int removeAt = -1;
-        for (int i = 0; i < list.arraySize; i++)
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        traitScroll = EditorGUILayout.BeginScrollView(traitScroll, true, false);
+
+        // 머리글
+        Rect hr = GUILayoutUtility.GetRect(total, headH);
+        float x = hr.x;
+        for (int i = 0; i < TraitCols.Length; i++)
         {
-            SerializedProperty t = list.GetArrayElementAtIndex(i);
-            EditorGUILayout.BeginHorizontal();
-            TableField.Draw(t.FindPropertyRelative("id"), 40);
-            TableField.Draw(t.FindPropertyRelative("label"), 100);
-            TableField.Draw(t.FindPropertyRelative("atRate"), 70);
-            TableField.Draw(t.FindPropertyRelative("dfRate"), 70);
-            TableField.Draw(t.FindPropertyRelative("resistable"), 60);
-            TableField.Draw(t.FindPropertyRelative("inflictChance"), 70);
-            TableField.Draw(t.FindPropertyRelative("dotDamage"), 60);
-            TableField.Draw(t.FindPropertyRelative("dotGrowth"), 60);
-            TableField.Draw(t.FindPropertyRelative("dotTurns"), 45);
-            TableField.Draw(t.FindPropertyRelative("description"), 380);
-            if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
-            EditorGUILayout.EndHorizontal();
+            GUI.Label(new Rect(x, hr.y, widths[i], headH), new GUIContent(TraitCols[i][0], TraitCols[i][3]), header);
+            x += widths[i] + gap;
+        }
+
+        // 줄
+        int removeAt = -1;
+        for (int r = 0; r < list.arraySize; r++)
+        {
+            SerializedProperty t = list.GetArrayElementAtIndex(r);
+            Rect rr = GUILayoutUtility.GetRect(total, rowH);
+            x = rr.x;
+            for (int i = 0; i < TraitCols.Length; i++)
+            {
+                SerializedProperty p = t.FindPropertyRelative(TraitCols[i][1]);
+                Rect cell = new Rect(x, rr.y, widths[i], rowH);
+                if (p != null && p.propertyType == SerializedPropertyType.Boolean)
+                    p.boolValue = EditorGUI.Toggle(new Rect(cell.x + (cell.width - 14f) / 2f, cell.y, 14f, cell.height), p.boolValue); // 체크 칸은 가운데
+                else
+                    TableField.Draw(cell, p);
+                x += widths[i] + gap;
+            }
+            if (GUI.Button(new Rect(x, rr.y, delW - 2f, rowH), "X")) removeAt = r;
         }
         if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        EditorGUILayout.EndScrollView();
 
         if (GUILayout.Button("+ 특성 추가", GUILayout.Height(24)))
         {
@@ -351,12 +404,22 @@ public static class RuleTableDrawers
 
             list.InsertArrayElementAtIndex(list.arraySize);
             SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            // 마지막 줄이 복사되므로 모든 칸을 비운다
+            foreach (string[] c in TraitCols)
+            {
+                SerializedProperty p = added.FindPropertyRelative(c[1]);
+                if (p == null) continue;
+                switch (p.propertyType)
+                {
+                    case SerializedPropertyType.Integer: p.intValue = 0; break;
+                    case SerializedPropertyType.Float: p.floatValue = 0f; break;
+                    case SerializedPropertyType.Boolean: p.boolValue = false; break;
+                    case SerializedPropertyType.String: p.stringValue = ""; break;
+                }
+            }
             added.FindPropertyRelative("id").intValue = maxId + 1;
             added.FindPropertyRelative("label").stringValue = "새 특성";
-            added.FindPropertyRelative("atRate").floatValue = 0f;
-            added.FindPropertyRelative("dfRate").floatValue = 0f;
-            added.FindPropertyRelative("resistable").boolValue = false;
-            added.FindPropertyRelative("description").stringValue = "";
+            added.FindPropertyRelative("reviveHpPercent").floatValue = 50f;
         }
 
         bool changed = EditorGUI.EndChangeCheck();
@@ -377,6 +440,18 @@ public static class RuleTableDrawers
     // =========================================================
     //  탐색 결과 표: 한 줄 = 탐색했을 때 나올 수 있는 결과 하나
     // =========================================================
+    // 지역 번호 칸: 번호와 지역 이름을 같이 보여 준다 (0 = 모든 지역. 이름은 FieldManager의 지역과 같음)
+    private static readonly string[] RegionNames = { "전체", "포레스트", "폭포", "그라운드", "광산", "채석장", "유적" };
+
+    private static void DrawRegionField(SerializedProperty p)
+    {
+        EditorGUILayout.BeginHorizontal(GUILayout.Width(95));
+        p.intValue = Mathf.Max(0, EditorGUILayout.IntField(p.intValue, GUILayout.Width(28)));
+        int id = p.intValue;
+        GUILayout.Label(id < RegionNames.Length ? RegionNames[id] : "?", EditorStyles.miniLabel, GUILayout.Width(62));
+        EditorGUILayout.EndHorizontal();
+    }
+
     public static bool DrawSearchTable(SerializedObject so)
     {
         so.Update();
@@ -396,6 +471,7 @@ public static class RuleTableDrawers
 
         GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
         EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("지역", header, GUILayout.Width(95));
         GUILayout.Label("종류", header, GUILayout.Width(90));
         GUILayout.Label("이름", header, GUILayout.Width(130));
         GUILayout.Label("비중", header, GUILayout.Width(50));
@@ -414,6 +490,7 @@ public static class RuleTableDrawers
             int w = Mathf.Max(0, weight.intValue);
 
             EditorGUILayout.BeginHorizontal();
+            DrawRegionField(e.FindPropertyRelative("regionId"));
             TableField.Draw(e.FindPropertyRelative("kind"), 90);
             TableField.Draw(e.FindPropertyRelative("label"), 130);
             TableField.Draw(weight, 50);
@@ -546,6 +623,8 @@ public static class RuleTableDrawers
         new BaseRow("기절 시 아이템 손실 (%)", "itemLossPercent", "기절하면 잃는 아이템 비율 (도구 제외)", 0),
         new BaseRow("오후 SP 회복 (%)", "restAfternoonSpPercent", "[휴식]으로 오후가 될 때 회복하는 SP (최대 SP의 %)"),
         new BaseRow("밤 SP 회복 (%)", "restNightSpPercent", "[휴식]으로 밤이 될 때 회복하는 SP (최대 SP의 %). 다음 날 오전은 체력과 SP가 가득 찬다"),
+        new BaseRow("탈진 스택 수", "exhaustStacks", "SP가 0에 닿을 때마다 쌓이는 스택. 이만큼 쌓이면 건강이 나빠져 최대 SP가 줄어듦 (0이면 탈진 없음). 푹 자고 다음 날이 되면 풀림", 0),
+        new BaseRow("건강 악화 최대 SP 감소 (%)", "exhaustSpMaxPercent", "건강이 나빠졌을 때 줄어드는 최대 SP [%]"),
         new BaseRow("고유 특성 ID", "innateTraitId", "장비 없이도 가지는 특성 (특성 표의 ID, 0 = 없음). 예: 1 = 독", 0),
         new BaseRow("위험 1단계 체력 (%)", "lowHpPercent1", "체력이 이 비율 이하면 화면 가장자리가 붉어지기 시작"),
         new BaseRow("위험 1단계 세기", "lowHpAlpha1", "붉은 정도 (0~100)"),

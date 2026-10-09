@@ -104,9 +104,12 @@ public class DataTableWindow : EditorWindow
         C("체력", "hpMax", 60, "최대 체력"), C("공격력", "at", 60), C("방어력", "df", 60),
         C("속도", "speed", 55, "높을수록 먼저 행동"), C("회피율", "avoid", 60, "%"),
         C("치명타 확률", "criticalrate", 70, "%"), C("치명타 피해", "critical", 70, "% 증가"),
+        C("방어 보너스 %", "defendBonus", 85, "방어 태세일 때 내 공격 피해가 이만큼 [%] 깎여 들어감"),
         C("방어 확률", "defendChance", 65, "자기 턴에 방어를 고를 확률 [%]"),
         C("저체력 방어", "defendChanceLowHp", 75, "체력 30% 이하일 때 방어 확률 [%]"),
         C("제압 확률", "suppressChance", 70, "턴마다 플레이어를 제압할 확률 [%]"),
+        C("특성 공격 ID", "inflictTraitId", 85, "맞춘 공격으로 플레이어에게 거는 특성 (특성 표의 ID, 0이면 없음. 예: 1 = 독). 플레이어가 이미 그 특성을 가지면 걸리지 않음"),
+        C("특성 확률", "inflictChance", 70, "공격이 들어갔을 때 특성을 거는 확률 [%]"),
     }).ToArray();
 
     private static readonly Col[] MonsterReward = MonsterLead.Concat(new[]
