@@ -158,6 +158,7 @@ public static class RuleTableDrawers
         EditorGUILayout.HelpBox(
             "행동을 하면 숙련도 경험치와 플레이어 레벨 경험치를 함께 얻습니다. 종류: 전투(공격/방어), 벌목(도끼), 채광(곡괭이), 채석(Quarrying: 자원 표의 숙련도 칸에서 지정), 풀 베기(낫), 제작, 회복(아이템 사용, 레벨 보너스가 독 내성), 도려내기. " +
             "레벨 보너스는 모두 정량입니다: 수확 보너스(+n개), 수량 추가(최소~최대), 레벨 경험치 보너스(+n), 행동 SP 감소(-n). [Gather]는 예전 방식(아래 '도구'로 채집할 때)입니다. " +
+            "레벨 보너스는 누적되지 않습니다: 지금 레벨 줄의 값 하나만 적용됩니다 (2레벨 +1, 3레벨 +1이면 3레벨은 +1, +2로 만들려면 3레벨에 2를 적습니다). " +
             "같은 종류의 숙련도를 여러 개 만들 수 있고, 번호(ID)가 겹치지 않아야 진행도가 따로 쌓입니다.",
             MessageType.None);
 
@@ -228,6 +229,25 @@ public static class RuleTableDrawers
     // =========================================================
     //  등급 표: 한 줄 = 등급 하나 (위에서부터 Tier 1, 2, 3 ...)
     // =========================================================
+    private static readonly string[][] GradeCols =
+    {
+        new[] { "Tier", "tier", "40", "등급 번호 (1부터)" },
+        new[] { "등급 이름", "name", "110", "" },
+        new[] { "다음 등급까지 경험치", "expToNext", "110", "이 경험치가 차면 다음 등급으로 오름 (마지막 등급은 0)" },
+        new[] { "공격력 %", "atBonus", "80", "이 등급일 때 장비의 공격력이 늘어나는 비율 (100이면 2배)" },
+        new[] { "방어력 %", "dfBonus", "80", "장비의 방어력" },
+        new[] { "체력 %", "hpBonus", "80", "장비의 체력" },
+        new[] { "고정 데미지 %", "fixBonus", "85", "장비의 고정 데미지" },
+        new[] { "방어 관통 %", "breakDfBonus", "85", "장비의 방어 관통" },
+        new[] { "체력 퍼뎀 %", "hpRateAtBonus", "85", "장비의 체력 퍼뎀" },
+        new[] { "치명타 배율 %", "critBonus", "85", "장비의 치명타 데미지" },
+        new[] { "치명타 확률 %", "critRateBonus", "85", "장비의 치명타 확률" },
+        new[] { "흡수 %", "absBonus", "80", "장비의 체력 흡수" },
+        new[] { "회복 증가율 %", "healRateBonus", "85", "장비의 회복 증가율 (회복 아이템을 쓸 때 회복량이 늘어나는 비율)" },
+    };
+
+    private static Vector2 gradeScroll;
+
     public static bool DrawGradeTable(SerializedObject so)
     {
         so.Update();
@@ -236,32 +256,44 @@ public static class RuleTableDrawers
         EditorGUILayout.HelpBox(
             "장비/도구는 내구도를 1 쓸 때마다 경험치(아이템 표 [수리/등급] 탭의 '경험치/내구도')를 얻고, " +
             "'다음 등급까지 경험치'가 차면 다음 등급으로 오릅니다 (남은 경험치는 이어짐). 마지막 등급의 경험치는 0으로 둡니다. " +
-            "'능력치 %'는 그 등급일 때 장비의 공격력/방어력/체력/고정 공격력이 늘어나는 비율입니다 (0이면 등급이 올라도 능력치는 그대로).",
+            "공격력 % ~ 회복 증가율 %는 그 등급일 때 장비의 해당 능력치가 늘어나는 비율이며, 능력치마다 따로 정합니다. " +
+            "장비의 기본 능력치에 곱해집니다 (100이면 2배, 0이면 그대로). 값을 고친 뒤에는 가방을 열면 반영됩니다.",
             MessageType.None);
 
         SerializedProperty list = so.FindProperty("grades");
 
-        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter };
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.Label("Tier", header, GUILayout.Width(40));
-        GUILayout.Label("등급 이름", header, GUILayout.Width(140));
-        GUILayout.Label("다음 등급까지 경험치", header, GUILayout.Width(130));
-        GUILayout.Label("능력치 %", header, GUILayout.Width(70));
-        EditorGUILayout.EndHorizontal();
+        const float rowH = 20f, headH = 34f, gap = 2f, delW = 28f;
+        float[] widths = new float[GradeCols.Length];
+        float total = delW;
+        for (int i = 0; i < GradeCols.Length; i++) { widths[i] = float.Parse(GradeCols[i][2]); total += widths[i] + gap; }
+
+        GUIStyle header = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        gradeScroll = EditorGUILayout.BeginScrollView(gradeScroll, true, false);
+
+        Rect hr = GUILayoutUtility.GetRect(total, headH);
+        float x = hr.x;
+        for (int i = 0; i < GradeCols.Length; i++)
+        {
+            GUI.Label(new Rect(x, hr.y, widths[i], headH), new GUIContent(GradeCols[i][0], GradeCols[i][3]), header);
+            x += widths[i] + gap;
+        }
 
         int removeAt = -1;
-        for (int i = 0; i < list.arraySize; i++)
+        for (int r = 0; r < list.arraySize; r++)
         {
-            SerializedProperty g = list.GetArrayElementAtIndex(i);
-            EditorGUILayout.BeginHorizontal();
-            TableField.Draw(g.FindPropertyRelative("tier"), 40);
-            TableField.Draw(g.FindPropertyRelative("name"), 140);
-            TableField.Draw(g.FindPropertyRelative("expToNext"), 130);
-            TableField.Draw(g.FindPropertyRelative("statBonusPercent"), 70);
-            if (GUILayout.Button("X", GUILayout.Width(26))) removeAt = i;
-            EditorGUILayout.EndHorizontal();
+            SerializedProperty g = list.GetArrayElementAtIndex(r);
+            Rect rr = GUILayoutUtility.GetRect(total, rowH);
+            x = rr.x;
+            for (int i = 0; i < GradeCols.Length; i++)
+            {
+                TableField.Draw(new Rect(x, rr.y, widths[i], rowH), g.FindPropertyRelative(GradeCols[i][1]));
+                x += widths[i] + gap;
+            }
+            if (GUI.Button(new Rect(x, rr.y, delW - 2f, rowH), "X")) removeAt = r;
         }
         if (removeAt >= 0) list.DeleteArrayElementAtIndex(removeAt);
+
+        EditorGUILayout.EndScrollView();
 
         if (GUILayout.Button("+ 등급 추가", GUILayout.Height(24)))
         {
@@ -271,10 +303,15 @@ public static class RuleTableDrawers
 
             list.InsertArrayElementAtIndex(list.arraySize);
             SerializedProperty added = list.GetArrayElementAtIndex(list.arraySize - 1);
+            foreach (string[] c in GradeCols)
+            {
+                SerializedProperty p = added.FindPropertyRelative(c[1]);
+                if (p == null) continue;
+                if (p.propertyType == SerializedPropertyType.Float) p.floatValue = 0f;
+                else if (p.propertyType == SerializedPropertyType.Integer) p.intValue = 0;
+            }
             added.FindPropertyRelative("tier").intValue = maxTier + 1;
             added.FindPropertyRelative("name").stringValue = "New Grade";
-            added.FindPropertyRelative("expToNext").intValue = 0;
-            added.FindPropertyRelative("statBonusPercent").floatValue = 0f;
         }
 
         bool changed = EditorGUI.EndChangeCheck();

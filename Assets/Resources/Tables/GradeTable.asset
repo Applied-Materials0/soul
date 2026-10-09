@@ -16,20 +16,70 @@ MonoBehaviour:
   - tier: 1
     name: Common
     expToNext: 50
+    atBonus: 0
+    dfBonus: 0
+    hpBonus: 0
+    fixBonus: 0
+    breakDfBonus: 0
+    hpRateAtBonus: 0
+    critBonus: 0
+    critRateBonus: 0
+    absBonus: 0
+    healRateBonus: 0
     statBonusPercent: 0
   - tier: 2
     name: Rare
     expToNext: 200
-    statBonusPercent: 100
+    atBonus: 100
+    dfBonus: 100
+    hpBonus: 100
+    fixBonus: 10
+    breakDfBonus: 0
+    hpRateAtBonus: 0
+    critBonus: 0
+    critRateBonus: 0
+    absBonus: 0
+    healRateBonus: 0
+    statBonusPercent: 0
   - tier: 3
     name: Epic
     expToNext: 600
-    statBonusPercent: 200
+    atBonus: 25
+    dfBonus: 25
+    hpBonus: 25
+    fixBonus: 25
+    breakDfBonus: 0
+    hpRateAtBonus: 0
+    critBonus: 0
+    critRateBonus: 0
+    absBonus: 0
+    healRateBonus: 0
+    statBonusPercent: 0
   - tier: 4
     name: Legends
     expToNext: 1000
-    statBonusPercent: 300
+    atBonus: 50
+    dfBonus: 50
+    hpBonus: 50
+    fixBonus: 50
+    breakDfBonus: 0
+    hpRateAtBonus: 0
+    critBonus: 0
+    critRateBonus: 0
+    absBonus: 0
+    healRateBonus: 0
+    statBonusPercent: 0
   - tier: 5
     name: Eternal
     expToNext: 0
-    statBonusPercent: 500
+    atBonus: 100
+    dfBonus: 100
+    hpBonus: 100
+    fixBonus: 100
+    breakDfBonus: 0
+    hpRateAtBonus: 0
+    critBonus: 0
+    critRateBonus: 0
+    absBonus: 0
+    healRateBonus: 0
+    statBonusPercent: 0

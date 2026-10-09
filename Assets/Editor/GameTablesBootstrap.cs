@@ -31,6 +31,7 @@ public static class GameTablesBootstrap
         MigrateTraitDefaults();
         EnsureDefaultTraits();
         MigrateTraitWeaponTypes();
+        MigrateGradeStats();
         MigrateRepairMaterials();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
@@ -128,6 +129,27 @@ public static class GameTablesBootstrap
             }
         }
         if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+    }
+
+    // 등급 표의 "능력치 %" 한 칸을 능력치마다 따로 정하는 칸들로 나눈 뒤, 옛 값은 (예전에 적용되던) 공격력/방어력/체력/고정 데미지 칸으로 옮긴다. 한 번만.
+    private static void MigrateGradeStats()
+    {
+        const string doneKey = "Soul.GradeStatsV1.Done";
+        if (EditorPrefs.GetBool(doneKey, false)) return;
+        GradeTable table = AssetDatabase.LoadAssetAtPath<GradeTable>(Folder + "/GradeTable.asset");
+        if (table == null) return;
+        bool changed = false;
+        foreach (GradeDef g in table.grades)
+        {
+            if (g == null || g.statBonusPercent == 0f) continue;
+            bool anyNew = g.atBonus != 0f || g.dfBonus != 0f || g.hpBonus != 0f || g.fixBonus != 0f || g.breakDfBonus != 0f || g.hpRateAtBonus != 0f
+                || g.critBonus != 0f || g.critRateBonus != 0f || g.absBonus != 0f || g.healRateBonus != 0f;
+            if (!anyNew) { g.atBonus = g.dfBonus = g.hpBonus = g.fixBonus = g.statBonusPercent; }
+            g.statBonusPercent = 0f;
+            changed = true;
+        }
+        if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+        EditorPrefs.SetBool(doneKey, true);
     }
 
     // 무기 종류 칸이 생기기 전에 만든 무기 특성(다크나이트 = 메이스, 레인저 = 활, 검성 = 검, 도살자 = 배틀 엑스)에 종류를 채운다. 한 번만, 이름이 그대로인 것만.

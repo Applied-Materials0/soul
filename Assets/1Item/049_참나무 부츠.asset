@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uCC38\uB098\uBB34 \uBD80\uCE20"
   weight: 250
   countmax: 1
-  durabilitymax: 0
+  durabilitymax: 50
   toolType: 0
   tier: 0
   toolattack: 0

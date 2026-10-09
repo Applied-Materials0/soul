@@ -10994,18 +10994,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!1660057539 &9223372036854775807
-SceneRoots:
-  m_ObjectHideFlags: 0
-  m_Roots:
-  - {fileID: 746903563}
-  - {fileID: 1863557322}
-  - {fileID: 1530016418}
-  - {fileID: 1977461785}
-  - {fileID: 1730724584}
-  - {fileID: 1857645855}
-  - {fileID: 1194901967}
-  - {fileID: 7710000000000000027}
 --- !u!1 &7800000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -11075,8 +11063,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 0}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -11168,8 +11156,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 0
+  m_Sprite: {fileID: 0}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -11390,3 +11378,15 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 746903563}
+  - {fileID: 1863557322}
+  - {fileID: 1530016418}
+  - {fileID: 1977461785}
+  - {fileID: 1730724584}
+  - {fileID: 1857645855}
+  - {fileID: 1194901967}
+  - {fileID: 7710000000000000027}

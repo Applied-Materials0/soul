@@ -16,7 +16,7 @@ MonoBehaviour:
   itemName: "\uC720\uB9AC\uBCD1"
   weight: 100
   countmax: 20
-  durabilitymax: 0
+  durabilitymax: 20
   toolType: 0
   tier: 0
   toolattack: 0

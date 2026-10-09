@@ -721,6 +721,7 @@ public class InventoryManager : MonoBehaviour
         if (BtnAudio != null) BtnAudio.Play();
         inventoryUI.SetActive(true);
         ItemGainToast.ClearAll(); // 필드에서 얻고 남아 있던 획득 표시는 가방을 열면 바로 치운다
+        RecalcEquipment(); // 등급 표 같은 표를 고친 뒤에도 장비 능력치가 지금 값으로 맞도록
         PlayerUI.RefreshAll(); // 스탯 창 텍스트를 지금 값으로
     }
 
@@ -1215,8 +1216,6 @@ public class InventoryManager : MonoBehaviour
         GradeTable grades = GameTables.Grades;
         int tier = GradeOf(s);
         GradeDef g = grades.Get(tier);
-        float m = GradeMult(s);
-
         string exp = (g == null || g.expToNext <= 0 || tier >= grades.MaxTier) ? $"{s.exp} (MAX)" : $"{s.exp} / {g.expToNext}";
         title = $"<b>{DisplayName(s)}</b>\n<size=80%>등급 {grades.NameOf(tier)} (Tier {tier})   Lv.{tier}\n경험치 {exp}";
         if (it.CanBreak) title += $"   내구도 {s.durability}/{it.durabilitymax}";
@@ -1224,19 +1223,22 @@ public class InventoryManager : MonoBehaviour
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         if (it.weaponType != WeaponType.None) sb.AppendLine($"무기 종류  {WeaponTypeInfo.Name(it.weaponType)}");
-        int at = Mathf.RoundToInt(it.at * m), df = Mathf.RoundToInt(it.df * m), hp = Mathf.RoundToInt(it.hp * m), fix = Mathf.RoundToInt(it.fixat * m);
+        int at = Mathf.RoundToInt(it.at * GM(s, x => x.atBonus)), df = Mathf.RoundToInt(it.df * GM(s, x => x.dfBonus)), hp = Mathf.RoundToInt(it.hp * GM(s, x => x.hpBonus)), fix = Mathf.RoundToInt(it.fixat * GM(s, x => x.fixBonus));
+        float breakDfV = it.breakdf * GM(s, x => x.breakDfBonus), hpRateAtV = it.hprateat * GM(s, x => x.hpRateAtBonus), absV = it.abs * GM(s, x => x.absBonus);
+        float critV = it.critical * GM(s, x => x.critBonus), critRateV = it.criticalrate * GM(s, x => x.critRateBonus), healV = it.healrate * GM(s, x => x.healRateBonus);
         if (at != 0) sb.AppendLine($"공격력  {at:+0;-0}");
         if (df != 0) sb.AppendLine($"방어력  {df:+0;-0}");
         if (hp != 0) sb.AppendLine($"체력  {hp:+0;-0}");
         if (it.manamax != 0) sb.AppendLine($"마나  {it.manamax:+0;-0}");
         if (it.spmax != 0) sb.AppendLine($"SP  {it.spmax:+0;-0}");
         if (fix != 0) sb.AppendLine($"고정 데미지  {fix:+0;-0}");
-        if (it.breakdf != 0f) sb.AppendLine($"방어 관통  {it.breakdf:+0.#;-0.#}%");
-        if (it.hprateat != 0f) sb.AppendLine($"체력 퍼뎀  {it.hprateat:+0.#;-0.#}%");
-        if (it.abs != 0f) sb.AppendLine($"체력 흡수  {it.abs:+0.#;-0.#}%");
+        if (breakDfV != 0f) sb.AppendLine($"방어 관통  {breakDfV:+0.#;-0.#}%");
+        if (hpRateAtV != 0f) sb.AppendLine($"체력 퍼뎀  {hpRateAtV:+0.#;-0.#}%");
+        if (absV != 0f) sb.AppendLine($"체력 흡수  {absV:+0.#;-0.#}%");
         if (it.avoid != 0f) sb.AppendLine($"회피율  {it.avoid:+0.#;-0.#}%");
-        if (it.criticalrate != 0f) sb.AppendLine($"치명타 확률  {it.criticalrate:+0.#;-0.#}%");
-        if (it.critical != 0f) sb.AppendLine($"치명타 데미지  {it.critical:+0.#;-0.#}%");
+        if (critRateV != 0f) sb.AppendLine($"치명타 확률  {critRateV:+0.#;-0.#}%");
+        if (critV != 0f) sb.AppendLine($"치명타 데미지  {critV:+0.#;-0.#}%");
+        if (healV != 0f) sb.AppendLine($"회복 증가율  {healV:+0.#;-0.#}%");
         TraitDef t = GameTables.Traits.Get(it.traitId);
         if (t != null)
         {
@@ -1312,10 +1314,11 @@ public class InventoryManager : MonoBehaviour
     public static int GradeOf(ItemStack s) { return s != null ? Mathf.Max(1, s.grade) : 1; }
 
     // 등급에 따른 능력치 배율 (등급 표의 능력치 보너스 %)
-    private static float GradeMult(ItemStack s)
+    // 등급에 따른 능력치 배율: 등급 표에서 능력치마다 따로 정한 %를 그 장비의 기본 능력치에 곱한다 (예: 공격력 +100% -> 2배)
+    private static float GM(ItemStack s, System.Func<GradeDef, float> pick)
     {
         GradeDef g = GameTables.Grades.Get(GradeOf(s));
-        return g != null ? 1f + g.statBonusPercent / 100f : 1f;
+        return g != null ? Mathf.Max(0f, 1f + pick(g) / 100f) : 1f;
     }
 
     // 내구도를 lost만큼 쓴 만큼 장비 경험치를 쌓고, 경험치가 차면 등급이 오른다. 올랐으면 알림 문구를 돌려준다.
@@ -1428,7 +1431,10 @@ public class InventoryManager : MonoBehaviour
         // 파괴된(내구도 0) 장비는 자동으로 장착 해제된다 (가방에는 "파괴된 ..."으로 남고, 수리하면 다시 장착할 수 있음)
         foreach (List<ItemStack> list in equipped.Values) list.RemoveAll(s => !IsWorking(s));
 
-        int at = 0, df = 0, hp = 0, fixAt = 0, slotB = 0, weightB = 0, sp = 0, mana = 0;
+        // 장비 능력치는 소수로 모아 마지막에 한 번만 반올림한다 (작은 값에 % 가 붙어도 사라지지 않게)
+        float atF = 0f, dfF = 0f, hpF = 0f, fixF = 0f, traitAtF = 0f, healRateSum = 0f;
+        int oldMaxHp = BattleCalc.PlayerMaxHp(); // 장비를 바꾸기 전의 최대 체력
+        int fixAt = 0, slotB = 0, weightB = 0, sp = 0, mana = 0;
         float atRate = 0f, dfRate = 0f, hpRate = 0f, hpRateAt = 0f, breakDf = 0f, abs = 0f, avoid = 0f;
         float crit = 0f, critRate = 0f, goldRate = 0f, expRate = 0f;
 
@@ -1436,13 +1442,15 @@ public class InventoryManager : MonoBehaviour
         {
             if (!IsWorking(s)) continue;
             Item it = s.itemData;
-            float m = GradeMult(s); // 등급이 높을수록 기본 능력치가 늘어남
-            at += Mathf.RoundToInt(it.at * m); df += Mathf.RoundToInt(it.df * m); hp += Mathf.RoundToInt(it.hp * m);
-            fixAt += Mathf.RoundToInt(it.fixat * m);
+            // 등급이 높을수록 능력치가 늘어남 (등급 표에서 능력치마다 따로 정함)
+            atF += it.at * GM(s, x => x.atBonus); dfF += it.df * GM(s, x => x.dfBonus); hpF += it.hp * GM(s, x => x.hpBonus);
+            fixF += it.fixat * GM(s, x => x.fixBonus);
+            healRateSum += it.healrate * GM(s, x => x.healRateBonus);
             slotB += it.slotmax; weightB += it.weightmax;
             sp += it.spmax; mana += it.manamax;
-            atRate += it.atrate; dfRate += it.dfrate; hpRate += it.hprate; hpRateAt += it.hprateat;
-            breakDf += it.breakdf; abs += it.abs; avoid += it.avoid; crit += it.critical; critRate += it.criticalrate;
+            atRate += it.atrate; dfRate += it.dfrate; hpRate += it.hprate; hpRateAt += it.hprateat * GM(s, x => x.hpRateAtBonus);
+            breakDf += it.breakdf * GM(s, x => x.breakDfBonus); abs += it.abs * GM(s, x => x.absBonus); avoid += it.avoid;
+            crit += it.critical * GM(s, x => x.critBonus); critRate += it.criticalrate * GM(s, x => x.critRateBonus);
             goldRate += it.goldrate; expRate += it.exprate;
         }
 
@@ -1454,7 +1462,10 @@ public class InventoryManager : MonoBehaviour
             TraitDef t = ts.trait;
             float ownAtRate = (cleansing && t.atRate < 0f) ? 0f : t.atRate;
             if (ts.stack != null)
-                at += Mathf.RoundToInt(ts.stack.itemData.at * GradeMult(ts.stack) * ownAtRate / 100f); // 장비의 특성: 그 장비 자체의 공격력에만 %가 붙는다 (방어력 증감은 나의 총 방어력에 붙음)
+            {
+                float own = ts.stack.itemData.at * GM(ts.stack, x => x.atBonus) * ownAtRate / 100f;
+                atF += own; traitAtF += own;
+            }
             else
                 atRate += ownAtRate;                                                                 // 나에게 걸린 특성: 나의 총 공격력에 %
             dfRate += EffectiveDfRate(t);
@@ -1480,15 +1491,17 @@ public class InventoryManager : MonoBehaviour
         sp -= Exhaustion.SpMaxPenalty(baseSp);
 
         // 가방의 도구 중 가장 높은 공격력 하나 (장착한 것은 위에서 이미 더함)
-        int toolAt = 0;
+        float toolAt = 0f;
         foreach (ItemStack s in itemList)
             if (s.itemData.toolType != ToolType.None && !IsEquipped(s) && IsUsableTool(s))
-                toolAt = Mathf.Max(toolAt, Mathf.RoundToInt(s.itemData.at * GradeMult(s)));
+                toolAt = Mathf.Max(toolAt, s.itemData.at * GM(s, x => x.atBonus));
 
-        GameManager.EquipAt = at + toolAt;
-        GameManager.EquipDf = df;
-        GameManager.EquipHp = hp;
-        GameManager.FixAt = fixAt;
+        GameManager.EquipAt = atF + toolAt;
+        GameManager.EquipTraitAt = traitAtF;
+        GameManager.EquipDf = dfF;
+        GameManager.EquipHp = Mathf.RoundToInt(hpF);
+        GameManager.FixAt = Mathf.RoundToInt(fixF) + fixAt;
+        GameManager.HealRate = healRateSum;
         GameManager.SlotBonus = slotB;
         GameManager.WeightBonus = weightB;
         GameManager.AtRate = atRate;
@@ -1511,6 +1524,7 @@ public class InventoryManager : MonoBehaviour
         if (GameManager.SP > GameManager.SPMax) GameManager.SP = GameManager.SPMax;
         if (GameManager.Mana > GameManager.ManaMax) GameManager.Mana = GameManager.ManaMax;
         int maxHp = BattleCalc.PlayerMaxHp();
+        if (maxHp > oldMaxHp) GameManager.Hp += maxHp - oldMaxHp; // 장비로 최대 체력이 늘면 현재 체력도 늘어난 만큼 오른다
         if (GameManager.Hp > maxHp) GameManager.Hp = maxHp;
 
         RefreshEquipPanels();
@@ -1760,6 +1774,7 @@ public class InventoryManager : MonoBehaviour
             targets.AddRange(EquippedIn(EquipSlot.Body));
             targets.AddRange(EquippedIn(EquipSlot.Legs));
             targets.AddRange(EquippedIn(EquipSlot.Feet));
+            targets.AddRange(EquippedIn(EquipSlot.Glove));
             targets.AddRange(EquippedIn(EquipSlot.Shield));
         }
 
@@ -1879,10 +1894,10 @@ public class InventoryManager : MonoBehaviour
         int spBefore = GameManager.SP;
         int manaBefore = GameManager.Mana;
 
-        int useHp = item.useHp > 0 ? Mathf.RoundToInt(item.useHp * BattleCalc.HealMult()) : item.useHp; // 화염 같은 상태이상이면 회복량이 줄어든다
+        int useHp = item.useHp > 0 ? Mathf.RoundToInt(item.useHp * BattleCalc.HealMult() * BattleCalc.Mult(GameManager.HealRate)) : item.useHp; // 화염 같은 상태이상이면 회복량이 줄어든다
         GameManager.Hp = Mathf.Clamp(GameManager.Hp + useHp, 0, Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp)); // 체력을 깎는 아이템은 쓰러질 수도 있다
-        GameManager.SP = Mathf.Clamp(GameManager.SP + item.useSp, 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
-        GameManager.Mana = Mathf.Clamp(GameManager.Mana + item.useMana, 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
+        GameManager.SP = Mathf.Clamp(GameManager.SP + (item.useSp > 0 ? Mathf.RoundToInt(item.useSp * BattleCalc.Mult(GameManager.HealRate)) : item.useSp), 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
+        GameManager.Mana = Mathf.Clamp(GameManager.Mana + (item.useMana > 0 ? Mathf.RoundToInt(item.useMana * BattleCalc.Mult(GameManager.HealRate)) : item.useMana), 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
 
         int hp = GameManager.Hp - hpBefore;
         int sp = GameManager.SP - spBefore;

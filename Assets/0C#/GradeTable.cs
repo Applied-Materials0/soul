@@ -11,7 +11,18 @@ public class GradeDef
     public int tier;                  // 등급 번호 (1부터)
     public string name;               // 등급 이름 (Common, Rare ...)
     [Min(0)] public int expToNext;    // 다음 등급까지 필요한 경험치 (마지막 등급은 0)
-    public float statBonusPercent;    // 이 등급일 때 장비 능력치(공격력/방어력/체력/고정 공격력)가 늘어나는 비율 [%]
+    // 등급일 때 장비의 각 능력치가 늘어나는 비율 [%]. 능력치마다 따로 정하며, 그 장비의 기본 능력치에 곱해진다 (100이면 2배, 0이면 그대로).
+    public float atBonus;             // 공격력
+    public float dfBonus;             // 방어력
+    public float hpBonus;             // 체력
+    public float fixBonus;            // 고정 데미지
+    public float breakDfBonus;        // 방어 관통
+    public float hpRateAtBonus;       // 체력 퍼뎀
+    public float critBonus;           // 치명타 배율(치명타 데미지)
+    public float critRateBonus;       // 치명타 확률
+    public float absBonus;            // 흡수
+    public float healRateBonus;       // 회복 증가율
+    [HideInInspector] public float statBonusPercent; // (옛 값: 한 칸으로 묶었던 능력치 %. 에디터가 위의 칸들로 옮겨 줌)
 }
 
 [CreateAssetMenu(fileName = "GradeTable", menuName = "Soul/Grade Table")]
@@ -44,7 +55,7 @@ public class GradeTable : ScriptableObject
 
     private static GradeDef G(int tier, string name, int exp, float bonus)
     {
-        return new GradeDef { tier = tier, name = name, expToNext = exp, statBonusPercent = bonus };
+        return new GradeDef { tier = tier, name = name, expToNext = exp, atBonus = bonus, dfBonus = bonus, hpBonus = bonus, fixBonus = bonus };
     }
 
     private static List<GradeDef> CreateDefaultGrades()

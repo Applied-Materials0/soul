@@ -184,10 +184,12 @@ public class PlayerUI : MonoBehaviour
         int exp = GameManager.Exp;
         int hp = GameManager.Hp;
         float hpmax = BattleCalc.PlayerMaxHp();
-        int at = GameManager.At + GameManager.EquipAt;
-        int df = GameManager.Df + GameManager.EquipDf;
+        float at = GameManager.At + GameManager.EquipAt;
+        float df = GameManager.Df + GameManager.EquipDf;
         // 공격력/방어력은 장비와 특성(독 등)의 증감률까지 반영한 실제 값으로 보여 준다
         string atText = Mathf.RoundToInt(at * BattleCalc.Mult(BattleCalc.TotalAtRate())).ToString("N0") + RateNote(BattleCalc.TotalAtRate());
+        if (!Mathf.Approximately(GameManager.EquipTraitAt, 0f))
+            atText += $" <color={(GameManager.EquipTraitAt > 0f ? "#1B7F2A" : "#C00000")}>(장비 특성 {GameManager.EquipTraitAt:+0.#;-0.#})</color>";
         string dfText = Mathf.RoundToInt(df * BattleCalc.Mult(BattleCalc.TotalDfRate())).ToString("N0") + RateNote(BattleCalc.TotalDfRate());
         int fixat = GameManager.FixAt;
         float breakdf = GameManager.BreakDf;

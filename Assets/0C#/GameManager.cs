@@ -56,8 +56,9 @@ public class GameManager : MonoBehaviour
     static public int SlotMax;          //슬롯 최대 개수 기본값 (기본 능력치 표)
     static public int SlotBonus;        //장비로 늘어난 슬롯 개수 (장비 시스템이 채움). 실제 한도 = SlotMax + SlotBonus
     static public int WeightBonus;      //장비로 늘어난 최대 무게 (장비 시스템이 채움). 실제 한도 = WeightMax + WeightBonus
-    static public int EquipAt;         //도구 및 장비 공격력 합 (장비 시스템이 채움)
-    static public int EquipDf;         // 장비 방어력 합 (장비 시스템이 채움)
+    static public float EquipAt;         //도구 및 장비 공격력 합 (장비 시스템이 채움)
+    static public float EquipTraitAt;       // 그중 장비에 붙은 특성(%)으로 늘어난 공격력 (스탯 창 표시용)
+    static public float EquipDf;         // 장비 방어력 합 (장비 시스템이 채움)
     static public int EquipHp;         // 장비로 늘어난 최대 체력 (장비 시스템이 채움)
     static public float DefendBonus;    //[방어] 시 방어력 증가 [%], 기본 50 (장비로 추가될 수 있음)
     static public float BreakDf;        //관통률 [%] 방관
@@ -66,7 +67,7 @@ public class GameManager : MonoBehaviour
     static public float Critical;       //치명타 데미지 배율 [%]
     static public float CriticalRate;   //치명타 확률 [%]
     static public int Heal;             //회복량
-    static public int HealRate;         //회복 배율 [%]
+    static public float HealRate;         //회복 증가율 [%] (장비): 회복 아이템을 쓸 때 회복량이 이만큼 늘어남
     static public int SPHeal;           //스태미나 회복량
     static public int MPHeal;           //마나 회복량
     static public float GoldR;          //골드 보너스
