@@ -74,12 +74,31 @@ public class PlayerUI : MonoBehaviour
     // =========================================================
     private RectTransform hpBarRoot;
     private RectTransform hpBarFill;
+    private bool hpBarFromHierarchy;
     private TextMeshProUGUI hpBarText;
     private static readonly Color HpEmptyColor = new Color(0.75f, 0.15f, 0.15f, 1f);
     private static readonly Color HpFillColor = new Color(0.20f, 0.75f, 0.25f, 1f);
 
+    // 하이어라키에 "PlayerHpBar" 오브젝트(자식: Fill, Text)가 있으면 그것을 쓴다 (스탯 텍스트와 같은 부모 아래).
+    // 위치/크기/색은 그 오브젝트에서 직접 고치면 된다. 없을 때만 아래에서 대신 만든다.
+    private bool FindHpBar()
+    {
+        Transform parent = statText.transform.parent;
+        Transform bar = parent != null ? parent.Find("PlayerHpBar") : null;
+        if (bar == null) return false;
+        Transform fill = bar.Find("Fill");
+        Transform text = bar.Find("Text");
+        if (fill == null) return false;
+        hpBarRoot = bar as RectTransform;
+        hpBarFill = fill as RectTransform;
+        hpBarText = text != null ? text.GetComponent<TextMeshProUGUI>() : null;
+        hpBarFromHierarchy = true;
+        return true;
+    }
+
     private void BuildHpBar()
     {
+        if (FindHpBar()) return;
         hpBarRoot = CraftQuantityPopup.NewRect("PlayerHpBar", statText.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(300f, 26f));
         hpBarRoot.pivot = new Vector2(0f, 0f);
         Image back = hpBarRoot.gameObject.AddComponent<Image>();
@@ -112,7 +131,8 @@ public class PlayerUI : MonoBehaviour
 
         float ratio = hpMax > 0 ? Mathf.Clamp01(hp / (float)hpMax) : 0f;
         hpBarFill.anchorMax = new Vector2(ratio, 1f);
-        hpBarText.text = $"HP {hp:N0} / {hpMax:N0}";
+        if (hpBarText != null) hpBarText.text = $"HP {hp:N0} / {hpMax:N0}";
+        if (hpBarFromHierarchy) return; // 하이어라키 오브젝트의 위치는 건드리지 않는다
 
         // 스탯 글자 덩어리의 왼쪽 위 모서리 바로 위에 놓는다
         statText.ForceMeshUpdate();
@@ -157,7 +177,7 @@ public class PlayerUI : MonoBehaviour
         //1. statText가 연결되어 있을 때만 갱신 (비어있어도 에러 안 남!)
         if (statText != null)
         {
-            statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} \n HP: {hp:N0} / {hpmax:N0} </b>   \n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
+            statText.text = $"<b><size=120%>LV: {level:N0}</size> / EXP {exp:N0}{(GameManager.ExpNext > 0 ? " / " + GameManager.ExpNext.ToString("N0") : " (MAX)")} </b>\n SP: {sp:N0} / {spmax:N0}{BagStatusLine()} \n 마나: {mana:N0} / {manamax:N0} \n AT: {atText}    DF: {dfText} \n 고정 데미지: {fixat:N0} 방어 관통: {breakdf:N0}% \n 체력 퍼뎀: {hprateat:N0}% 체력 흡수: {abs:N0}% 회피율: {avoid:N0}% \n 치명타 확률: {criticalrate:N0}% 치명타 데미지 {critical:N0}% ";
         }
 
         if (statText != null) UpdateHpBar(hp, Mathf.RoundToInt(hpmax));
@@ -168,4 +188,4 @@ public class PlayerUI : MonoBehaviour
             SPText.text = $"SP: {sp:N0} / {spmax:N0}";
         }
     }
-}
+}

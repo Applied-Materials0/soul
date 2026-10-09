@@ -20,8 +20,8 @@ public class DataTableWindow : EditorWindow
         return new Col { title = title, path = path, width = width, tip = tip, text = text };
     }
 
-    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound, Search, Trait, Grade }
-    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음", "탐색 결과", "특성", "등급" };
+    private enum Mode { Item, Resource, Monster, Level, SPCost, Proficiency, PlayerBase, Sound, Search, Trait, Grade, Type }
+    private static readonly string[] ModeNames = { "아이템", "자원", "몬스터", "레벨", "SP 소모", "숙련도", "기본 능력치", "효과음", "탐색 결과", "특성", "등급", "타입" };
 
     private static readonly string[] ItemTabNames = { "기본", "도구", "장비 스탯", "레시피", "사용 효과", "수리/등급" };
     private static readonly string[] MonsterTabNames = { "기본", "능력치", "보상", "출현 지역", "도망/도려내기" };
@@ -167,6 +167,7 @@ public class DataTableWindow : EditorWindow
             if (!itemNames.ContainsKey(item.id)) itemNames[item.id] = item.itemName;
         ResourceTableDrawer.RefreshNames();
 
+        if (mode == Mode.Type) TypeListDrawer.Refresh();
         rows = new List<SerializedObject>();
         resourceTable = null;
         ruleTable = null;
@@ -309,6 +310,7 @@ public class DataTableWindow : EditorWindow
         switch (mode)
         {
             case Mode.Resource: DrawResourceMode(); break;
+            case Mode.Type: TypeListDrawer.Draw(ref scroll); break;
             case Mode.Level:
             case Mode.SPCost:
             case Mode.Proficiency:

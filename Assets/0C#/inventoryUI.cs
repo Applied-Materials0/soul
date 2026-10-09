@@ -361,12 +361,12 @@ public class InventoryManager : MonoBehaviour
             pos = craft.anchoredPosition;
         }
 
-        // 제작 버튼 왼쪽으로 [정렬] [장비] [버프] 순서로 나란히
+        // 제작 버튼 왼쪽으로 [정렬] [Stat] [숙련도] [버프] [장비] 순서로 나란히 (Stat은 SetupCraftButton에서 옮김)
         GameObject sort = MakeBarButton("SortButton", "ID순 정렬", anchor, pivot, pos - new Vector2((size.x + 10f) * 1f, 0f), size, new Color(0.25f, 0.4f, 0.65f), OnClickSort);
         sortLabel = sort.GetComponentInChildren<TextMeshProUGUI>();
-        MakeBarButton("EquipButton", "장비창", anchor, pivot, pos - new Vector2((size.x + 10f) * 2f, 0f), size, new Color(0.5f, 0.4f, 0.2f), ToggleEquipPanel);
-        MakeBarButton("BuffButton", "버프창", anchor, pivot, pos - new Vector2((size.x + 10f) * 3f, 0f), size, new Color(0.45f, 0.25f, 0.55f), ToggleBuffPanel);
-        MakeBarButton("ProficiencyButton", "숙련도창", anchor, pivot, pos - new Vector2((size.x + 10f) * 4f, 0f), size, new Color(0.2f, 0.5f, 0.45f), ToggleProficiencyPanel);
+        MakeBarButton("EquipButton", "장비", anchor, pivot, pos - new Vector2((size.x + 10f) * 5f, 0f), size, new Color(0.5f, 0.4f, 0.2f), ToggleEquipPanel);
+        MakeBarButton("BuffButton", "버프", anchor, pivot, pos - new Vector2((size.x + 10f) * 4f, 0f), size, new Color(0.45f, 0.25f, 0.55f), ToggleBuffPanel);
+        MakeBarButton("ProficiencyButton", "숙련도", anchor, pivot, pos - new Vector2((size.x + 10f) * 3f, 0f), size, new Color(0.2f, 0.5f, 0.45f), ToggleProficiencyPanel);
     }
 
     private GameObject MakeBarButton(string name, string label, Vector2 anchor, Vector2 pivot, Vector2 pos, Vector2 size, Color color, UnityEngine.Events.UnityAction onClick)
@@ -460,7 +460,7 @@ public class InventoryManager : MonoBehaviour
             anchor = statBtn.anchorMax;
             pivot = statBtn.pivot;
             size = statBtn.sizeDelta;
-            pos = statBtn.anchoredPosition - new Vector2(size.x + 10f, 0f);
+            pos = statBtn.anchoredPosition; // 제작 버튼이 맨 오른쪽(스탯 버튼이 있던 자리)에 온다
         }
 
         GameObject go = CraftQuantityPopup.CreateButton(inventoryUI.transform, "CraftRecipeButton", "제작",
@@ -471,6 +471,9 @@ public class InventoryManager : MonoBehaviour
         rt.anchorMax = anchor;
         rt.pivot = pivot;
         rt.anchoredPosition = pos;
+
+        // 왼쪽부터 [장비] [버프] [숙련도] [Stat] [정렬] [제작] 순서: 스탯 버튼은 정렬 버튼 왼쪽 자리로 옮긴다
+        if (statBtn != null) statBtn.anchoredPosition -= new Vector2((size.x + 10f) * 2f, 0f);
 
         // 스탯 버튼과 같은 이미지/글자 모양을 따라 함
         if (statBtn != null)
@@ -1729,4 +1732,4 @@ public class ItemStack
         this.amount = amount;
         this.durability = data != null ? data.durabilitymax : 0;
     }
-}
+}

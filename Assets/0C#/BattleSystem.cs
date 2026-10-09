@@ -170,8 +170,6 @@ public class BattleSystem : MonoBehaviour
         }
 
         PlaySound(SoundEvent.PlayerAttack); // 공격 효과음 (효과음 표)
-        string wearInfo = InventoryManager.Instance != null ? InventoryManager.Instance.WearEquipment(true) : ""; // 공격하면 무기가 닳는다
-
         bool targetDefending = monsterDefending; // 몬스터가 지난 턴에 방어를 골랐는가
         BattleCalc.AttackResult r = BattleCalc.PlayerAttack(monster, targetDefending);
         monsterDefending = false; // 몬스터의 방어는 이 공격 한 번에만 적용
@@ -190,6 +188,7 @@ public class BattleSystem : MonoBehaviour
         else
         {
             monsterHp = Mathf.Max(0, monsterHp - r.damage);
+            string wearInfo = InventoryManager.Instance != null ? InventoryManager.Instance.WearEquipment(true) : ""; // 공격이 맞았을 때만 무기가 닳는다 (피하거나 막히면 안 닳음)
             hud.SetHp(monsterHp, monster.hpMax);
 
             // 몬스터가 방어했는데 피해가 들어갔으면 방어 실패
