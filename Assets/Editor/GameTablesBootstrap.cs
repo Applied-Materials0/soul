@@ -32,6 +32,7 @@ public static class GameTablesBootstrap
         EnsureDefaultTraits();
         MigrateTraitWeaponTypes();
         MigrateGradeStats();
+        EnsureDefaultSkills();
         MigrateRepairMaterials();
 
         // 효과음 표는 새로 만들 때 기본 소리 파일(war2, metal)을 이름으로 찾아 채워 준다
@@ -129,6 +130,25 @@ public static class GameTablesBootstrap
             }
         }
         if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+    }
+
+    // 스킬 표에 새로 생긴 기본 스킬(무기 종류별 스킬 7~10번)을 빠진 번호만 추가한다. 한 번만 (사용자가 지워도 다시 살아나지 않게).
+    private static void EnsureDefaultSkills()
+    {
+        const string doneKey = "Soul.SkillDefaultsV2.Added";
+        if (EditorPrefs.GetBool(doneKey, false)) return;
+        SkillTable table = AssetDatabase.LoadAssetAtPath<SkillTable>(Folder + "/SkillTable.asset");
+        if (table == null) return;
+        bool changed = false;
+        foreach (SkillDef def in SkillTable.CreateDefaultSkills())
+        {
+            if (def.id < 7 || table.Get(def.id) != null) continue;
+            table.skills.Add(def);
+            changed = true;
+            Debug.Log($"[GameTablesBootstrap] 스킬 표에 [{def.label}] 스킬을 추가했습니다.");
+        }
+        if (changed) { EditorUtility.SetDirty(table); AssetDatabase.SaveAssets(); }
+        EditorPrefs.SetBool(doneKey, true);
     }
 
     // 등급 표의 "능력치 %" 한 칸을 능력치마다 따로 정하는 칸들로 나눈 뒤, 옛 값은 (예전에 적용되던) 공격력/방어력/체력/고정 데미지 칸으로 옮긴다. 한 번만.

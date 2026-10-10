@@ -71,6 +71,15 @@ public class SkillTable : ScriptableObject
                 description = "약하게 찌르고 적에게 독을 퍼뜨린다." },
             new SkillDef { id = 6, label = "조준 사격", unlockLevel = 5, manaCost = 5, powerPercent = 120f, sureHit = true, cooldown = 2,
                 description = "적의 회피와 방어 태세를 무시하고 반드시 맞힌다." },
+            // 무기 종류별 스킬 (해당 종류의 무기를 장착해야 쓸 수 있음)
+            new SkillDef { id = 7, label = "분쇄", weaponType = WeaponType.Mace, unlockLevel = 2, manaCost = 3, powerPercent = 120f, breakDf = 30f,
+                description = "메이스로 방어를 부수듯 내리친다. 적의 방어력을 일부 무시한다." },
+            new SkillDef { id = 8, label = "회전 베기", weaponType = WeaponType.BattleAxe, unlockLevel = 3, manaCost = 4, hits = 2, powerPercent = 80f, cooldown = 1,
+                description = "배틀 엑스를 휘둘러 두 번 벤다." },
+            new SkillDef { id = 9, label = "연사", weaponType = WeaponType.Bow, unlockLevel = 3, manaCost = 5, hits = 3, powerPercent = 50f, cooldown = 2,
+                description = "화살을 세 번 연달아 쏜다." },
+            new SkillDef { id = 10, label = "검기", weaponType = WeaponType.Sword, unlockLevel = 2, manaCost = 3, powerPercent = 110f, criticalRate = 30f,
+                description = "검에 기운을 실어 벤다. 치명타가 잘 터진다." },
         };
     }
 

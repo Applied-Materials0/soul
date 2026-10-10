@@ -19,6 +19,7 @@ MonoBehaviour:
       \uACF5\uACA9\uBCF4\uB2E4 \uAC15\uD558\uB2E4."
     kind: 0
     unlockLevel: 1
+    weaponType: 0
     manaCost: 3
     spCost: 0
     cooldown: 1
@@ -39,6 +40,7 @@ MonoBehaviour:
       \uCC0C\uB978\uB2E4."
     kind: 0
     unlockLevel: 2
+    weaponType: 0
     manaCost: 3
     spCost: 0
     cooldown: 0
@@ -59,6 +61,7 @@ MonoBehaviour:
       \uCE58\uB8CC\uD55C\uB2E4."
     kind: 1
     unlockLevel: 2
+    weaponType: 0
     manaCost: 4
     spCost: 0
     cooldown: 3
@@ -78,6 +81,7 @@ MonoBehaviour:
     description: "\uB450 \uBC88 \uC5F0\uB2EC\uC544 \uBCA4\uB2E4."
     kind: 0
     unlockLevel: 3
+    weaponType: 0
     manaCost: 4
     spCost: 0
     cooldown: 0
@@ -98,6 +102,7 @@ MonoBehaviour:
       \uD37C\uB728\uB9B0\uB2E4."
     kind: 0
     unlockLevel: 4
+    weaponType: 0
     manaCost: 5
     spCost: 0
     cooldown: 5
@@ -118,6 +123,7 @@ MonoBehaviour:
       \uBB34\uC2DC\uD558\uACE0 \uBC18\uB4DC\uC2DC \uB9DE\uD78C\uB2E4."
     kind: 0
     unlockLevel: 5
+    weaponType: 3
     manaCost: 5
     spCost: 0
     cooldown: 2
@@ -127,6 +133,90 @@ MonoBehaviour:
     breakDf: 0
     criticalRate: 0
     sureHit: 1
+    inflictTraitId: 0
+    inflictChance: 0
+    healAmount: 0
+    healPercent: 0
+    cleanse: 0
+  - id: 7
+    label: "\uBD84\uC1C4"
+    description: "\uBA54\uC774\uC2A4\uB85C \uBC29\uC5B4\uB97C \uBD80\uC218\uB4EF
+      \uB0B4\uB9AC\uCE5C\uB2E4. \uC801\uC758 \uBC29\uC5B4\uB825\uC744 \uC77C\uBD80
+      \uBB34\uC2DC\uD55C\uB2E4."
+    kind: 0
+    unlockLevel: 2
+    weaponType: 1
+    manaCost: 3
+    spCost: 0
+    cooldown: 0
+    hits: 1
+    powerPercent: 120
+    fixedDamage: 0
+    breakDf: 30
+    criticalRate: 0
+    sureHit: 0
+    inflictTraitId: 0
+    inflictChance: 0
+    healAmount: 0
+    healPercent: 0
+    cleanse: 0
+  - id: 8
+    label: "\uD68C\uC804 \uBCA0\uAE30"
+    description: "\uBC30\uD2C0 \uC5D1\uC2A4\uB97C \uD718\uB458\uB7EC \uB450 \uBC88
+      \uBCA4\uB2E4."
+    kind: 0
+    unlockLevel: 3
+    weaponType: 2
+    manaCost: 4
+    spCost: 0
+    cooldown: 1
+    hits: 2
+    powerPercent: 80
+    fixedDamage: 0
+    breakDf: 0
+    criticalRate: 0
+    sureHit: 0
+    inflictTraitId: 0
+    inflictChance: 0
+    healAmount: 0
+    healPercent: 0
+    cleanse: 0
+  - id: 9
+    label: "\uC5F0\uC0AC"
+    description: "\uD654\uC0B4\uC744 \uC138 \uBC88 \uC5F0\uB2EC\uC544 \uC3DC\uB2E4."
+    kind: 0
+    unlockLevel: 3
+    weaponType: 3
+    manaCost: 5
+    spCost: 0
+    cooldown: 2
+    hits: 3
+    powerPercent: 50
+    fixedDamage: 0
+    breakDf: 0
+    criticalRate: 0
+    sureHit: 0
+    inflictTraitId: 0
+    inflictChance: 0
+    healAmount: 0
+    healPercent: 0
+    cleanse: 0
+  - id: 10
+    label: "\uAC80\uAE30"
+    description: "\uAC80\uC5D0 \uAE30\uC6B4\uC744 \uC2E4\uC5B4 \uBCA4\uB2E4. \uCE58\uBA85\uD0C0\uAC00
+      \uC798 \uD130\uC9C4\uB2E4."
+    kind: 0
+    unlockLevel: 2
+    weaponType: 4
+    manaCost: 3
+    spCost: 0
+    cooldown: 0
+    hits: 1
+    powerPercent: 110
+    fixedDamage: 0
+    breakDf: 0
+    criticalRate: 30
+    sureHit: 0
     inflictTraitId: 0
     inflictChance: 0
     healAmount: 0
