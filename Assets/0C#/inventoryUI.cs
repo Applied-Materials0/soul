@@ -312,6 +312,24 @@ public class InventoryManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q)) panel.DiscardKey();
     }
 
+    // F: 고른 아이템 묶음을 반으로 나눈다 (나눈 쪽은 새 슬롯에 들어감. 홀수면 원래 슬롯에 하나 더 남음)
+    private void SplitSelected()
+    {
+        ItemStack s = kbSelected;
+        if (s == null || !itemList.Contains(s)) { ShowBagMessageOrToast("나눌 아이템을 먼저 고르세요."); return; }
+        if (s.amount < 2) { ShowBagMessageOrToast("2개 이상이어야 나눌 수 있습니다."); return; }
+        if (UsedSlots >= SlotLimit) { ShowBagMessageOrToast("빈 슬롯이 없어 나눌 수 없습니다."); return; }
+
+        int half = s.amount / 2;
+        s.amount -= half;
+        ItemStack part = new ItemStack(s.itemData, half) { durability = s.durability, grade = s.grade, exp = s.exp };
+        itemList.Add(part);
+        CreateSlot(part);
+        RefreshSlot(s);
+        SoundManager.Instance?.PlaySlotClickSound();
+        ShowBagMessageOrToast($"{Josa.WithEul(s.itemData.itemName)} 반으로 나눴다. ({s.amount} / {half})");
+    }
+
     // 마우스로 슬롯을 눌렀을 때도 키보드 선택이 거기서 이어지게 한다
     public void MarkKeyboardSelection(ItemStack stack)
     {
@@ -371,6 +389,7 @@ public class InventoryManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.Z)
                 || Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.T)) tabFocus = false; // 단축키를 쓰면 탭 줄 조작은 끝
             if (Input.GetKeyDown(KeyCode.C)) ToggleRecipePanel();
+            if (Input.GetKeyDown(KeyCode.F) && !RepairPopup.IsOpen && !(recipePanel != null && recipePanel.IsOpen)) SplitSelected();
             if (Input.GetKeyDown(KeyCode.X)) OnClickSort();
             if (Input.GetKeyDown(KeyCode.Z)) OpenStat();
             if (Input.GetKeyDown(KeyCode.E)) ToggleEquipPanel();
@@ -1223,7 +1242,7 @@ public class InventoryManager : MonoBehaviour
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         if (it.weaponType != WeaponType.None) sb.AppendLine($"무기 종류  {WeaponTypeInfo.Name(it.weaponType)}");
-        int at = Mathf.RoundToInt(it.at * GM(s, x => x.atBonus)), df = Mathf.RoundToInt(it.df * GM(s, x => x.dfBonus)), hp = Mathf.RoundToInt(it.hp * GM(s, x => x.hpBonus)), fix = Mathf.RoundToInt(it.fixat * GM(s, x => x.fixBonus));
+        int at = BattleCalc.FloorInt(it.at * GM(s, x => x.atBonus)), df = BattleCalc.FloorInt(it.df * GM(s, x => x.dfBonus)), hp = BattleCalc.FloorInt(it.hp * GM(s, x => x.hpBonus)), fix = BattleCalc.FloorInt(it.fixat * GM(s, x => x.fixBonus));
         float breakDfV = it.breakdf * GM(s, x => x.breakDfBonus), hpRateAtV = it.hprateat * GM(s, x => x.hpRateAtBonus), absV = it.abs * GM(s, x => x.absBonus);
         float critV = it.critical * GM(s, x => x.critBonus), critRateV = it.criticalrate * GM(s, x => x.critRateBonus), healV = it.healrate * GM(s, x => x.healRateBonus);
         if (at != 0) sb.AppendLine($"공격력  {at:+0;-0}");
@@ -1315,7 +1334,7 @@ public class InventoryManager : MonoBehaviour
 
     // 등급에 따른 능력치 배율 (등급 표의 능력치 보너스 %)
     // 등급에 따른 능력치 배율: 등급 표에서 능력치마다 따로 정한 %를 그 장비의 기본 능력치에 곱한다 (예: 공격력 +100% -> 2배)
-    private static float GM(ItemStack s, System.Func<GradeDef, float> pick)
+    public static float GM(ItemStack s, System.Func<GradeDef, float> pick)
     {
         GradeDef g = GameTables.Grades.Get(GradeOf(s));
         return g != null ? Mathf.Max(0f, 1f + pick(g) / 100f) : 1f;
@@ -1343,6 +1362,7 @@ public class InventoryManager : MonoBehaviour
         {
             RecalcEquipment();
             ShowBagMessageOrToast(up);
+            ItemInfoPanel.Instance?.RefreshIfOpen();
         }
         return up;
     }
@@ -1443,8 +1463,8 @@ public class InventoryManager : MonoBehaviour
             if (!IsWorking(s)) continue;
             Item it = s.itemData;
             // 등급이 높을수록 능력치가 늘어남 (등급 표에서 능력치마다 따로 정함)
-            atF += it.at * GM(s, x => x.atBonus); dfF += it.df * GM(s, x => x.dfBonus); hpF += it.hp * GM(s, x => x.hpBonus);
-            fixF += it.fixat * GM(s, x => x.fixBonus);
+            atF += BattleCalc.FloorInt(it.at * GM(s, x => x.atBonus)); dfF += BattleCalc.FloorInt(it.df * GM(s, x => x.dfBonus)); hpF += BattleCalc.FloorInt(it.hp * GM(s, x => x.hpBonus));
+            fixF += BattleCalc.FloorInt(it.fixat * GM(s, x => x.fixBonus));
             healRateSum += it.healrate * GM(s, x => x.healRateBonus);
             slotB += it.slotmax; weightB += it.weightmax;
             sp += it.spmax; mana += it.manamax;
@@ -1463,7 +1483,7 @@ public class InventoryManager : MonoBehaviour
             float ownAtRate = (cleansing && t.atRate < 0f) ? 0f : t.atRate;
             if (ts.stack != null)
             {
-                float own = ts.stack.itemData.at * GM(ts.stack, x => x.atBonus) * ownAtRate / 100f;
+                float own = ownAtRate >= 0f ? BattleCalc.FloorInt(ts.stack.itemData.at * GM(ts.stack, x => x.atBonus) * ownAtRate / 100f) : -BattleCalc.FloorInt(ts.stack.itemData.at * GM(ts.stack, x => x.atBonus) * -ownAtRate / 100f);
                 atF += own; traitAtF += own;
             }
             else
@@ -1486,15 +1506,15 @@ public class InventoryManager : MonoBehaviour
         // 최대 SP / 마나 증가 [%]: 장비 보너스를 뺀 기본값에 비율을 곱해 더한다. 탈진으로 건강이 나빠지면 최대 SP가 줄어든다
         int baseSp = GameManager.SPMax - appliedSpBonus;
         int baseMana = GameManager.ManaMax - appliedManaBonus;
-        sp += Mathf.RoundToInt(baseSp * spRateSum / 100f);
-        mana += Mathf.RoundToInt(baseMana * manaRateSum / 100f);
+        sp += BattleCalc.FloorInt(baseSp * spRateSum / 100f);
+        mana += BattleCalc.FloorInt(baseMana * manaRateSum / 100f);
         sp -= Exhaustion.SpMaxPenalty(baseSp);
 
         // 가방의 도구 중 가장 높은 공격력 하나 (장착한 것은 위에서 이미 더함)
         float toolAt = 0f;
         foreach (ItemStack s in itemList)
             if (s.itemData.toolType != ToolType.None && !IsEquipped(s) && IsUsableTool(s))
-                toolAt = Mathf.Max(toolAt, s.itemData.at * GM(s, x => x.atBonus));
+                toolAt = Mathf.Max(toolAt, BattleCalc.FloorInt(s.itemData.at * GM(s, x => x.atBonus)));
 
         GameManager.EquipAt = atF + toolAt;
         GameManager.EquipTraitAt = traitAtF;
@@ -1514,7 +1534,7 @@ public class InventoryManager : MonoBehaviour
         GameManager.Critical = crit;
         GameManager.CriticalRate = critRate;
         GameManager.GoldR = goldRate;
-        GameManager.ExpR = Mathf.RoundToInt(expRate);
+        GameManager.ExpR = BattleCalc.FloorInt(expRate);
 
         // 최대 SP/마나는 기본값 위에 장비 보너스를 얹는다 (바뀐 만큼만 더하고 뺌)
         GameManager.SPMax += sp - appliedSpBonus;
@@ -1894,10 +1914,10 @@ public class InventoryManager : MonoBehaviour
         int spBefore = GameManager.SP;
         int manaBefore = GameManager.Mana;
 
-        int useHp = item.useHp > 0 ? Mathf.RoundToInt(item.useHp * BattleCalc.HealMult() * BattleCalc.Mult(GameManager.HealRate)) : item.useHp; // 화염 같은 상태이상이면 회복량이 줄어든다
+        int useHp = item.useHp > 0 ? BattleCalc.FloorInt(item.useHp * BattleCalc.HealMult() * BattleCalc.Mult(GameManager.HealRate)) : item.useHp; // 화염 같은 상태이상이면 회복량이 줄어든다
         GameManager.Hp = Mathf.Clamp(GameManager.Hp + useHp, 0, Mathf.Max(BattleCalc.PlayerMaxHp(), GameManager.Hp)); // 체력을 깎는 아이템은 쓰러질 수도 있다
-        GameManager.SP = Mathf.Clamp(GameManager.SP + (item.useSp > 0 ? Mathf.RoundToInt(item.useSp * BattleCalc.Mult(GameManager.HealRate)) : item.useSp), 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
-        GameManager.Mana = Mathf.Clamp(GameManager.Mana + (item.useMana > 0 ? Mathf.RoundToInt(item.useMana * BattleCalc.Mult(GameManager.HealRate)) : item.useMana), 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
+        GameManager.SP = Mathf.Clamp(GameManager.SP + (item.useSp > 0 ? BattleCalc.FloorInt(item.useSp * BattleCalc.Mult(GameManager.HealRate)) : item.useSp), 0, Mathf.Max(GameManager.SPMax, GameManager.SP));
+        GameManager.Mana = Mathf.Clamp(GameManager.Mana + (item.useMana > 0 ? BattleCalc.FloorInt(item.useMana * BattleCalc.Mult(GameManager.HealRate)) : item.useMana), 0, Mathf.Max(GameManager.ManaMax, GameManager.Mana));
 
         int hp = GameManager.Hp - hpBefore;
         int sp = GameManager.SP - spBefore;

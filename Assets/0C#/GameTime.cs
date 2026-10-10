@@ -107,7 +107,7 @@ public static class GameTime
             case DayPeriod.Morning:
             {
                 Period = DayPeriod.Afternoon;
-                int gain = Mathf.RoundToInt(GameManager.SPMax * Mathf.Clamp(b.restAfternoonSpPercent, 0f, 100f) / 100f);
+                int gain = BattleCalc.FloorInt(GameManager.SPMax * Mathf.Clamp(b.restAfternoonSpPercent, 0f, 100f) / 100f);
                 GameManager.SP = Mathf.Min(GameManager.SPMax, GameManager.SP + gain);
                 message = "오후가 되었다.\nSP를 회복했다.";
                 break;
@@ -115,7 +115,7 @@ public static class GameTime
             case DayPeriod.Afternoon:
             {
                 Period = DayPeriod.Night;
-                int gain = Mathf.RoundToInt(GameManager.SPMax * Mathf.Clamp(b.restNightSpPercent, 0f, 100f) / 100f);
+                int gain = BattleCalc.FloorInt(GameManager.SPMax * Mathf.Clamp(b.restNightSpPercent, 0f, 100f) / 100f);
                 GameManager.SP = Mathf.Min(GameManager.SPMax, GameManager.SP + gain);
                 message = "밤이 되었다.\nSP를 " +gain.ToString("N0") + " 회복했다.";
                 break;

@@ -376,21 +376,27 @@ public class ItemInfoPanel : MonoBehaviour
             string effText = eff.Length > 0 ? " (" + eff.Trim() + ")" : "";
             sb.AppendLine($" 특성 : {trait.label}{effText}");
         }
-        if (item.at > 0) sb.AppendLine($" 공 격 력 : {item.at}");
-        if (item.df > 0) sb.AppendLine($" 방 어 력 : {item.df}");
-        if (item.hp > 0) sb.AppendLine($" 체    력 : {item.hp}");
+        // 장비의 등급이 오르면 능력치가 늘어난다 (등급 표). 이 슬롯의 장비 등급을 반영한 값을 보여 준다 (소수점은 버림)
+        System.Func<System.Func<GradeDef, float>, float> G = pick => stack != null ? InventoryManager.GM(stack, pick) : 1f;
+        int gAt = BattleCalc.FloorInt(item.at * G(x => x.atBonus)), gDf = BattleCalc.FloorInt(item.df * G(x => x.dfBonus)), gHp = BattleCalc.FloorInt(item.hp * G(x => x.hpBonus));
+        int gFix = BattleCalc.FloorInt(item.fixat * G(x => x.fixBonus));
+        float gHpRateAt = item.hprateat * G(x => x.hpRateAtBonus), gBreak = item.breakdf * G(x => x.breakDfBonus), gAbs = item.abs * G(x => x.absBonus);
+        float gCrit = item.critical * G(x => x.critBonus), gCritRate = item.criticalrate * G(x => x.critRateBonus), gHeal = item.healrate * G(x => x.healRateBonus);
+        if (gAt > 0) sb.AppendLine($" 공 격 력 : {gAt}");
+        if (gDf > 0) sb.AppendLine($" 방 어 력 : {gDf}");
+        if (gHp > 0) sb.AppendLine($" 체    력 : {gHp}");
         if (item.atrate > 0) sb.AppendLine($" 공격력 배율 : {item.atrate}");
         if (item.dfrate > 0) sb.AppendLine($" 방어력 배율 : {item.dfrate}");
         if (item.hprate > 0) sb.AppendLine($" 체력 배율 : {item.hprate}");
-        if (item.hprateat > 0) sb.AppendLine($" 체력 공격력 : {item.hprateat}");
-        if (item.fixat > 0) sb.AppendLine($" 고정 공격력 : {item.fixat}");
-        if (item.breakdf > 0) sb.AppendLine($" 관 통 률 : {item.breakdf}");
-        if (item.abs > 0) sb.AppendLine($" 흡 수 율 : {item.abs}");
+        if (gHpRateAt > 0) sb.AppendLine($" 체력 공격력 : {gHpRateAt:0.#}");
+        if (gFix > 0) sb.AppendLine($" 고정 공격력 : {gFix}");
+        if (gBreak > 0) sb.AppendLine($" 관 통 률 : {gBreak:0.#}");
+        if (gAbs > 0) sb.AppendLine($" 흡 수 율 : {gAbs:0.#}");
         if (item.avoid > 0) sb.AppendLine($" 회 피 율 : {item.avoid}");
-        if (item.critical > 0) sb.AppendLine($" 치명타 배율 : {item.critical}");
-        if (item.criticalrate > 0) sb.AppendLine($" 치명타 확률 : {item.criticalrate}");
+        if (gCrit > 0) sb.AppendLine($" 치명타 배율 : {gCrit:0.#}");
+        if (gCritRate > 0) sb.AppendLine($" 치명타 확률 : {gCritRate:0.#}");
         if (item.manamax > 0) sb.AppendLine($" 최대 마나 : {item.manamax}");
-        if (item.healrate > 0) sb.AppendLine($" 회복량 배율 : {item.healrate}");
+        if (gHeal > 0) sb.AppendLine($" 회복 증가율 : {gHeal:0.#}%");
         if (item.goldrate > 0) sb.AppendLine($" 골드 배율 : {item.goldrate}");
         if (item.exprate > 0) sb.AppendLine($" 경험치 배율 : {item.exprate}");
         if (item.spmax > 0) sb.AppendLine($" 최대 스태미나 : {item.spmax}");

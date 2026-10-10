@@ -106,6 +106,7 @@ public class ItemGainToast : MonoBehaviour
     public static void ClearAll()
     {
         if (instance == null || instance.row == null) return;
+        instance.brokenQueue.Clear();
         for (int i = instance.row.childCount - 1; i >= 0; i--)
             Destroy(instance.row.GetChild(i).gameObject);
         if (instance.msgColumn != null)
@@ -121,25 +122,43 @@ public class ItemGainToast : MonoBehaviour
         instance.SpawnBroken(item, title);
     }
 
+    // 파괴 알림은 하나씩 차례로 보인다: 앞의 것이 사라지면 다음 것이 나온다 (세로 알림 줄에 표시)
+    private readonly System.Collections.Generic.Queue<Item> brokenQueue = new System.Collections.Generic.Queue<Item>();
+    private bool brokenRunning;
+
     private void SpawnBroken(Item item, string title)
     {
-        while (row.childCount >= MaxShown)
-            DestroyImmediate(row.GetChild(0).gameObject);
+        brokenQueue.Enqueue(item);
+        if (!brokenRunning) StartCoroutine(BrokenRoutine());
+    }
 
+    private IEnumerator BrokenRoutine()
+    {
+        brokenRunning = true;
+        while (brokenQueue.Count > 0)
+        {
+            GameObject go = BuildBroken(brokenQueue.Dequeue());
+            while (go != null) yield return null; // 사라질 때까지 기다린 뒤 다음 것
+        }
+        brokenRunning = false;
+    }
+
+    private GameObject BuildBroken(Item item)
+    {
         TMP_FontAsset font = InventoryManager.Instance != null ? InventoryManager.Instance.UIFont : null;
 
         GameObject go = new GameObject("ToastBroken", typeof(RectTransform), typeof(CanvasGroup));
         RectTransform rt = (RectTransform)go.transform;
-        rt.SetParent(row, false);
-        rt.sizeDelta = new Vector2(560f, 270f);
+        rt.SetParent(msgColumn, false);
+        rt.sizeDelta = new Vector2(900f, 190f); // 가로는 글자가 한 줄에 들어가도록 넓게, 세로는 작게
         CanvasGroup group = go.GetComponent<CanvasGroup>();
-        group.alpha = 0f;
+        group.alpha = 1f; // 부서진 순간 바로 보인다 (서서히 나타나지 않음)
         group.blocksRaycasts = false;
 
         Vector2 top = new Vector2(0.5f, 1f);
         if (item.icon != null)
         {
-            Image icon = CraftQuantityPopup.NewRect("Icon", rt, top, Vector2.zero, new Vector2(150f, 150f)).gameObject.AddComponent<Image>();
+            Image icon = CraftQuantityPopup.NewRect("Icon", rt, top, Vector2.zero, new Vector2(110f, 110f)).gameObject.AddComponent<Image>();
             icon.sprite = item.icon;
             icon.preserveAspect = true;
             icon.color = new Color(1f, 0.6f, 0.6f, 1f);
@@ -147,15 +166,17 @@ public class ItemGainToast : MonoBehaviour
         }
 
         TextMeshProUGUI label = CraftQuantityPopup.AddText(
-            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -154f), new Vector2(560f, 110f)),
+            CraftQuantityPopup.NewRect("Label", rt, top, new Vector2(0f, -114f), new Vector2(900f, 70f)),
             BrokenFontSize, TextAlignmentOptions.Center, font);
+        label.textWrappingMode = TextWrappingModes.NoWrap; // 한 줄로 (두 줄로 꺾여 세로가 커지지 않게)
         label.text = $"{Josa.WithIga(item.itemName)} 파괴되었습니다!"; // 예: 돌도끼가 파괴되었습니다!
         label.color = new Color(1f, 0.35f, 0.3f);
         label.fontStyle = FontStyles.Bold;
         label.outlineWidth = 0.3f;
         label.outlineColor = new Color32(0, 0, 0, 255);
 
-        StartCoroutine(Fade(go, group, 2.2f));
+        StartCoroutine(Fade(go, group, 2.2f, 0f));
+        return go;
     }
 
     // 글자 알림이 나타나서 완전히 사라질 때까지 걸리는 시간 (기절 후 화면 전환 시점을 맞추는 데 씀)
@@ -207,14 +228,14 @@ public class ItemGainToast : MonoBehaviour
     }
 
     // 나타남 -> 또렷하게 유지 -> 흐려지며 사라짐
-    private IEnumerator Fade(GameObject go, CanvasGroup group, float holdTime)
+    private IEnumerator Fade(GameObject go, CanvasGroup group, float holdTime, float fadeIn = FadeInTime)
     {
         float t = 0f;
-        while (t < FadeInTime)
+        while (t < fadeIn)
         {
             if (go == null) yield break;
             t += Time.unscaledDeltaTime;
-            group.alpha = Mathf.Clamp01(t / FadeInTime);
+            group.alpha = Mathf.Clamp01(t / fadeIn);
             yield return null;
         }
         group.alpha = 1f;

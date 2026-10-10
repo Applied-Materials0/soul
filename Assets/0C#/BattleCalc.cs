@@ -44,6 +44,12 @@ public static class BattleCalc
         return r;
     }
 
+    // 비율(%)로 늘리거나 줄인 값은 소수점을 버린다 (반올림 금지: 1 미만은 0). 부동소수점 오차로 12.9999가 12가 되지 않게 아주 작은 값을 더해 내린다.
+    public static int FloorInt(float value)
+    {
+        return Mathf.FloorToInt(value + 0.0001f);
+    }
+
     // 증감률(%)을 곱하는 값으로 바꾼다: 0 -> 1.0, 50 -> 1.5, -20 -> 0.8
     public static float Mult(float ratePercent)
     {
@@ -53,7 +59,7 @@ public static class BattleCalc
     // 플레이어의 최대 체력 = 최대 체력 x 체력 증감률
     public static int PlayerMaxHp()
     {
-        return Mathf.Max(1, Mathf.RoundToInt((GameManager.HpMax + GameManager.EquipHp) * Mult(GameManager.HpRate)));
+        return Mathf.Max(1, FloorInt((GameManager.HpMax + GameManager.EquipHp) * Mult(GameManager.HpRate)));
     }
 
     // =========================================================
@@ -111,7 +117,7 @@ public static class BattleCalc
         r.damage = total;
         r.noEffect = total <= 0;
         int heal = total > 0 ? Mathf.FloorToInt(total * Mathf.Max(0f, GameManager.Abs) / 100f) : 0; // 흡수
-        r.heal = Mathf.RoundToInt(heal * HealMult());
+        r.heal = FloorInt(heal * HealMult());
         return r;
     }
 

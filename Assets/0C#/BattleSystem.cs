@@ -113,7 +113,7 @@ public class BattleSystem : MonoBehaviour
         float startHeal = inv != null ? inv.SumTrait(t => t.healAmount) + BattleCalc.PlayerMaxHp() * inv.SumTrait(t => t.healPercent) / 100f : 0f;
         if (startHeal > 0f && GameManager.Hp < BattleCalc.PlayerMaxHp())
         {
-            int healed = HealPlayer(Mathf.RoundToInt(startHeal));
+            int healed = HealPlayer(BattleCalc.FloorInt(startHeal));
             if (healed > 0) yield return Say($"체력을 {healed} 회복했다.");
         }
 
@@ -137,7 +137,7 @@ public class BattleSystem : MonoBehaviour
     // 플레이어 체력을 회복한다 (회복량 감소 상태이상 적용, 최대 체력 한도). 실제로 회복한 양을 돌려줌
     private int HealPlayer(int amount)
     {
-        int heal = Mathf.RoundToInt(amount * BattleCalc.HealMult());
+        int heal = BattleCalc.FloorInt(amount * BattleCalc.HealMult());
         int max = BattleCalc.PlayerMaxHp();
         int before = GameManager.Hp;
         GameManager.Hp = Mathf.Min(max, GameManager.Hp + Mathf.Max(0, heal));
@@ -364,7 +364,7 @@ public class BattleSystem : MonoBehaviour
     public static int SkillManaCost(SkillDef s)
     {
         float reduce = Mathf.Clamp(GameManager.SkillManaReduce, 0f, 100f);
-        return Mathf.Max(0, Mathf.RoundToInt(s.manaCost * (1f - reduce / 100f)));
+        return Mathf.Max(0, BattleCalc.FloorInt(s.manaCost * (1f - reduce / 100f)));
     }
 
     // 지금 쓸 수 없는 이유 (쓸 수 있으면 null)
@@ -631,7 +631,7 @@ public class BattleSystem : MonoBehaviour
         {
             float dot = statusTrait.dotDamage + statusTrait.dotGrowth * statusElapsed
                 + monsterHp * (statusTrait.dotHpPercent + statusTrait.dotHpGrowth * statusElapsed) / 100f; // 체력 퍼뎀은 현재 체력 비례
-            int dmg = Mathf.Max(1, Mathf.RoundToInt(dot));
+            int dmg = Mathf.Max(1, BattleCalc.FloorInt(dot));
             statusElapsed++;
             statusTurnsLeft--;
             yield return Say($"{name}{Josa(name, "이", "가")} {statusTrait.label}{Josa(statusTrait.label, "으로", "로")} 인해 {dmg}의 데미지를 입었다!"); // 문구가 보인 뒤에
@@ -705,7 +705,7 @@ public class BattleSystem : MonoBehaviour
                 float reflectPct = inv != null ? inv.SumTrait(t => t.reflectPercent) : 0f;
                 if (reflectPct > 0f && monsterHp > 0)
                 {
-                    int reflect = Mathf.Max(1, Mathf.RoundToInt(h.damage * reflectPct / 100f));
+                    int reflect = Mathf.Max(1, BattleCalc.FloorInt(h.damage * reflectPct / 100f));
                     monsterHp = Mathf.Max(0, monsterHp - reflect);
                     hud.SetHp(monsterHp, monster.hpMax);
                     steps.Add(new Step($"{reflect}의 피해를 반사했다!", LineDelay));
@@ -806,7 +806,7 @@ public class BattleSystem : MonoBehaviour
                 float dot = st.dotDamage + st.dotGrowth * GameManager.StatusElapsed
                     + GameManager.Hp * (st.dotHpPercent + st.dotHpGrowth * GameManager.StatusElapsed) / 100f; // 현재 체력 비례
                 dot -= InventoryManager.PoisonResist() * st.resistPercent / 100f; // 독 내성 x 내성 적용%
-                int dmg = Mathf.Max(1, Mathf.RoundToInt(dot));
+                int dmg = Mathf.Max(1, BattleCalc.FloorInt(dot));
                 GameManager.StatusElapsed++;
                 GameManager.StatusTurnsLeft--;
                 GameManager.Hp = Mathf.Max(0, GameManager.Hp - dmg);
@@ -823,7 +823,7 @@ public class BattleSystem : MonoBehaviour
         if (inv == null || GameManager.Hp <= 0) return;
 
         // 마나 도둑: 턴마다 마나 회복
-        int manaGain = Mathf.RoundToInt(inv.SumTrait(t => t.manaPerTurn) + GameManager.ManaMax * inv.SumTrait(t => t.manaPercentPerTurn) / 100f);
+        int manaGain = BattleCalc.FloorInt(inv.SumTrait(t => t.manaPerTurn) + GameManager.ManaMax * inv.SumTrait(t => t.manaPercentPerTurn) / 100f);
         if (manaGain > 0 && GameManager.Mana < GameManager.ManaMax)
         {
             int before = GameManager.Mana;
@@ -836,7 +836,7 @@ public class BattleSystem : MonoBehaviour
         float regen = inv.SumTrait(t => t.regenPerTurn) + BattleCalc.PlayerMaxHp() * inv.SumTrait(t => t.regenHpPercent) / 100f;
         if (regen > 0f && GameManager.Hp < BattleCalc.PlayerMaxHp())
         {
-            int healed = HealPlayer(Mathf.RoundToInt(regen));
+            int healed = HealPlayer(BattleCalc.FloorInt(regen));
             if (healed > 0) steps.Add(new Step($"체력을 {healed} 회복했다.", LineDelay));
         }
     }
@@ -875,8 +875,8 @@ public class BattleSystem : MonoBehaviour
         yield return Say($"{monster.monsterName}{Josa(monster.monsterName, "을", "를")} 쓰러뜨렸다!");
 
         // 골드와 경험치는 각각 보너스(증감률)를 곱해서 받는다
-        int gold = Mathf.RoundToInt(monster.gold * BattleCalc.Mult(GameManager.GoldR));
-        int exp = Mathf.RoundToInt(monster.exp * BattleCalc.Mult(GameManager.ExpR));
+        int gold = BattleCalc.FloorInt(monster.gold * BattleCalc.Mult(GameManager.GoldR));
+        int exp = BattleCalc.FloorInt(monster.exp * BattleCalc.Mult(GameManager.ExpR));
         GameManager.Gold += gold;
         int oldLevel = GameManager.Level;
         List<LevelSystem.LevelUp> levelUps = LevelSystem.AddExp(exp); // 레벨 표에 따라 레벨업

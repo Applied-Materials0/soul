@@ -22,7 +22,7 @@ public static class Exhaustion
     public static int SpMaxPenalty(int baseSpMax)
     {
         if (!Weakened) return 0;
-        return Mathf.RoundToInt(baseSpMax * Mathf.Clamp(GameTables.PlayerBase.exhaustSpMaxPercent, 0f, 100f) / 100f);
+        return BattleCalc.FloorInt(baseSpMax * Mathf.Clamp(GameTables.PlayerBase.exhaustSpMaxPercent, 0f, 100f) / 100f);
     }
 
     // SP가 바뀐 뒤에 부른다 (PlayerUI가 갱신될 때마다). SP가 0에 도달한 순간 스택이 쌓인다.

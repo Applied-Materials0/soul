@@ -33,53 +33,53 @@ MonoBehaviour:
     atBonus: 100
     dfBonus: 100
     hpBonus: 100
-    fixBonus: 10
-    breakDfBonus: 0
-    hpRateAtBonus: 0
-    critBonus: 0
-    critRateBonus: 0
-    absBonus: 0
-    healRateBonus: 0
+    fixBonus: 100
+    breakDfBonus: 100
+    hpRateAtBonus: 100
+    critBonus: 100
+    critRateBonus: 100
+    absBonus: 100
+    healRateBonus: 100
     statBonusPercent: 0
   - tier: 3
     name: Epic
     expToNext: 600
-    atBonus: 25
-    dfBonus: 25
-    hpBonus: 25
-    fixBonus: 25
-    breakDfBonus: 0
-    hpRateAtBonus: 0
-    critBonus: 0
-    critRateBonus: 0
-    absBonus: 0
-    healRateBonus: 0
+    atBonus: 200
+    dfBonus: 200
+    hpBonus: 200
+    fixBonus: 200
+    breakDfBonus: 200
+    hpRateAtBonus: 200
+    critBonus: 200
+    critRateBonus: 200
+    absBonus: 200
+    healRateBonus: 200
     statBonusPercent: 0
   - tier: 4
     name: Legends
     expToNext: 1000
-    atBonus: 50
-    dfBonus: 50
-    hpBonus: 50
-    fixBonus: 50
-    breakDfBonus: 0
-    hpRateAtBonus: 0
-    critBonus: 0
-    critRateBonus: 0
-    absBonus: 0
-    healRateBonus: 0
+    atBonus: 300
+    dfBonus: 300
+    hpBonus: 300
+    fixBonus: 300
+    breakDfBonus: 300
+    hpRateAtBonus: 300
+    critBonus: 300
+    critRateBonus: 300
+    absBonus: 300
+    healRateBonus: 300
     statBonusPercent: 0
   - tier: 5
     name: Eternal
     expToNext: 0
-    atBonus: 100
-    dfBonus: 100
-    hpBonus: 100
-    fixBonus: 100
-    breakDfBonus: 0
-    hpRateAtBonus: 0
-    critBonus: 0
-    critRateBonus: 0
-    absBonus: 0
-    healRateBonus: 0
+    atBonus: 500
+    dfBonus: 500
+    hpBonus: 500
+    fixBonus: 500
+    breakDfBonus: 500
+    hpRateAtBonus: 500
+    critBonus: 500
+    critRateBonus: 500
+    absBonus: 500
+    healRateBonus: 500
     statBonusPercent: 0

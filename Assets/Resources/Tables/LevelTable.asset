@@ -147,7 +147,217 @@ MonoBehaviour:
     spMaxGain: 5
     speedGain: 0
   - level: 20
-    expToNext: 0
+    expToNext: 2100
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 21
+    expToNext: 2310
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 22
+    expToNext: 2530
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 23
+    expToNext: 2760
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 24
+    expToNext: 3000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 25
+    expToNext: 3250
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 26
+    expToNext: 3510
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 27
+    expToNext: 3780
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 28
+    expToNext: 4060
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 29
+    expToNext: 4350
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 30
+    expToNext: 4650
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 31
+    expToNext: 5000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 32
+    expToNext: 5500
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 33
+    expToNext: 6000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 34
+    expToNext: 6500
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 35
+    expToNext: 7000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 36
+    expToNext: 7500
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 37
+    expToNext: 8000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 38
+    expToNext: 8500
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 39
+    expToNext: 9000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 40
+    expToNext: 9500
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 41
+    expToNext: 10000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 42
+    expToNext: 10600
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 43
+    expToNext: 11300
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 44
+    expToNext: 12100
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 45
+    expToNext: 13000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 46
+    expToNext: 14000
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 47
+    expToNext: 15100
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 48
+    expToNext: 16300
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 49
+    expToNext: 17600
+    hpMaxGain: 5
+    atGain: 1
+    dfGain: 1
+    spMaxGain: 5
+    speedGain: 1
+  - level: 50
+    expToNext: 19000
     hpMaxGain: 5
     atGain: 1
     dfGain: 1

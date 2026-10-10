@@ -175,71 +175,71 @@ MonoBehaviour:
     playerExpPerUse: 0
     levels:
     - level: 1
-      expToNext: 20
+      expToNext: 10
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 2
-      expToNext: 40
-      bonus: 1
+      expToNext: 20
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 3
-      expToNext: 80
-      bonus: 2
+      expToNext: 40
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 4
-      expToNext: 140
-      bonus: 3
+      expToNext: 80
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 5
-      expToNext: 220
-      bonus: 4
+      expToNext: 160
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 6
       expToNext: 320
-      bonus: 5
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 7
-      expToNext: 440
-      bonus: 6
+      expToNext: 640
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 8
-      expToNext: 600
-      bonus: 7
+      expToNext: 1280
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 9
-      expToNext: 800
-      bonus: 8
+      expToNext: 2560
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 10
       expToNext: 0
-      bonus: 10
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
@@ -252,75 +252,75 @@ MonoBehaviour:
     playerExpPerUse: 1
     levels:
     - level: 1
-      expToNext: 5
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 0
-      spReduce: 0
-    - level: 2
       expToNext: 10
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
-    - level: 3
+    - level: 2
       expToNext: 20
-      bonus: 0
+      bonus: 1
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 3
+      expToNext: 40
+      bonus: 1
       extraMin: 0
       extraMax: 0
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 4
-      expToNext: 35
-      bonus: 0
+      expToNext: 80
+      bonus: 1
       extraMin: 0
       extraMax: 1
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 5
-      expToNext: 55
-      bonus: 0
+      expToNext: 160
+      bonus: 2
       extraMin: 0
       extraMax: 1
       expBonus: 1
       spReduce: 1
     - level: 6
-      expToNext: 80
-      bonus: 0
+      expToNext: 320
+      bonus: 2
       extraMin: 0
       extraMax: 1
       expBonus: 2
-      spReduce: 2
+      spReduce: 1
     - level: 7
-      expToNext: 110
-      bonus: 0
-      extraMin: 1
+      expToNext: 640
+      bonus: 2
+      extraMin: 0
       extraMax: 2
       expBonus: 2
-      spReduce: 2
+      spReduce: 1
     - level: 8
-      expToNext: 150
-      bonus: 0
-      extraMin: 1
+      expToNext: 1280
+      bonus: 2
+      extraMin: 0
       extraMax: 2
-      expBonus: 2
-      spReduce: 2
+      expBonus: 3
+      spReduce: 1
     - level: 9
-      expToNext: 200
-      bonus: 0
+      expToNext: 2560
+      bonus: 2
       extraMin: 1
       extraMax: 2
       expBonus: 3
-      spReduce: 2
+      spReduce: 1
     - level: 10
       expToNext: 0
-      bonus: 0
+      bonus: 2
       extraMin: 1
       extraMax: 2
       expBonus: 3
-      spReduce: 3
+      spReduce: 2
   - id: 4
     kind: 7
     tool: 0
@@ -329,75 +329,75 @@ MonoBehaviour:
     playerExpPerUse: 1
     levels:
     - level: 1
-      expToNext: 5
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 0
-      spReduce: 0
-    - level: 2
       expToNext: 10
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
-    - level: 3
+    - level: 2
       expToNext: 20
-      bonus: 0
+      bonus: 1
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 3
+      expToNext: 40
+      bonus: 1
       extraMin: 0
       extraMax: 0
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 4
-      expToNext: 35
-      bonus: 0
+      expToNext: 80
+      bonus: 1
       extraMin: 0
       extraMax: 1
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 5
-      expToNext: 55
-      bonus: 0
+      expToNext: 160
+      bonus: 2
       extraMin: 0
       extraMax: 1
       expBonus: 1
       spReduce: 1
     - level: 6
-      expToNext: 80
-      bonus: 0
+      expToNext: 320
+      bonus: 2
       extraMin: 0
       extraMax: 1
       expBonus: 2
-      spReduce: 2
+      spReduce: 1
     - level: 7
-      expToNext: 110
-      bonus: 0
-      extraMin: 1
+      expToNext: 640
+      bonus: 2
+      extraMin: 0
       extraMax: 2
       expBonus: 2
-      spReduce: 2
+      spReduce: 1
     - level: 8
-      expToNext: 150
-      bonus: 0
-      extraMin: 1
+      expToNext: 1280
+      bonus: 2
+      extraMin: 0
       extraMax: 2
-      expBonus: 2
-      spReduce: 2
+      expBonus: 3
+      spReduce: 1
     - level: 9
-      expToNext: 200
-      bonus: 0
+      expToNext: 2560
+      bonus: 2
       extraMin: 1
       extraMax: 2
       expBonus: 3
-      spReduce: 2
+      spReduce: 1
     - level: 10
       expToNext: 0
-      bonus: 0
+      bonus: 2
       extraMin: 1
       extraMax: 2
       expBonus: 3
-      spReduce: 3
+      spReduce: 2
   - id: 5
     kind: 4
     tool: 0
@@ -406,152 +406,152 @@ MonoBehaviour:
     playerExpPerUse: 1
     levels:
     - level: 1
-      expToNext: 5
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 0
-      spReduce: 0
-    - level: 2
       expToNext: 10
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
-    - level: 3
+    - level: 2
       expToNext: 20
-      bonus: 0
+      bonus: 1
+      extraMin: 0
+      extraMax: 0
+      expBonus: 0
+      spReduce: 0
+    - level: 3
+      expToNext: 40
+      bonus: 1
       extraMin: 0
       extraMax: 0
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 4
-      expToNext: 35
-      bonus: 0
+      expToNext: 80
+      bonus: 1
       extraMin: 0
       extraMax: 1
       expBonus: 1
-      spReduce: 1
+      spReduce: 0
     - level: 5
-      expToNext: 55
-      bonus: 0
+      expToNext: 160
+      bonus: 2
       extraMin: 0
       extraMax: 1
       expBonus: 1
       spReduce: 1
     - level: 6
-      expToNext: 80
-      bonus: 0
+      expToNext: 320
+      bonus: 2
       extraMin: 0
       extraMax: 1
-      expBonus: 2
-      spReduce: 2
+      expBonus: 1
+      spReduce: 1
     - level: 7
-      expToNext: 110
-      bonus: 0
+      expToNext: 640
+      bonus: 2
       extraMin: 1
-      extraMax: 2
-      expBonus: 2
-      spReduce: 2
+      extraMax: 1
+      expBonus: 1
+      spReduce: 1
     - level: 8
-      expToNext: 150
-      bonus: 0
+      expToNext: 1280
+      bonus: 2
+      extraMin: 1
+      extraMax: 2
+      expBonus: 1
+      spReduce: 1
+    - level: 9
+      expToNext: 2560
+      bonus: 2
       extraMin: 1
       extraMax: 2
       expBonus: 2
-      spReduce: 2
-    - level: 9
-      expToNext: 200
-      bonus: 0
-      extraMin: 1
-      extraMax: 2
-      expBonus: 3
-      spReduce: 2
+      spReduce: 1
     - level: 10
       expToNext: 0
-      bonus: 0
+      bonus: 2
       extraMin: 1
-      extraMax: 2
-      expBonus: 3
-      spReduce: 3
+      extraMax: 3
+      expBonus: 2
+      spReduce: 2
   - id: 6
     kind: 8
     tool: 0
     label: "\uC81C\uC791"
-    expPerUse: 1
-    playerExpPerUse: 1
+    expPerUse: 10000
+    playerExpPerUse: 10000
     levels:
     - level: 1
-      expToNext: 5
+      expToNext: 100
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
       spReduce: 0
     - level: 2
-      expToNext: 10
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 0
-      spReduce: 0
-    - level: 3
-      expToNext: 20
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 0
-    - level: 4
-      expToNext: 35
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 0
-    - level: 5
-      expToNext: 55
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 0
-    - level: 6
-      expToNext: 80
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 0
-    - level: 7
-      expToNext: 110
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 0
-    - level: 8
-      expToNext: 150
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 0
-    - level: 9
       expToNext: 200
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 3
+      expBonus: 1
       spReduce: 0
-    - level: 10
-      expToNext: 0
+    - level: 3
+      expToNext: 400
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 2
+      spReduce: 0
+    - level: 4
+      expToNext: 800
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 3
       spReduce: 0
+    - level: 5
+      expToNext: 1600
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 4
+      spReduce: 1
+    - level: 6
+      expToNext: 3200
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 5
+      spReduce: 1
+    - level: 7
+      expToNext: 6400
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 6
+      spReduce: 1
+    - level: 8
+      expToNext: 12800
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 7
+      spReduce: 1
+    - level: 9
+      expToNext: 25600
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 8
+      spReduce: 1
+    - level: 10
+      expToNext: 0
+      bonus: 0
+      extraMin: 0
+      extraMax: 1
+      expBonus: 8
+      spReduce: 2
   - id: 7
     kind: 6
     tool: 0
@@ -578,57 +578,57 @@ MonoBehaviour:
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 1
-      spReduce: 1
+      expBonus: 2
+      spReduce: 0
     - level: 4
-      expToNext: 70
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 1
-    - level: 5
-      expToNext: 110
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 1
-    - level: 6
-      expToNext: 160
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 7
-      expToNext: 220
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 8
-      expToNext: 300
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 9
-      expToNext: 400
+      expToNext: 80
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 3
-      spReduce: 2
+      spReduce: 0
+    - level: 5
+      expToNext: 160
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 4
+      spReduce: 1
+    - level: 6
+      expToNext: 320
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 5
+      spReduce: 1
+    - level: 7
+      expToNext: 640
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 6
+      spReduce: 1
+    - level: 8
+      expToNext: 1280
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 7
+      spReduce: 1
+    - level: 9
+      expToNext: 2560
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 8
+      spReduce: 1
     - level: 10
       expToNext: 0
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 3
-      spReduce: 3
+      expBonus: 9
+      spReduce: 2
   - id: 8
     kind: 9
     tool: 0
@@ -648,64 +648,64 @@ MonoBehaviour:
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 0
+      expBonus: 1
       spReduce: 0
     - level: 3
       expToNext: 40
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 1
-      spReduce: 1
+      expBonus: 2
+      spReduce: 0
     - level: 4
-      expToNext: 70
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 1
-    - level: 5
-      expToNext: 110
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 1
-      spReduce: 1
-    - level: 6
-      expToNext: 160
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 7
-      expToNext: 220
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 8
-      expToNext: 300
-      bonus: 0
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
-    - level: 9
-      expToNext: 400
+      expToNext: 80
       bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 3
-      spReduce: 2
+      spReduce: 0
+    - level: 5
+      expToNext: 160
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 4
+      spReduce: 1
+    - level: 6
+      expToNext: 320
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 5
+      spReduce: 1
+    - level: 7
+      expToNext: 640
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 6
+      spReduce: 1
+    - level: 8
+      expToNext: 1280
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 7
+      spReduce: 1
+    - level: 9
+      expToNext: 2560
+      bonus: 0
+      extraMin: 0
+      extraMax: 0
+      expBonus: 8
+      spReduce: 1
     - level: 10
       expToNext: 0
       bonus: 0
       extraMin: 0
       extraMax: 0
-      expBonus: 3
-      spReduce: 3
+      expBonus: 9
+      spReduce: 2
   - id: 9
     kind: 1
     tool: 0
@@ -715,7 +715,7 @@ MonoBehaviour:
     levels:
     - level: 1
       expToNext: 10
-      bonus: 1
+      bonus: 0
       extraMin: 0
       extraMax: 0
       expBonus: 0
@@ -732,7 +732,7 @@ MonoBehaviour:
       bonus: 1
       extraMin: 0
       extraMax: 0
-      expBonus: 1
+      expBonus: 0
       spReduce: 1
     - level: 4
       expToNext: 80
@@ -743,43 +743,43 @@ MonoBehaviour:
       spReduce: 1
     - level: 5
       expToNext: 160
-      bonus: 1
+      bonus: 2
       extraMin: 0
-      extraMax: 0
+      extraMax: 1
       expBonus: 1
       spReduce: 1
     - level: 6
       expToNext: 320
-      bonus: 1
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
+      bonus: 2
+      extraMin: 1
+      extraMax: 1
+      expBonus: 1
+      spReduce: 1
     - level: 7
       expToNext: 640
-      bonus: 1
-      extraMin: 0
-      extraMax: 0
-      expBonus: 2
-      spReduce: 2
+      bonus: 2
+      extraMin: 1
+      extraMax: 2
+      expBonus: 1
+      spReduce: 1
     - level: 8
       expToNext: 1280
-      bonus: 1
-      extraMin: 0
-      extraMax: 0
+      bonus: 2
+      extraMin: 1
+      extraMax: 2
       expBonus: 2
-      spReduce: 2
+      spReduce: 1
     - level: 9
       expToNext: 2560
-      bonus: 1
-      extraMin: 0
-      extraMax: 0
-      expBonus: 3
+      bonus: 2
+      extraMin: 1
+      extraMax: 2
+      expBonus: 2
       spReduce: 2
     - level: 10
       expToNext: 0
-      bonus: 1
-      extraMin: 0
-      extraMax: 0
-      expBonus: 3
+      bonus: 2
+      extraMin: 1
+      extraMax: 3
+      expBonus: 2
       spReduce: 3
